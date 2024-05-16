@@ -33,7 +33,7 @@ struct zcond_false {
         branch;                                                                 \
     })                        
 
-#define zcond_true(cond)                                                        \
+#define zcond_false(cond)                                                        \
     ({                                                                          \
         bool branch;                                                            \
         if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \

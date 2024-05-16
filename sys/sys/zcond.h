@@ -21,7 +21,7 @@ struct zcond_false {
 #define DEFINE_ZCOND_FALSE(name) \
     struct zcond_false name = {{ .enabled = false }}
 
-#define zcond_true(cond)                                                        \      
+#define zcond_true(cond)                                                        \
     ({                                                                          \
         bool branch;                                                            \
         if (__builtin_types_compatible_p(cond, struct zcond_true)) {            \
@@ -33,7 +33,7 @@ struct zcond_false {
         branch;                                                                 \
     })                        
 
-#define zcond_false(cond)                                                       \      
+#define zcond_false(cond)                                                       \
     ({                                                                          \
         bool branch;                                                            \
         if (__builtin_types_compatible_p(cond, struct zcond_true)) {            \

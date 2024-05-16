@@ -6,11 +6,9 @@
 #include <sys/sysctl.h>
 #include <sys/zcond.h>
 
-//DEFINE_ZCOND_TRUE(cond1);
-//DEFINE_ZCOND_FALSE(cond2);
+DEFINE_ZCOND_TRUE(cond1);
+DEFINE_ZCOND_FALSE(cond2);
 
-struct zcond_true cond1 = (struct zcond_true) {.cond = {.enabled = true}};
-struct zcond_false cond2 = (struct zcond_false) {.cond = {.enabled = false}};
 
 static int 
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) {

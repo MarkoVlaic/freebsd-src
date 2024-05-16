@@ -5,7 +5,7 @@
 
 struct zcond {
     bool enabled; 
-};
+}; 
 
 struct zcond_true {
     struct zcond cond;
@@ -24,26 +24,25 @@ struct zcond_false {
 #define zcond_true(cond)                                                        \
     ({                                                                          \
         bool branch;                                                            \
-        if (__builtin_types_compatible_p(cond, struct zcond_true)) {            \
+        if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
             branch = true;                                                      \
-        } else if (__builtin_types_compatible_p(cond, struct zcond_false)) {    \
+        } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
             branch = false;                                                     \
         }                                                                       \
                                                                                 \
         branch;                                                                 \
     })                        
 
-#define zcond_false(cond)                                                       \
+#define zcond_true(cond)                                                        \
     ({                                                                          \
         bool branch;                                                            \
-        if (__builtin_types_compatible_p(cond, struct zcond_true)) {            \
-            branch = false;                                                     \
-        } else if (__builtin_types_compatible_p(cond, struct zcond_false)) {    \
-            branch = true;                                                      \
+        if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
+            branch = false;                                                      \
+        } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
+            branch = true;                                                     \
         }                                                                       \
                                                                                 \
         branch;                                                                 \
     })                        
-
 
 #endif

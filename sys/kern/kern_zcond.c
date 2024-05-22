@@ -12,6 +12,7 @@ DEFINE_ZCOND_FALSE(cond2);
 
 static int 
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
+    printf("zcond test start\n");
     if(zcond_true(cond1)) {
         printf("cond 1 true\n");
     }

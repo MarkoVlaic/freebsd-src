@@ -2,6 +2,7 @@
 #define _SYS_ZCOND_H
 
 #include <sys/types.h>
+#include <machine/zcond.h>
 
 struct zcond {
     bool enabled; 
@@ -21,30 +22,15 @@ struct zcond_false {
 #define DEFINE_ZCOND_FALSE(name) \
     struct zcond_false name = {{ .enabled = false }}
 
-static __attribute__((always_inline)) bool zcond_nop(void) {
-    asm goto(
-            ".nops 8 \n\t"
-            : : : : l_true );
 
-    return false;
-l_true: return true;
-}
-
-static __attribute__((always_inline)) bool zcond_jmp(void) {
-    asm goto(
-            "jmp %[l_true] \n\t"
-            : : : : l_true );
-    return false;
-l_true: return true;
-}
 
 #define zcond_true(cond)                                                                \
     ({                                                                                  \
         bool branch;                                                                    \
         if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
-            branch = zcond_jmp();                                                              \
+            branch = arch_zcond_jmp();                                                              \
         } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
-            branch = zcond_nop();                                                             \
+            branch = arch_zcond_nop();                                                             \
         }                                                                               \
                                                                                         \
         branch;                                                                         \
@@ -54,12 +40,12 @@ l_true: return true;
     ({                                                                                  \
         bool branch;                                                                    \
         if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
-            branch = zcond_nop();                                                             \
+            branch = arch_zcond_nop();                                                             \
         } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
-            branch = zcond_jmp();                                                              \
+            branch = arch_zcond_jmp();                                                              \
         }                                                                               \
                                                                                         \
         branch;                                                                         \
     })                        
 
-#endif
+endif

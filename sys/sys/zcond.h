@@ -21,7 +21,7 @@ struct zcond_false {
 #define DEFINE_ZCOND_FALSE(name) \
     struct zcond_false name = {{ .enabled = false }}
 
-static __attribute__((always_inline)) zcond_nop() {
+static __attribute__((always_inline)) bool zcond_nop() {
     asm goto(
             ".nops 8 \n\t"
             : : : : l_true );
@@ -30,7 +30,7 @@ static __attribute__((always_inline)) zcond_nop() {
 l_true: return true;
 }
 
-static __attribute__((always_inline)) zcond_jmp() {
+static __attribute__((always_inline)) bool zcond_jmp() {
     asm goto(
             "jmp %[l_true] \n\t"
             : : : : l_true );

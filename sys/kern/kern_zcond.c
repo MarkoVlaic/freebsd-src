@@ -44,6 +44,8 @@ static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) {
     printf("zcond test 3 start\n");
     if(zcond_false(cond1)) {
         printf("cond 1 false\n");
+    } else {
+        printf("else branch\n");
     }
 
     return 0;

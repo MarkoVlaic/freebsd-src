@@ -31,4 +31,14 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
     return 0;
 }
 
+static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) {
+    printf("zcond test 2 start\n");
+    if(zcond_true(cond1)) {
+        printf("cond 1 true\n");
+    }
+
+    return 0;
+}
+
 SYSCTL_PROC(_kern, OID_AUTO, zcond, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test, "I", "trigger zcond test");
+SYSCTL_PROC(_kern, OID_AUTO, zcond2, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test2, "I", "trigger second zcond test");

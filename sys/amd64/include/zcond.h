@@ -11,7 +11,7 @@
 
 struct zcond;
 
-static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p) {
+static __attribute__((always_inline)) __attribute__(("O0")) bool arch_zcond_nop(struct zcond *const zcond_p) {
     asm goto(
             "1: .nops 8 \n\t"
             ZCOND_TABLE_ENTRY
@@ -21,7 +21,7 @@ static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zc
 l_true: return true;
 }
 
-static __attribute__((always_inline)) bool arch_zcond_jmp(struct zcond *const zcond_p) {
+static __attribute__((always_inline))  __attribute__(("O0")) bool arch_zcond_jmp(struct zcond *const zcond_p) {
     asm goto(
             "1: jmp %[l_true] \n\t"
             ZCOND_TABLE_ENTRY

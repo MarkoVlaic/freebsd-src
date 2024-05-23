@@ -7,7 +7,7 @@
     ".pushsection __zcond_table, \"aw\" \n\t"  \
     ".8byte 1b \n\t" \
     ".8byte %l[l_true] \n\t" \
-    ".8byte %[zcond_addr] \n\t" \
+    ".8byte %c0 \n\t" \
     ".popsection \n\t"
 
 struct zcond;
@@ -16,7 +16,7 @@ static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zc
     asm goto(
             "1: .nops 8 \n\t"
             ZCOND_TABLE_ENTRY
-            : : [zcond_addr] "i" (zcond_p) : : l_true );
+            : : "i" (zcond_p) : : l_true );
 
     return false;
 l_true: return true;
@@ -26,7 +26,7 @@ static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const z
     asm goto(
             "1: jmp %[l_true] \n\t"
             ZCOND_TABLE_ENTRY
-            : : [zcond_addr] "i" (zcond_p) : : l_true );
+            : : "i" (zcond_p) : : l_true );
     return false;
 l_true: return true;
 }

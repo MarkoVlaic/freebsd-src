@@ -33,25 +33,25 @@ struct zcond_false {
 #define ZCOND_INIT(zcond_wrapped) \
     SLIST_INIT(&zcond_wrapped->cond->ins_points)
 
-#define zcond_true(cond) \
+#define zcond_true(cond_wrapped) \
     ({                                                                                  \
         bool branch;                                                                    \
-        if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
-            branch = arch_zcond_jmp(&cond->cond);                                                              \
-        } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
-            branch = arch_zcond_nop(&cond->cond);                                                             \
+        if (__builtin_types_compatible_p(typeof(cond_wrapped), struct zcond_true)) {            \
+            branch = arch_zcond_jmp(&cond_wrapped.cond);                                                              \
+        } else if (__builtin_types_compatible_p(typeof(cond_wrapped), struct zcond_false)) {    \
+            branch = arch_zcond_nop(&cond_wrapped.cond);                                                             \
         }                                                                               \
                                                                                         \
         branch;                                                                         \
     })                        
 
-#define zcond_false(cond)                                                               \
+#define zcond_false(cond_wrapped)                                                               \
     ({                                                                                  \
         bool branch;                                                                    \
-        if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
-            branch = arch_zcond_nop(&cond->cond);                                                             \
-        } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
-            branch = arch_zcond_jmp(&cond->cond);                                                              \
+        if (__builtin_types_compatible_p(typeof(cond_wrapped), struct zcond_true)) {            \
+            branch = arch_zcond_nop(&cond_wrapped.cond);                                                             \
+        } else if (__builtin_types_compatible_p(typeof(cond_wrapped), struct zcond_false)) {    \
+            branch = arch_zcond_jmp(&cond_wrapped.cond);                                                              \
         }                                                                               \
                                                                                         \
         branch;                                                                         \

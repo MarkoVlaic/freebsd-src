@@ -7,7 +7,7 @@
     ".pushsection __zcond_table, \"aw\" \n\t"  \
     ".long 1b \n\t" \
     ".long %l[l_true] \n\t" \
-    ".long %[zcond_addr] \n\t" \
+    ".long %[zcond_addr] - .\n\t" \
     ".popsection \n\t"
 
 struct zcond;

@@ -13,7 +13,7 @@ DEFINE_ZCOND_FALSE(cond2);
 
 
 static int 
-trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
+trigger_zcond_test(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     printf("zcond test start\n");
     if(zcond_true(cond1)) {
         printf("cond 1 true\n");
@@ -33,7 +33,7 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
     return 0;
 }
 
-static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) {
+static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     printf("zcond test 2 start\n");
     if(zcond_true(cond1)) {
         printf("cond 1 true\n");
@@ -42,7 +42,7 @@ static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) {
     return 0;
 }
 
-static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) {
+static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     printf("zcond test 3 start\n");
     if(zcond_false(cond1)) {
         printf("cond 1 false\n");

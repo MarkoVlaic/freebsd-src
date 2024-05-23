@@ -36,7 +36,7 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
 static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     printf("zcond test 2 start\n");
     if(zcond_true(cond1)) {
-        printf("cond 1 true\n");
+        printf("cond 1 true %s\n", __func__);
     }
 
     return 0;

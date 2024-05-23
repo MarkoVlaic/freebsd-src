@@ -5,9 +5,9 @@
 
 #define ZCOND_TABLE_ENTRY \
     ".pushsection __zcond_table, \"aw\" \n\t"  \
-    ".8byte 1b \n\t" \
-    ".8byte %l[l_true] \n\t" \
-    ".8byte %c0 \n\t" \
+    ".quad 1b \n\t" \
+    ".quad %l[l_true] \n\t" \
+    ".quad %c0 \n\t" \
     ".popsection \n\t"
 
 struct zcond;

@@ -7,6 +7,7 @@
     ".pushsection __zcond_table, \"aw\" \n\t"  \
     ".8byte 1b \n\t" \
     ".8byte %l[l_true] \n\t" \
+    ".8byte %[zcond_addr] \n\t" \
     ".popsection \n\t"
 
 struct zcond;

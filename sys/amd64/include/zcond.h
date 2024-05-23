@@ -4,7 +4,7 @@
 //#include <sys/zcond.h>
 
 #define ZCOND_TABLE_ENTRY \
-    ".pushsection __zcond_table, \"a\" \n\t"  \
+    ".pushsection __zcond_table, \"aw\" \n\t"  \
     ".long 1b \n\t" \
     ".long %l[l_true] \n\t" \
     ".long %[zcond_addr] \n\t" \

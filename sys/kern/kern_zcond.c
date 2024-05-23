@@ -7,9 +7,9 @@
 #include <sys/zcond.h>
 
 DEFINE_ZCOND_TRUE(cond1);
-ZCOND_INIT(&cond1);
+// ZCOND_INIT(&cond1); where should i call this?
 DEFINE_ZCOND_FALSE(cond2);
-ZCOND_INIT(&cond2);
+// ZCOND_INIT(&cond2);
 
 
 static int 

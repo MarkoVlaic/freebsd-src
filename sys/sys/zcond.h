@@ -33,7 +33,8 @@ struct zcond_false {
 #define ZCOND_INIT(zcond_wrapped) \
     SLIST_INIT(&zcond_wrapped->cond->ins_points)
 
-#define zcond_true(cond_wrapped) \
+
+#define __attribute__((always_inline)) zcond_true(cond_wrapped) \
     ({                                                                                  \
         bool branch;                                                                    \
         if (__builtin_types_compatible_p(typeof(cond_wrapped), struct zcond_true)) {            \
@@ -45,7 +46,7 @@ struct zcond_false {
         branch;                                                                         \
     })                        
 
-#define zcond_false(cond_wrapped)                                                               \
+#define  __attribute__((always_inline)) zcond_false(cond_wrapped)                                                               \
     ({                                                                                  \
         bool branch;                                                                    \
         if (__builtin_types_compatible_p(typeof(cond_wrapped), struct zcond_true)) {            \

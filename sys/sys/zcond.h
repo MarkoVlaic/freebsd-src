@@ -37,9 +37,9 @@ struct zcond_false {
     ({                                                                                  \
         bool branch;                                                                    \
         if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
-            branch = arch_zcond_jmp();                                                              \
+            branch = arch_zcond_jmp(&cond);                                                              \
         } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
-            branch = arch_zcond_nop();                                                             \
+            branch = arch_zcond_nop(&cond);                                                             \
         }                                                                               \
                                                                                         \
         branch;                                                                         \
@@ -49,9 +49,9 @@ struct zcond_false {
     ({                                                                                  \
         bool branch;                                                                    \
         if (__builtin_types_compatible_p(typeof(cond), struct zcond_true)) {            \
-            branch = arch_zcond_nop();                                                             \
+            branch = arch_zcond_nop(&cond);                                                             \
         } else if (__builtin_types_compatible_p(typeof(cond), struct zcond_false)) {    \
-            branch = arch_zcond_jmp();                                                              \
+            branch = arch_zcond_jmp(&cond);                                                              \
         }                                                                               \
                                                                                         \
         branch;                                                                         \

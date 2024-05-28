@@ -5,6 +5,35 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/zcond.h>
+#include <sys/malloc.h>
+
+MALLOC_DECLARE(M_ZCOND);
+MALLOC_DEFINE(M_ZCOND, "zcond malloc", "malloc for the zcond subsystem");
+
+void zcond_init(void* unused) {
+    extern char __zcond_table_start, __zcond_table_end;
+    struct ins_point *entry, dummy_ins_point;
+    struct zcond *entry_zcond;
+    char *entry_addr;
+    size_t entry_size = sizeof(struct ins_point) - sizeof(dummy_ins_point.next);
+    
+    for(entry_addr = __zcond_table_start; entry_addr < __zcond_table_end; entry_addr += entry_size) {
+        entry = malloc(sizeof(struct ins_point), M_ZCOND, M_NOWAIT);
+        if(entry == NULL) {
+            // what now?
+            printf("malloc failed");
+        }
+
+        memcpy(entry, entry_addr, entry_size);
+        entry_zcond = entry->zcond;
+
+        if(entry_zcond->ins_points.slh_first == NULL) {
+            SLIST_INIT(&entry_zcond->ins_points);
+        }
+
+        SLIST_INSERT_HEAD(&entry_zcond->ins_points, entry, next);    
+    }
+}
 
 DEFINE_ZCOND_TRUE(cond1);
 // ZCOND_INIT(&cond1); where should i call this?

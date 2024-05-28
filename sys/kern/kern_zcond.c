@@ -17,7 +17,7 @@ void zcond_init(void* unused) {
     char *entry_addr;
     size_t entry_size = sizeof(struct ins_point) - sizeof(dummy_ins_point.next);
     
-    for(entry_addr = __zcond_table_start; entry_addr < __zcond_table_end; entry_addr += entry_size) {
+    for(entry_addr = &__zcond_table_start; entry_addr < &__zcond_table_end; entry_addr += entry_size) {
         entry = malloc(sizeof(struct ins_point), M_ZCOND, M_NOWAIT);
         if(entry == NULL) {
             // what now?

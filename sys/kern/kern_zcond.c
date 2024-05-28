@@ -54,13 +54,13 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
         printf("cond 1 false\n");
     }
     
-    if(zcond_true(cond2)) {
+   /* if(zcond_true(cond2)) {
         printf("cond 2 true\n");
     }
 
     if(zcond_false(cond2)) {
         printf("cond 2 false\n");
-    }
+    }*/
     return 0;
 }
 

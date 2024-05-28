@@ -88,7 +88,7 @@ static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
     printf("inspection points for cond1:\n");
     struct ins_point *p;
     SLIST_FOREACH(p, &cond1.cond.ins_points, next) {
-        printf("patch_addr = %#08x | jump_addr = %#08x | zcond_ptr = %#08x", p->patch_addr, p->lbl_true_addr, p->zcond);
+        printf("patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %#08lx", p->patch_addr, p->lbl_true_addr, p->zcond);
     }
 }
 

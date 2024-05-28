@@ -10,7 +10,8 @@
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond malloc", "malloc for the zcond subsystem");
 
-void zcond_init(void* unused) {
+static void 
+zcond_init(void* unused) {
     extern char __zcond_table_start, __zcond_table_end;
     struct ins_point *entry, dummy_ins_point;
     struct zcond *entry_zcond;
@@ -34,6 +35,7 @@ void zcond_init(void* unused) {
         SLIST_INSERT_HEAD(&entry_zcond->ins_points, entry, next);    
     }
 }
+SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
 DEFINE_ZCOND_TRUE(cond1);
 // ZCOND_INIT(&cond1); where should i call this?

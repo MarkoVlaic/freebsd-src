@@ -84,6 +84,15 @@ static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     return 0;
 }
 
+static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
+    printf("inspection points for cond1:\n");
+    struct ins_point *p;
+    SLIST_FOREACH(p, &cond1.ins_points, next) {
+        printf("patch_addr = %#08x | jump_addr = %#08x | zcond_ptr = %#08x", p->patch_addr, p->lbl_true_addr, p->zcond);
+    }
+}
+
 SYSCTL_PROC(_kern, OID_AUTO, zcond, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test, "I", "trigger zcond test");
 SYSCTL_PROC(_kern, OID_AUTO, zcond2, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test2, "I", "trigger second zcond test");
 SYSCTL_PROC(_kern, OID_AUTO, zcond3, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test3, "I", "trigger third zcond test");
+SYSCTL_PROC(_kern, OID_AUTO, zcond_ins_p, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, zcond_list_inspection_points, "I", "list cond1 inspection points");

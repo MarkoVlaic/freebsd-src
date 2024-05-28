@@ -90,6 +90,8 @@ static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
     SLIST_FOREACH(p, &cond1.cond.ins_points, next) {
         printf("patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p", p->patch_addr, p->lbl_true_addr, p->zcond);
     }
+    
+    return 0;
 }
 
 SYSCTL_PROC(_kern, OID_AUTO, zcond, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test, "I", "trigger zcond test");

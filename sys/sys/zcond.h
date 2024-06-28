@@ -3,17 +3,20 @@
 
 #include <sys/types.h>
 #include <machine/zcond.h>
+#include <vm/vm_page.h>
 
 struct ins_point {
     vm_offset_t patch_addr; /* address of the nop or jmp instruction to be patched */
     vm_offset_t lbl_true_addr; /* address of the label to jump to when the condition is true */
     struct zcond* zcond;
     SLIST_ENTRY(ins_point) next;
+    vm_page_t *swap_page; 
 };
 
 struct zcond {
     bool enabled; 
     SLIST_HEAD(, ins_point) ins_points;
+    vm_page_t swap_page;
 }; 
 
 struct zcond_true {

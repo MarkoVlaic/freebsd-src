@@ -6,6 +6,7 @@
 #include <sys/sysctl.h>
 #include <sys/zcond.h>
 #include <sys/malloc.h>
+#include <vm/vm.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
@@ -27,6 +28,11 @@ zcond_init(void* unused) {
         }
 
         SLIST_INSERT_HEAD(&entry_zcond->ins_points, entry, next);    
+        
+        entry_zcond->swap_page = vm_page_alloc_noobj(VM_ALLOC_WIRED);
+        vm_offset_t src_vaddr = entry->patch_addr & ~PAGE_MASK;
+        vm_page_t src_page = PHYS_TO_VM_PAGE(vtophys(src_vaddr));
+        pmap_copy_page(src_page, entry_zcond->swap_page);
     }
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?

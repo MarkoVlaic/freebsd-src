@@ -10,6 +10,7 @@
     ".quad %c0 \n\t" \
     ".quad 0 \n\t" \
     ".quad 0 \n\t" \
+    "jmp %l[l_true] \n\t" \
     ".popsection \n\t"
 
 struct zcond;

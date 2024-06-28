@@ -13,17 +13,13 @@ MALLOC_DEFINE(M_ZCOND, "zcond malloc", "malloc for the zcond subsystem");
 static void 
 zcond_init(void* unused) {
     extern char __zcond_table_start, __zcond_table_end;
-    struct ins_point *entry, dummy_ins_point;
+    struct ins_point *entry;
     struct zcond *entry_zcond;
     char *entry_addr;
-    size_t entry_size = sizeof(struct ins_point) - sizeof(dummy_ins_point.next);
+    size_t entry_size = sizeof(struct ins_point);
     
     for(entry_addr = &__zcond_table_start; entry_addr < &__zcond_table_end; entry_addr += entry_size) {
-        entry = malloc(sizeof(struct ins_point), M_ZCOND, M_NOWAIT);
-        if(entry == NULL) {
-            // what now?
-            printf("malloc failed");
-        }
+        entry = malloc(sizeof(struct ins_point), M_ZCOND, M_WAITOK);
 
         memcpy(entry, entry_addr, entry_size);
         entry_zcond = entry->zcond;

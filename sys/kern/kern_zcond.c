@@ -8,7 +8,7 @@
 #include <sys/malloc.h>
 
 MALLOC_DECLARE(M_ZCOND);
-MALLOC_DEFINE(M_ZCOND, "zcond malloc", "malloc for the zcond subsystem");
+MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 static void 
 zcond_init(void* unused) {
@@ -19,9 +19,7 @@ zcond_init(void* unused) {
     size_t entry_size = sizeof(struct ins_point);
     
     for(entry_addr = &__zcond_table_start; entry_addr < &__zcond_table_end; entry_addr += entry_size) {
-        entry = malloc(sizeof(struct ins_point), M_ZCOND, M_WAITOK);
-
-        memcpy(entry, entry_addr, entry_size);
+        entry = (struct ins_point *) addr; 
         entry_zcond = entry->zcond;
 
         if(entry_zcond->ins_points.slh_first == NULL) {
@@ -43,8 +41,8 @@ static int
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     printf("zcond test start\n");
     if(zcond_true(cond1)) {
-        printf("cond 1 true\n");
-    }
+            printf("cond 1 true\n");
+        }
 
     if(zcond_false(cond1)) {
         printf("cond 1 false\n");

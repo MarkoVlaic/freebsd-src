@@ -30,10 +30,10 @@ struct zcond_false {
 };
 
 #define DEFINE_ZCOND_TRUE(name) \
-    struct zcond_true name = {{ .enabled = true, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page = NULL }}
+    struct zcond_true name = {{ .enabled = true, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page_addr = NULL }}
 
 #define DEFINE_ZCOND_FALSE(name) \
-    struct zcond_false name = {{ .enabled = false, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page = NULL }}
+    struct zcond_false name = {{ .enabled = false, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page_addr = NULL }}
 
 #define ZCOND_INIT(zcond_wrapped) \
     SLIST_INIT(&zcond_wrapped->cond->ins_points)

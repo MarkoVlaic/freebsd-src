@@ -55,9 +55,9 @@ void __zcond_disable(struct zcond* cond) {
        //char* patch_instruction = p->swap_page + p->patch_address & PAGE_MASK;
         page_start = p->patch_addr & ~PAGE_MASK;
         page_end = page_start + PAGE_SIZE; 
-        pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | PMAP_ENTER_WIRED);
+        pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ);
         memcpy((void *)p->patch_addr, nop, NOP_SIZE);
-        pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | PMAP_ENTER_WIRED | VM_PROT_EXECUTE);
+        pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_EXECUTE);
     }
 }
 

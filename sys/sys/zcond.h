@@ -12,13 +12,13 @@ struct ins_point {
     vm_offset_t lbl_true_addr; /* address of the label to jump to when the condition is true */
     struct zcond* zcond;
     SLIST_ENTRY(ins_point) next;
-    vm_page_t *swap_page; 
+    vm_offset_t swap_page;
 };
 
 struct zcond {
     bool enabled; 
     SLIST_HEAD(, ins_point) ins_points;
-    vm_page_t swap_page;
+    vm_offset_t swap_page_vaddr;
 }; 
 
 struct zcond_true {
@@ -30,10 +30,10 @@ struct zcond_false {
 };
 
 #define DEFINE_ZCOND_TRUE(name) \
-    struct zcond_true name = {{ .enabled = true, .ins_points = SLIST_HEAD_INITIALIZER() }}
+    struct zcond_true name = {{ .enabled = true, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page = NULL }}
 
 #define DEFINE_ZCOND_FALSE(name) \
-    struct zcond_false name = {{ .enabled = false, .ins_points = SLIST_HEAD_INITIALIZER() }}
+    struct zcond_false name = {{ .enabled = false, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page = NULL }}
 
 #define ZCOND_INIT(zcond_wrapped) \
     SLIST_INIT(&zcond_wrapped->cond->ins_points)
@@ -62,5 +62,9 @@ struct zcond_false {
                                                                                         \
         branch;                                                                         \
     })                        
+
+//void zcond_enable(struct zcond *cond);
+#define zcond_disable(cond_wrapped) __zcond_disable(&cond_wrapped.cond)
+void __zcond_disable(struct zcond *cond);
 
 #endif

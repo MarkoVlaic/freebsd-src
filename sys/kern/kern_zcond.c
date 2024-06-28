@@ -29,14 +29,37 @@ zcond_init(void* unused) {
         }
 
         SLIST_INSERT_HEAD(&entry_zcond->ins_points, entry, next);    
-        
-        entry_zcond->swap_page = vm_page_alloc_noobj(VM_ALLOC_WIRED);
-        vm_offset_t src_vaddr = entry->patch_addr & ~PAGE_MASK;
-        vm_page_t src_page = PHYS_TO_VM_PAGE(vtophys(src_vaddr));
-        pmap_copy_page(src_page, entry_zcond->swap_page);
+       
+        /*if(zcond->swap_page == NULL) { 
+            vm_page_t page = vm_page_alloc_noobj(VM_ALLOC_WIRED);
+            entry_zcond->swap_page_vaddr = kva_alloc(PAGE_SIZE);
+            
+            pmap_enter(kernel_pmap, entry_zcond->swap_page_vaddr, page, VM_PROT_READ | VM_PROT_WRITE | PMAP_ENTER_WIRED, 0);
+
+            bcopy(entry->patch_addr & ~PAGE_MASK, entry_zcond->swap_page_vaddr, PAGE_SIZE);
+        }*/
+
     }
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
+
+void __zcond_disable(struct zcond* cond) {
+    if(!cond->enabled) {
+        return;
+    }
+    
+    struct ins_point *p;
+    char nop[NOP_SIZE] = NOP_BYTES;
+    vm_offset_t page_start, page_end;
+    SLIST_FOREACH(p, &cond->ins_points, next) {
+       //char* patch_instruction = p->swap_page + p->patch_address & PAGE_MASK;
+        page_start = p->patch_addr & ~PAGE_MASK;
+        page_end = page_start + PAGE_SIZE; 
+        pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_WIRED);
+        memcpy(p->patch_addr, nop, NOP_SIZE);
+        pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_WIRED | VM_PROT_EXECUTE);
+    }
+}
 
 DEFINE_ZCOND_TRUE(cond1);
 // ZCOND_INIT(&cond1); where should i call this?

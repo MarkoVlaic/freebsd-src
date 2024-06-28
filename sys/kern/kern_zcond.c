@@ -7,6 +7,7 @@
 #include <sys/zcond.h>
 #include <sys/malloc.h>
 #include <vm/vm.h>
+#include <vm/vm_page.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");

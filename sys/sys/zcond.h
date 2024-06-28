@@ -18,7 +18,6 @@ struct ins_point {
 struct zcond {
     bool enabled; 
     SLIST_HEAD(, ins_point) ins_points;
-    vm_offset_t swap_page_vaddr;
 }; 
 
 struct zcond_true {
@@ -30,10 +29,10 @@ struct zcond_false {
 };
 
 #define DEFINE_ZCOND_TRUE(name) \
-    struct zcond_true name = {{ .enabled = true, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page_addr = NULL }}
+    struct zcond_true name = {{ .enabled = true, .ins_points = SLIST_HEAD_INITIALIZER() }}
 
 #define DEFINE_ZCOND_FALSE(name) \
-    struct zcond_false name = {{ .enabled = false, .ins_points = SLIST_HEAD_INITIALIZER(), .swap_page_addr = NULL }}
+    struct zcond_false name = {{ .enabled = false, .ins_points = SLIST_HEAD_INITIALIZER() }}
 
 #define ZCOND_INIT(zcond_wrapped) \
     SLIST_INIT(&zcond_wrapped->cond->ins_points)

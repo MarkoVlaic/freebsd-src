@@ -19,7 +19,7 @@ zcond_init(void* unused) {
     size_t entry_size = sizeof(struct ins_point);
     
     for(entry_addr = &__zcond_table_start; entry_addr < &__zcond_table_end; entry_addr += entry_size) {
-        entry = (struct ins_point *) addr; 
+        entry = (struct ins_point *) entry_addr; 
         entry_zcond = entry->zcond;
 
         if(entry_zcond->ins_points.slh_first == NULL) {

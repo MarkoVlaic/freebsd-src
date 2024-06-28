@@ -121,6 +121,8 @@ static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
 static int zcond1_disable(SYSCTL_HANDLER_ARGS) {
     zcond_disable(cond1);
     printf("disabled\n");
+
+    return 0;
 }
 
 SYSCTL_PROC(_kern, OID_AUTO, zcond, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test, "I", "trigger zcond test");

@@ -68,6 +68,7 @@ void __zcond_disable(struct zcond* cond) __attribute__((optnone)) {
         restore_wp(wp);
      //   pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_EXECUTE);
     }
+    cond->enabled = false;
 }
 
 DEFINE_ZCOND_TRUE(cond1);

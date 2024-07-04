@@ -34,7 +34,7 @@ l_true: return true;
 }
 
 // from Intel® 64 and IA-32 Architectures Software Developer’s Manual, Volume 2B 4-165 
-#define NOP_BYTES {0x0F, 0x1F, 0x44, 0x00, 0x00}
-#define NOP_SIZE 5
+#define NOP_BYTES {0x66, 0x90}
+#define NOP_SIZE 2
 
 #endif /*!_MACHINE_ZCOND_H*/

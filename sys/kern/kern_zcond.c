@@ -9,7 +9,7 @@
 #include <vm/vm.h>
 #include <vm/vm_page.h>
 #include <vm/pmap.h>
-#include <machine/cpufunc.h>
+#include <machine/specialreg.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");

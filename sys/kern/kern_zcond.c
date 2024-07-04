@@ -51,7 +51,7 @@ void __zcond_disable(struct zcond* cond) __attribute__((optnone)) {
     
     struct ins_point *p;
     //char nop[NOP_SIZE] = NOP_BYTES;
-    vm_offset_t page_start, page_end;
+    vm_offset_t page_start;//, page_end;
     SLIST_FOREACH(p, &cond->ins_points, next) {
        //char* patch_instruction = p->swap_page + p->patch_address & PAGE_MASK;
         page_start = p->patch_addr & ~PAGE_MASK;

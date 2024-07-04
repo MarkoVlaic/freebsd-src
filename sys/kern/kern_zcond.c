@@ -59,7 +59,7 @@ void __zcond_disable(struct zcond* cond) __attribute__((optnone)) {
         //page_end = page_start + PAGE_SIZE; 
        // pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_WRITE);
         page = PHYS_TO_VM_PAGE(vtophys(page_start));
-        pmap_enter(kernel_pmap, page_start, page, VM_PROT_EXECUTE, PMAP_ENTER_WIRED, 0);
+        pmap_enter(kernel_pmap, page_start, page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
        // memcpy((void *)p->patch_addr, &nop[0], NOP_SIZE);
         //((void *)p->patch_addr)[0] = nop[0];
 

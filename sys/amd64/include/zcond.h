@@ -16,7 +16,7 @@ struct zcond;
 
 static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p) {
     asm goto(
-            "1: .nops 5 \n\t"
+            "1: .nops 2 \n\t"
             ZCOND_TABLE_ENTRY
             : : "i" (zcond_p) : : l_true );
 

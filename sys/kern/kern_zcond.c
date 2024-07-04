@@ -56,7 +56,7 @@ void __zcond_disable(struct zcond* cond) __attribute__((optnone)) {
         page_start = p->patch_addr & ~PAGE_MASK;
         page_end = page_start + PAGE_SIZE; 
         pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_WRITE);
-        memcpy((void *)p->patch_addr, &nop[0], NOP_SIZE);
+       // memcpy((void *)p->patch_addr, &nop[0], NOP_SIZE);
         //((void *)p->patch_addr)[0] = nop[0];
 
         pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_EXECUTE);

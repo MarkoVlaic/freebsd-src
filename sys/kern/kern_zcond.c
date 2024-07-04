@@ -57,15 +57,15 @@ void __zcond_disable(struct zcond* cond) __attribute__((optnone)) {
     SLIST_FOREACH(p, &cond->ins_points, next) {
        //char* patch_instruction = p->swap_page + p->patch_address & PAGE_MASK;
         bool wp = disable_wp();
-        page_start = p->patch_addr & ~PAGE_MASK;
-        page_end = page_start + PAGE_SIZE; 
-        pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_WRITE);
-        restore_wp(wp);
+        //page_start = p->patch_addr & ~PAGE_MASK;
+        //page_end = page_start + PAGE_SIZE; 
+        //pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_WRITE);
         //page = PHYS_TO_VM_PAGE(vtophys(page_start));
         //pmap_enter(kernel_pmap, page_start, page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
-       // memcpy((void *)p->patch_addr, &nop[0], NOP_SIZE);
+        memcpy((void *)p->patch_addr, &nop[0], NOP_SIZE);
         //((void *)p->patch_addr)[0] = nop[0];
-
+        
+        restore_wp(wp);
      //   pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_EXECUTE);
     }
 }

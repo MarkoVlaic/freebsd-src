@@ -43,7 +43,7 @@ zcond_init(void* unused) {
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
-void __zcond_disable(struct zcond* cond) {
+void __zcond_disable(struct zcond* cond) __attribute__((optnone)) {
     if(!cond->enabled) {
         return;
     }
@@ -56,7 +56,7 @@ void __zcond_disable(struct zcond* cond) {
         page_start = p->patch_addr & ~PAGE_MASK;
         page_end = page_start + PAGE_SIZE; 
         pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_WRITE);
-        memcpy((void *)p->patch_addr, nop, NOP_SIZE);
+        memcpy((void *)p->patch_addr, &nop[0], NOP_SIZE);
         pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_EXECUTE);
     }
 }

@@ -17,7 +17,7 @@ struct ins_point {
     char ins_type;
     SLIST_ENTRY(ins_point) next;
     vm_offset_t swap_page;
-};
+} __attribute__((packed));
 
 struct zcond {
     bool enabled; 

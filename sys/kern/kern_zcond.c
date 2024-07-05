@@ -45,7 +45,7 @@ zcond_init(void* unused) {
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
-void __zcond_disable(struct zcond* cond) __attribute__((optnone)) {
+void __zcond_disable(struct zcond* cond) {
     if(!cond->enabled) {
         return;
     }
@@ -101,7 +101,7 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
     return 0;
 }
 
-static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
+static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) {
     printf("zcond test 2 start\n");
     if(zcond_true(cond1)) {
         printf("cond 1 true %s\n", __func__);
@@ -110,7 +110,7 @@ static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     return 0;
 }
 
-static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
+static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) {
     printf("zcond test 3 start\n");
     if(zcond_false(cond1)) {
         printf("cond 1 false\n");

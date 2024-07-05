@@ -22,7 +22,7 @@ void arch_insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset) {
         insn[0] = 0xe9;
         int i;
         for(i=0;i<4;i++) {
-            insn[i+1] = (offset >> (i*2)) & 0xFF;
+            insn[i+1] = (offset >> (i*8)) & 0xFF;
         }
     }
 }

@@ -66,8 +66,10 @@ struct zcond_false {
         branch;                                                                         \
     })                        
 
-//void zcond_enable(struct zcond *cond);
+
+#define zcond_enable(cond_wrapped) __zcond_enable(&cond_wrapped.cond)
 #define zcond_disable(cond_wrapped) __zcond_disable(&cond_wrapped.cond)
+void __zcond_enable(struct zcond *cond);
 void __zcond_disable(struct zcond *cond);
 
 #endif

@@ -87,7 +87,7 @@ void __zcond_disable(struct zcond* cond) {
         }
         
         printf("patch ins point %#08lx with: ");
-        for(int i=0;i<size;i++) {
+        for(int i=0;i<insn_size;i++) {
             printf("%02hhx ", insn[i]);
         }
         printf("\n");

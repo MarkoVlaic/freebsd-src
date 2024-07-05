@@ -60,7 +60,7 @@ void __zcond_disable(struct zcond* cond) {
 
         if(p->ins_type == INS_TYPE_FALSE) {
             // replace nop with jmp
-            size_t offset;
+            vm_offset_t offset;
             if(*patch_addr == 0x66) {
                 // two byte nop
                insn_size = 2;

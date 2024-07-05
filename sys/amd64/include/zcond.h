@@ -8,27 +8,28 @@
     ".quad 1b \n\t" \
     ".quad %l[l_true] \n\t" \
     ".quad %c0 \n\t" \
+    ".byte %c1 \n\t" \
     ".quad 0 \n\t" \
     ".quad 0 \n\t" \
     ".popsection \n\t"
 
 struct zcond;
 
-static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p) {
+static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p, char ins_type) {
     asm goto(
             "1: .nops 2 \n\t"
             ZCOND_TABLE_ENTRY
-            : : "i" (zcond_p) : : l_true );
+            : : "i" (zcond_p), "i" (ins_type) : : l_true );
 
     return false;
 l_true: return true;
 }
 
-static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const zcond_p) {
+static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const zcond_p, char ins_type) {
     asm goto(
             "1: jmp %[l_true] \n\t"
             ZCOND_TABLE_ENTRY
-            : : "i" (zcond_p) : : l_true );
+            : : "i" (zcond_p), "i" (ins_type) : : l_true );
     return false;
 l_true: return true;
 }

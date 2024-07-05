@@ -81,8 +81,11 @@ static int
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) __attribute__((optnone)) {
     printf("zcond test start\n");
     if(zcond_true(cond1)) {
-            printf("cond 1 true\n");
-        }
+        printf("cond 1 true\n");
+        asm (
+            ".nops 512\n\t":::    
+        );
+    }
 
     if(zcond_false(cond1)) {
         printf("cond 1 false\n");

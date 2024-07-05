@@ -233,4 +233,5 @@ SYSCTL_PROC(_kern, OID_AUTO, zcond, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PT
 SYSCTL_PROC(_kern, OID_AUTO, zcond2, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test2, "I", "trigger second zcond test");
 SYSCTL_PROC(_kern, OID_AUTO, zcond3, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test3, "I", "trigger third zcond test");
 SYSCTL_PROC(_kern, OID_AUTO, zcond_ins_p, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, zcond_list_inspection_points, "I", "list cond1 inspection points");
+SYSCTL_PROC(_kern, OID_AUTO, zcond1_enable, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, zcond1_enable, "I", "enable zcond1");
 SYSCTL_PROC(_kern, OID_AUTO, zcond1_disable, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, zcond1_disable, "I", "disable zcond1");

@@ -86,7 +86,7 @@ void __zcond_disable(struct zcond* cond) {
             arch_insn_nop(insn, insn_size);
         }
         
-        printf("patch ins point %#08lx with: ");
+        printf("patch ins point %#08lx with: ", p->patch_addr);
         for(int i=0;i<insn_size;i++) {
             printf("%02hhx ", insn[i]);
         }

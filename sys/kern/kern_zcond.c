@@ -51,10 +51,40 @@ void __zcond_disable(struct zcond* cond) {
     }
     
     struct ins_point *p;
-    char nop[] = NOP2_BYTES;
+    char insn[5];
+    size_t insn_size;
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();
-        memcpy((void *)p->patch_addr, &nop[0], 2);
+
+        if(p->ins_type == INS_TYPE_FALSE) {
+            // replace nop with jmp
+            size_t offset;
+            if(*p->patch_addr == 0x66) {
+                // two byte nop
+               size = 2;
+            } else if(*p->patch_addr == 0x0f) {
+                size = 5
+            } else {
+                panic("unexpected opcode: %02hhx", *p->patch_addr); 
+            }
+
+            offset = p->lbl_true_addr - p->patch_addr + size; 
+            arch_insn_jmp(insn, size, offset);
+        } else {
+            //  replace jmp with nop
+            if(*p->patch_addr == 0xeb) {
+                // two byte jump
+                size = 2;
+            } else if(*p->patch_addr == 0xe9) {
+                // five byte jump
+                size = 5;
+            } else {
+                panic("unexpected opcode: %02hhx", *p->patch_addr); 
+            }
+            arch_insn_nop(insn, size);
+        }
+
+        memcpy((void *)p->patch_addr, &insn[0], size);
         restore_wp(wp);
     }
     cond->enabled = false;

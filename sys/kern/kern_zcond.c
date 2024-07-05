@@ -51,8 +51,8 @@ void __zcond_disable(struct zcond* cond) {
     }
     
     struct ins_point *p;
-    char* patch_addr;
-    char insn[5];
+    unsigned char* patch_addr;
+    unsigned char insn[5];
     size_t insn_size;
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();
@@ -64,10 +64,10 @@ void __zcond_disable(struct zcond* cond) {
             if(*patch_addr == 0x66) {
                 // two byte nop
                insn_size = 2;
-            } else if(patch_addr == 0x0f) {
-                insn_size = 5
+            } else if(*patch_addr == 0x0f) {
+                insn_size = 5;
             } else {
-                panic("unexpected opcode: %02hhx", *p->patch_addr); 
+                panic("unexpected opcode: %02hhx", *patch_addr); 
             }
 
             offset = p->lbl_true_addr - p->patch_addr + insn_size; 

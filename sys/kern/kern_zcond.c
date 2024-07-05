@@ -108,9 +108,9 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
         );
     }
 
-    if(zcond_false(cond1)) {
+    /*if(zcond_false(cond1)) {
         printf("cond 1 false\n");
-    }
+    }*/
     
    /* if(zcond_true(cond2)) {
         printf("cond 2 true\n");

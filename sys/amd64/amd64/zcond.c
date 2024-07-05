@@ -1,5 +1,5 @@
 #include <machine/zcond.h>
-#include <sys/vm.h>
+#include <vm/vm.h>
 
 void arch_insn_nop(unsigned char insn[], size_t size) {
     int i;

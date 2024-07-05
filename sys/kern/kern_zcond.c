@@ -51,22 +51,11 @@ void __zcond_disable(struct zcond* cond) {
     }
     
     struct ins_point *p;
-    char nop[NOP_SIZE] = NOP_BYTES;
-    //vm_offset_t page_start, page_end;
-    //vm_page_t page;
+    char nop[] = NOP2_BYTES;
     SLIST_FOREACH(p, &cond->ins_points, next) {
-       //char* patch_instruction = p->swap_page + p->patch_address & PAGE_MASK;
         bool wp = disable_wp();
-        //page_start = p->patch_addr & ~PAGE_MASK;
-        //page_end = page_start + PAGE_SIZE; 
-        //pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_WRITE);
-        //page = PHYS_TO_VM_PAGE(vtophys(page_start));
-        //pmap_enter(kernel_pmap, page_start, page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
-        memcpy((void *)p->patch_addr, &nop[0], NOP_SIZE);
-        //((void *)p->patch_addr)[0] = nop[0];
-        
+        memcpy((void *)p->patch_addr, &nop[0], 2);
         restore_wp(wp);
-     //   pmap_protect(kernel_pmap, page_start, page_end, VM_PROT_READ | VM_PROT_EXECUTE);
     }
     cond->enabled = false;
 }

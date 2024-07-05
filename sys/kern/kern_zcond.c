@@ -81,7 +81,7 @@ void __zcond_disable(struct zcond* cond) {
                 // five byte jump
                 insn_size = 5;
             } else {
-                panic("unexpected opcode: %02hhx", *p->patch_addr); 
+                panic("unexpected opcode: %02hhx", *patch_addr); 
             }
             arch_insn_nop(insn, insn_size);
         }

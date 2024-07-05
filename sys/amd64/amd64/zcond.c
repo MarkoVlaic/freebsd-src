@@ -1,4 +1,5 @@
 #include <machine/zcond.h>
+#include <sys/vm.h>
 
 void arch_insn_nop(unsigned char insn[], size_t size) {
     int i;
@@ -13,7 +14,7 @@ void arch_insn_nop(unsigned char insn[], size_t size) {
     }
 }
 
-void arch_insn_jmp(unsigned char insn[], size_t size, size_t offset) {
+void arch_insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset) {
     if(size == 2) {
         insn[0] = 0xeb;
         insn[1] = offset;

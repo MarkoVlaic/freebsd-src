@@ -2,6 +2,7 @@
 #define _MACHINE_ZCOND_H
 
 //#include <sys/zcond.h>
+#include <sys/types.h>
 
 #define ZCOND_TABLE_ENTRY \
     ".pushsection __zcond_table, \"aw\" \n\t"  \

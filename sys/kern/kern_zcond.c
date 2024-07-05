@@ -85,7 +85,12 @@ void __zcond_disable(struct zcond* cond) {
             }
             arch_insn_nop(insn, insn_size);
         }
-
+        
+        printf("patch ins point %#08lx with: ");
+        for(int i=0;i<size;i++) {
+            printf("%02hhx ", insn[i]);
+        }
+        printf("\n");
         memcpy((void *)patch_addr, &insn[0], insn_size);
         restore_wp(wp);
     }

@@ -70,7 +70,7 @@ void __zcond_disable(struct zcond* cond) {
                 panic("unexpected opcode: %02hhx", *patch_addr); 
             }
             
-            offset = p->lbl_true_addr - p->patch_addr + insn_size; 
+            offset = p->lbl_true_addr - p->patch_addr - insn_size; 
             arch_insn_jmp(insn, insn_size, offset);
             printf("offset = %#08lx\n", offset);
         } else {

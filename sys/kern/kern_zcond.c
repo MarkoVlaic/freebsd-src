@@ -162,10 +162,10 @@ DEFINE_ZCOND_FALSE(cond2);
 static int 
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
     struct sbuf buf;
-    sbuf_new_for_sysctl(&sbuf, NULL, 256, req);
-    sbuf_printf(sbuf, "zcond test start\n");
+    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+    sbuf_printf(buf, "zcond test start\n");
     if(zcond_true(cond1)) {
-        sbuf_printf(sbuf, "cond 1 true\n");
+        sbuf_printf(buf, "cond 1 true\n");
         asm (
             ".nops 512\n\t":::    
         );

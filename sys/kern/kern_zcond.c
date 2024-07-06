@@ -172,8 +172,8 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
         );
     }
     
-    sbuf_finish(&sbuf);
-    sbuf_delete(&sbuf);
+    sbuf_finish(&buf);
+    sbuf_delete(&buf);
     
     /*if(zcond_false(cond1)) {
         printf("cond 1 false\n");

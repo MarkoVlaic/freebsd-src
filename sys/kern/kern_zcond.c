@@ -233,6 +233,11 @@ static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
         sbuf_printf(&buf, "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | ins_type = %d\n", p->patch_addr, p->lbl_true_addr, p->zcond, p->ins_type);
     }
     
+    sbuf_printf(&buf, "inspection points for cond2:\n");
+    SLIST_FOREACH(p, &cond2.cond.ins_points, next) {
+        sbuf_printf(&buf, "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | ins_type = %d\n", p->patch_addr, p->lbl_true_addr, p->zcond, p->ins_type);
+    }
+
     sbuf_finish(&buf);
     sbuf_delete(&buf);
 

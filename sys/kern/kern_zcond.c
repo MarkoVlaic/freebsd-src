@@ -163,6 +163,7 @@ static int
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
     struct sbuf buf;
     sbuf_new_for_sysctl(&buf, NULL, 256, req);
+
     sbuf_printf(&buf, "zcond test start\n");
     if(zcond_true(cond1)) {
         sbuf_printf(&buf, "cond 1 true\n");
@@ -170,7 +171,10 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
             ".nops 512\n\t":::    
         );
     }
-
+    
+    sbuf_finish(&sbuf);
+    sbuf_delete(&sbuf);
+    
     /*if(zcond_false(cond1)) {
         printf("cond 1 false\n");
     }*/

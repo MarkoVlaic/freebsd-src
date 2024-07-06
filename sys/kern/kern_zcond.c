@@ -4,6 +4,7 @@
 #include <sys/systm.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <sys/sbuf.h>
 #include <sys/zcond.h>
 #include <sys/malloc.h>
 #include <vm/vm.h>
@@ -160,9 +161,11 @@ DEFINE_ZCOND_FALSE(cond2);
 
 static int 
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
-    printf("zcond test start\n");
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&sbuf, NULL, 256, req);
+    sbuf_printf(sbuf, "zcond test start\n");
     if(zcond_true(cond1)) {
-        printf("cond 1 true\n");
+        sbuf_printf(sbuf, "cond 1 true\n");
         asm (
             ".nops 512\n\t":::    
         );

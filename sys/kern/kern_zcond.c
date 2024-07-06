@@ -190,55 +190,82 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
 }
 
 static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) {
-    printf("zcond test 2 start\n");
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+
+    sbuf_printf(&buf, "zcond test 2 start\n");
     if(zcond_true(cond1)) {
-        printf("cond 1 true %s\n", __func__);
+       sbuf_printf(&buf, "cond 1 true %s\n", __func__);
     }
     asm (
         ".nops 512\n\t":::    
     );
+
+    sbuf_finish(&buf);
+    sbuf_delete(&buf);
     return 0;
 }
 
 static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) {
-    printf("zcond test 3 start\n");
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+    
+    sbuf_printf(&buf, "zcond test 3 start\n");
     if(zcond_false(cond1)) {
-        printf("cond 1 false\n");
+        sbuf_printf(&buf, "cond 1 false\n");
     } else {
-        printf("else branch\n");
+        sbuf_printf(&buf, "else branch\n");
     }
+
+    sbuf_finish(&buf);
+    sbuf_delete(&buf);
 
     return 0;
 }
 
 static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
-    printf("inspection points for cond1:\n");
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+
+    sbuf_printf(&buf, "inspection points for cond1:\n");
     struct ins_point *p;
     SLIST_FOREACH(p, &cond1.cond.ins_points, next) {
-        printf("patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | ins_type = %d\n", p->patch_addr, p->lbl_true_addr, p->zcond, p->ins_type);
+        sbuf_printf(&buf, "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | ins_type = %d\n", p->patch_addr, p->lbl_true_addr, p->zcond, p->ins_type);
     }
     
+    sbuf_finish(&buf);
+    sbuf_delete(&buf);
+
     return 0;
 }
 
 static int zcond1_disable(SYSCTL_HANDLER_ARGS) {
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+
     zcond_disable(cond1);
-    printf("disabled\n");
+    sbuf_printf(&buf, "disabled\n");
 
     return 0;
 }
 
 
-static int zcond1_enable(SYSCTL_HANDLER_ARGS) {
+static int zcond1_enable(SYSCTL_HANDLER_ARGS) { 
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+    
     zcond_enable(cond1);
-    printf("enabled\n");
+    sbuf_printf(&buf, "enabled\n");
+    
+    sbuf_finish(&buf);
+    sbuf_delete(&buf);
 
     return 0;
 }
 
-SYSCTL_PROC(_kern, OID_AUTO, zcond, CTLFLAG_RW | CTLTYPE_STRING, NULL, 0, trigger_zcond_test, "I", "trigger zcond test");
-SYSCTL_PROC(_kern, OID_AUTO, zcond2, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test2, "I", "trigger second zcond test");
-SYSCTL_PROC(_kern, OID_AUTO, zcond3, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test3, "I", "trigger third zcond test");
-SYSCTL_PROC(_kern, OID_AUTO, zcond_ins_p, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, zcond_list_inspection_points, "I", "list cond1 inspection points");
-SYSCTL_PROC(_kern, OID_AUTO, zcond1_enable, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, zcond1_enable, "I", "enable zcond1");
-SYSCTL_PROC(_kern, OID_AUTO, zcond1_disable, CTLFLAG_RW | CTLTYPE_INT, SYSCTL_NULL_INT_PTR, 0, zcond1_disable, "I", "disable zcond1");
+SYSCTL_PROC(_kern, OID_AUTO, zcond, CTLFLAG_RD | CTLTYPE_STRING, NULL, 0, trigger_zcond_test, "I", "trigger zcond test");
+SYSCTL_PROC(_kern, OID_AUTO, zcond2, CTLFLAG_RD | CTLTYPE_STRING, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test2, "I", "trigger second zcond test");
+SYSCTL_PROC(_kern, OID_AUTO, zcond3, CTLFLAG_RD | CTLTYPE_STRING, SYSCTL_NULL_INT_PTR, 0, trigger_zcond_test3, "I", "trigger third zcond test");
+SYSCTL_PROC(_kern, OID_AUTO, zcond_ins_p, CTLFLAG_RD | CTLTYPE_STRING, SYSCTL_NULL_INT_PTR, 0, zcond_list_inspection_points, "I", "list cond1 inspection points");
+SYSCTL_PROC(_kern, OID_AUTO, zcond1_enable, CTLFLAG_RD | CTLTYPE_STRING, SYSCTL_NULL_INT_PTR, 0, zcond1_enable, "I", "enable zcond1");
+SYSCTL_PROC(_kern, OID_AUTO, zcond1_disable, CTLFLAG_RD | CTLTYPE_STRING, SYSCTL_NULL_INT_PTR, 0, zcond1_disable, "I", "disable zcond1");

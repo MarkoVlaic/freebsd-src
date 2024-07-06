@@ -96,7 +96,7 @@ void __zcond_enable(struct zcond* cond) {
         memcpy((void *)patch_addr, &insn[0], insn_size);
         restore_wp(wp);
     }
-    cond->enabled = false;
+    cond->enabled = true;
 }
 
 void __zcond_disable(struct zcond* cond) {

@@ -12,6 +12,7 @@
 #include <vm/pmap.h>
 #include <machine/md_var.h>
 #include <sys/smp.h>
+#include <sys/cpuset.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
@@ -57,7 +58,10 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     unsigned char insn[5];
     size_t insn_size;
    
-    critical_enter(); 
+    critical_enter();
+    cpuset_t other_cpus;
+    CPU_COPY(cpuset_root, &other_cpus);
+    CPU_CLR(curcpu, &other_cpus); 
     suspend_cpus(other_cpus);
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();

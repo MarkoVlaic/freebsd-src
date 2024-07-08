@@ -56,7 +56,8 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     unsigned char* patch_addr;
     unsigned char insn[5];
     size_t insn_size;
-    
+   
+    critical_enter(); 
     suspend_cpus(other_cpus);
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();
@@ -101,6 +102,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     }
     cond->enabled = new_state;
     resume_cpus(other_cpus);
+    critical_exit();
 }
 
 DEFINE_ZCOND_TRUE(cond1);

@@ -68,7 +68,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     suspend_cpus(other_cpus);
 
     char cpus_buf[CPUSETBUFSIZ];
-    cpusetobj_strprint(cpus_buf, other_cpus);
+    cpusetobj_strprint(cpus_buf, &other_cpus);
     sbuf_printf(&buf, "suspending cpus: %s\n", cpus_buf);
 
     SLIST_FOREACH(p, &cond->ins_points, next) {

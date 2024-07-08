@@ -11,6 +11,7 @@
 #include <vm/vm_page.h>
 #include <vm/pmap.h>
 #include <machine/md_var.h>
+#include <sys/smp.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
@@ -50,11 +51,13 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     if(cond->enabled == new_state) {
         return;
     }
-    
+     
     struct ins_point *p;
     unsigned char* patch_addr;
     unsigned char insn[5];
     size_t insn_size;
+    
+    suspend_cpus(other_cpus);
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();
         patch_addr = (char*) p->patch_addr;
@@ -97,6 +100,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
         restore_wp(wp);
     }
     cond->enabled = new_state;
+    resume_cpus(other_cpus);
 }
 
 DEFINE_ZCOND_TRUE(cond1);

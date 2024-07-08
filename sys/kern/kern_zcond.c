@@ -58,6 +58,9 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     unsigned char insn[5];
     size_t insn_size;
    
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&buf, NULL, 1024, req);
+
     critical_enter();
     cpuset_t other_cpus;
     CPU_COPY(cpuset_root, &other_cpus);
@@ -65,11 +68,8 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     suspend_cpus(other_cpus);
 
     char cpus_buf[CPUSETBUFSIZ];
-    cpusetobj_strprint(buf, other_cpus);
+    cpusetobj_strprint(cpus_buf, other_cpus);
     sbuf_printf(&buf, "suspending cpus: %s\n", cpus_buf);
-
-    struct sbuf buf;
-    sbuf_new_for_sysctl(&buf, NULL, 1024, req);
 
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();

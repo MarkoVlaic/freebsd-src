@@ -71,5 +71,6 @@ struct zcond_false {
 #define zcond_disable(cond_wrapped) __zcond_set_enabled(&cond_wrapped.cond, false)
 void __zcond_enable(struct zcond *cond);
 void __zcond_disable(struct zcond *cond);
+void __zcond_set_enabled(struct zcond *cond, bool new_state);
 
 #endif

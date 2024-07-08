@@ -63,6 +63,14 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     CPU_COPY(cpuset_root, &other_cpus);
     CPU_CLR(curcpu, &other_cpus); 
     suspend_cpus(other_cpus);
+
+    char cpus_buf[CPUSETBUFSIZ];
+    cpusetobj_strprint(buf, other_cpus);
+    sbuf_printf("suspending cpus: %s\n", cpus_buf);
+
+    struct sbuf buf;
+    sbuf_new_for_sysctl(&buf, NULL, 1024, req);
+
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();
         patch_addr = (char*) p->patch_addr;
@@ -81,7 +89,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
             
             offset = p->lbl_true_addr - p->patch_addr - insn_size; 
             arch_insn_jmp(insn, insn_size, offset);
-            printf("offset = %#08lx\n", offset);
+            sbuf_printf(&buf, "offset = %#08lx\n", offset);
         } else {
             //  replace jmp with nop
             if(*patch_addr == 0xeb) {
@@ -96,15 +104,19 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
             arch_insn_nop(insn, insn_size);
         }
         
-        printf("patch ins point %#08lx with: ", p->patch_addr);
+        sbuf_printf(&buf, "patch ins point %#08lx with: ", p->patch_addr);
         for(int i=0;i<insn_size;i++) {
-            printf("%02hhx ", insn[i]);
+            sbuf_printf(&buf, "%02hhx ", insn[i]);
         }
-        printf("\n");
+        sbuf_printf(&buf, "\n");
         memcpy((void *)patch_addr, &insn[0], insn_size);
         restore_wp(wp);
     }
     cond->enabled = new_state;
+    
+    sbuf_finish(&buf);
+    sbuf_delete(&buf);
+    
     resume_cpus(other_cpus);
     critical_exit();
 }
@@ -180,7 +192,7 @@ static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) {
 
 static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
     struct sbuf buf;
-    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+    sbuf_new_for_sysctl(&buf, NULL, 1024, req);
 
     sbuf_printf(&buf, "inspection points for cond1:\n");
     struct ins_point *p;

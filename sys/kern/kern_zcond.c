@@ -11,6 +11,8 @@
 #include <vm/vm_page.h>
 #include <vm/pmap.h>
 #include <machine/md_var.h>
+#include <sys/smp.h>
+#include <sys/cpuset.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
@@ -46,21 +48,31 @@ zcond_init(void* unused) {
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
-
-void __zcond_enable(struct zcond* cond) {
-    if(cond->enabled) {
+void __zcond_set_enabled(struct zcond* cond, bool new_state) {
+    if(cond->enabled == new_state) {
         return;
     }
-    
+     
     struct ins_point *p;
     unsigned char* patch_addr;
     unsigned char insn[5];
     size_t insn_size;
+   
+    critical_enter();
+    cpuset_t other_cpus;
+    CPU_COPY(cpuset_root, &other_cpus);
+    CPU_CLR(curcpu, &other_cpus); 
+    suspend_cpus(other_cpus);
+
+    char cpus_buf[CPUSETBUFSIZ];
+    cpusetobj_strprint(cpus_buf, &other_cpus);
+    printf("suspending cpus: %s\n", cpus_buf);
+
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();
         patch_addr = (char*) p->patch_addr;
 
-        if(p->ins_type == INS_TYPE_TRUE) {
+        if( (p->ins_type == INS_TYPE_TRUE && new_state) || (p->ins_type == INS_TYPE_FALSE && !new_state)) {
             // replace nop with jmp
             vm_offset_t offset;
             if(*patch_addr == 0x66) {
@@ -97,65 +109,14 @@ void __zcond_enable(struct zcond* cond) {
         memcpy((void *)patch_addr, &insn[0], insn_size);
         restore_wp(wp);
     }
-    cond->enabled = true;
-}
-
-void __zcond_disable(struct zcond* cond) {
-    if(!cond->enabled) {
-        return;
-    }
+    cond->enabled = new_state;
     
-    struct ins_point *p;
-    unsigned char* patch_addr;
-    unsigned char insn[5];
-    size_t insn_size;
-    SLIST_FOREACH(p, &cond->ins_points, next) {
-        bool wp = disable_wp();
-        patch_addr = (char*) p->patch_addr;
-
-        if(p->ins_type == INS_TYPE_FALSE) {
-            // replace nop with jmp
-            vm_offset_t offset;
-            if(*patch_addr == 0x66) {
-                // two byte nop
-               insn_size = 2;
-            } else if(*patch_addr == 0x0f) {
-                insn_size = 5;
-            } else {
-                panic("unexpected opcode: %02hhx", *patch_addr); 
-            }
-            
-            offset = p->lbl_true_addr - p->patch_addr - insn_size; 
-            arch_insn_jmp(insn, insn_size, offset);
-            printf("offset = %#08lx\n", offset);
-        } else {
-            //  replace jmp with nop
-            if(*patch_addr == 0xeb) {
-                // two byte jump
-                insn_size = 2;
-            } else if(*patch_addr == 0xe9) {
-                // five byte jump
-                insn_size = 5;
-            } else {
-                panic("unexpected opcode: %02hhx", *patch_addr); 
-            }
-            arch_insn_nop(insn, insn_size);
-        }
-        
-        printf("patch ins point %#08lx with: ", p->patch_addr);
-        for(int i=0;i<insn_size;i++) {
-            printf("%02hhx ", insn[i]);
-        }
-        printf("\n");
-        memcpy((void *)patch_addr, &insn[0], insn_size);
-        restore_wp(wp);
-    }
-    cond->enabled = false;
+    resume_cpus(other_cpus);
+    critical_exit();
 }
 
 DEFINE_ZCOND_TRUE(cond1);
 DEFINE_ZCOND_FALSE(cond2);
-
 
 static int 
 trigger_zcond_test(SYSCTL_HANDLER_ARGS) {
@@ -225,7 +186,7 @@ static int trigger_zcond_test3(SYSCTL_HANDLER_ARGS) {
 
 static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
     struct sbuf buf;
-    sbuf_new_for_sysctl(&buf, NULL, 256, req);
+    sbuf_new_for_sysctl(&buf, NULL, 1024, req);
 
     sbuf_printf(&buf, "inspection points for cond1:\n");
     struct ins_point *p;
@@ -264,7 +225,6 @@ static int zcond1_enable(SYSCTL_HANDLER_ARGS) {
     
     sbuf_finish(&buf);
     sbuf_delete(&buf);
-
     return 0;
 }
 

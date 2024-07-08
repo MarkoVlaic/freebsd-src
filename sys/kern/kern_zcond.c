@@ -58,9 +58,6 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     unsigned char insn[5];
     size_t insn_size;
    
-    struct sbuf buf;
-    sbuf_new_for_sysctl(&buf, NULL, 1024, req);
-
     critical_enter();
     cpuset_t other_cpus;
     CPU_COPY(cpuset_root, &other_cpus);
@@ -69,7 +66,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
 
     char cpus_buf[CPUSETBUFSIZ];
     cpusetobj_strprint(cpus_buf, &other_cpus);
-    sbuf_printf(&buf, "suspending cpus: %s\n", cpus_buf);
+    printf("suspending cpus: %s\n", cpus_buf);
 
     SLIST_FOREACH(p, &cond->ins_points, next) {
         bool wp = disable_wp();
@@ -89,7 +86,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
             
             offset = p->lbl_true_addr - p->patch_addr - insn_size; 
             arch_insn_jmp(insn, insn_size, offset);
-            sbuf_printf(&buf, "offset = %#08lx\n", offset);
+            printf("offset = %#08lx\n", offset);
         } else {
             //  replace jmp with nop
             if(*patch_addr == 0xeb) {
@@ -104,18 +101,15 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
             arch_insn_nop(insn, insn_size);
         }
         
-        sbuf_printf(&buf, "patch ins point %#08lx with: ", p->patch_addr);
+        printf("patch ins point %#08lx with: ", p->patch_addr);
         for(int i=0;i<insn_size;i++) {
-            sbuf_printf(&buf, "%02hhx ", insn[i]);
+            printf("%02hhx ", insn[i]);
         }
-        sbuf_printf(&buf, "\n");
+        printf("\n");
         memcpy((void *)patch_addr, &insn[0], insn_size);
         restore_wp(wp);
     }
     cond->enabled = new_state;
-    
-    sbuf_finish(&buf);
-    sbuf_delete(&buf);
     
     resume_cpus(other_cpus);
     critical_exit();

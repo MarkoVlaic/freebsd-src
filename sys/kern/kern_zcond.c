@@ -66,7 +66,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
 
     char cpus_buf[CPUSETBUFSIZ];
     cpusetobj_strprint(buf, other_cpus);
-    sbuf_printf("suspending cpus: %s\n", cpus_buf);
+    sbuf_printf(&buf, "suspending cpus: %s\n", cpus_buf);
 
     struct sbuf buf;
     sbuf_new_for_sysctl(&buf, NULL, 1024, req);

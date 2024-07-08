@@ -59,7 +59,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
         bool wp = disable_wp();
         patch_addr = (char*) p->patch_addr;
 
-        if( (p->ins_type == INS_TYPE_TRUE && new_state) || (p->ins_type == INS_TYPE_FALSE && !new)) {
+        if( (p->ins_type == INS_TYPE_TRUE && new_state) || (p->ins_type == INS_TYPE_FALSE && !new_state)) {
             // replace nop with jmp
             vm_offset_t offset;
             if(*patch_addr == 0x66) {

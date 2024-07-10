@@ -58,7 +58,7 @@ void arch_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size
         // five byte jump
         *size = 5;
         goto jmp;
-    else {
+    } else {
         panic("unexpected opcode: %02hhx", *patch_addr); 
     }
     

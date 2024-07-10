@@ -39,7 +39,7 @@ static void arch_insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset)
 }
 
 void arch_get_patch_insn(struct zcond *cond, struct ins_point *ins_p, bool new_state, unsigned char insn[], size_t *size) {
-    patch_addr = (char*) ins_p->patch_addr;
+    unsigned char *patch_addr = (unsigned char*) ins_p->patch_addr;
 
     if( (ins_p->ins_type == INS_TYPE_TRUE && new_state) || (ins_p->ins_type == INS_TYPE_FALSE && !new_state)) {
         // replace nop with jmp

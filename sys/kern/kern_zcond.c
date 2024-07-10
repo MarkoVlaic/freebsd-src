@@ -53,7 +53,6 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     }
      
     struct ins_point *p;
-    unsigned char* patch_addr;
     unsigned char insn[5];
     size_t insn_size;
    

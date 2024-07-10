@@ -1,4 +1,5 @@
 #include <machine/zcond.h>
+#include <sys/zcond.h>
 #include <machine/md_var.h>
 #include <vm/vm.h>
 

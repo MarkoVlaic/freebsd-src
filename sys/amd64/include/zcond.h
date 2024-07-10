@@ -50,6 +50,9 @@ static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const z
 l_true: return true;
 }
 
-void arch_insn_nop(unsigned char insn[], size_t size);
-void arch_insn_jmp(unsigned char insn[], size_t size, size_t offset);
+void arch_enable_text_write();
+void arch_disable_text_write();
+
+void arch_get_patch_insn(struct zcond *cond, struct ins_point *ins_p, unsigned char insn[], size_t *size);
+
 #endif /*!_MACHINE_ZCOND_H*/

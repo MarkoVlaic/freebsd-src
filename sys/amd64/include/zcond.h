@@ -31,21 +31,21 @@ static char nop5_bytes[] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
 struct zcond;
 struct ins_point;
 
-static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p, char ins_type) {
+static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p) {
     asm goto(
             "1: " NOP5_ASM
             ZCOND_TABLE_ENTRY
-            : : "i" (zcond_p), "i" (ins_type) : : l_true );
+            : : "i" (zcond_p) : : l_true );
 
     return false;
 l_true: return true;
 }
 
-static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const zcond_p, char ins_type) {
+static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const zcond_p) {
     asm goto(
             "1: jmp %[l_true] \n\t"
             ZCOND_TABLE_ENTRY
-            : : "i" (zcond_p), "i" (ins_type) : : l_true );
+            : : "i" (zcond_p) : : l_true );
     return false;
 l_true: return true;
 }

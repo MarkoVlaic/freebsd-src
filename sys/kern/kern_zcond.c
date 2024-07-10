@@ -67,7 +67,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     printf("suspending cpus: %s\n", cpus_buf);
 
     SLIST_FOREACH(p, &cond->ins_points, next) {
-        arch_get_patch_insn(cond, p, new_state, insn, &insn_size);
+        arch_get_patch_insn(p, insn, &insn_size);
         
         printf("patch ins point %#08lx with: ", p->patch_addr);
         for(int i=0;i<insn_size;i++) {

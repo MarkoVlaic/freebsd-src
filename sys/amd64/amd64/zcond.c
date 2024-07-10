@@ -40,36 +40,37 @@ static void arch_insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset)
     }
 }
 
-void arch_get_patch_insn(struct zcond *cond, struct ins_point *p, bool new_state, unsigned char insn[], size_t *size) {
+void arch_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size) {
     unsigned char *patch_addr = (unsigned char*) p->patch_addr;
 
-    if( (p->ins_type == INS_TYPE_TRUE && new_state) || (p->ins_type == INS_TYPE_FALSE && !new_state)) {
-        // replace nop with jmp
-        vm_offset_t offset;
-        if(*patch_addr == 0x66) {
-            // two byte nop
-           *size = 2;
-        } else if(*patch_addr == 0x0f) {
-            *size = 5;
-        } else {
-            panic("unexpected opcode: %02hhx", *patch_addr); 
-        }
-        
-        offset = p->lbl_true_addr - p->patch_addr - *size; 
-        arch_insn_jmp(insn, *size, offset);
-    } else {
-        //  replace jmp with nop
-        if(*patch_addr == 0xeb) {
-            // two byte jump
-            *size = 2;
-        } else if(*patch_addr == 0xe9) {
-            // five byte jump
-            *size = 5;
-        } else {
-            panic("unexpected opcode: %02hhx", *patch_addr); 
-        }
-        arch_insn_nop(insn, *size);
+    if(*patch_addr == 0x66) {
+        // two byte nop
+       *size = 2;
+       goto nop;
+    } else if(*patch_addr == 0x0f) {
+        *size = 5;
+        goto nop;
+    } else if(*patch_addr == 0xeb) {
+        // two byte jump
+        *size = 2;
+        goto jmp;
+    } else if(*patch_addr == 0xe9) {
+        // five byte jump
+        *size = 5;
+        goto jmp;
+    else {
+        panic("unexpected opcode: %02hhx", *patch_addr); 
     }
+    
+nop:
+    // replace nop with jmp
+    vm_offset_t offset = p->lbl_true_addr - p->patch_addr - *size; 
+    arch_insn_jmp(insn, *size, offset);
+    return;
+    
+jmp:
+    // replace jmp with nop
+    arch_insn_nop(insn, *size);
 }
 
 

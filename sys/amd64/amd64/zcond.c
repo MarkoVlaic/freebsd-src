@@ -4,6 +4,7 @@
 #include <machine/md_var.h>
 #include <machine/machdep.h>
 #include <vm/vm.h>
+#include <vm/pmap.h>
 
 static bool wp;
 void arch_enable_text_write(void) {

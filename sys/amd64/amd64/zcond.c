@@ -61,10 +61,11 @@ void arch_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size
     } else {
         panic("unexpected opcode: %02hhx", *patch_addr); 
     }
-    
+
+    vm_offset_t offset; 
 nop:
     // replace nop with jmp
-    vm_offset_t offset = p->lbl_true_addr - p->patch_addr - *size; 
+    offset = p->lbl_true_addr - p->patch_addr - *size; 
     arch_insn_jmp(insn, *size, offset);
     return;
     

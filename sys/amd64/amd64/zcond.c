@@ -4,11 +4,11 @@
 #include <sys/zcond.h>
 
 static bool wp;
-void arch_enable_text_write() {
+void arch_enable_text_write(void) {
     wp = disable_wp();
 }
 
-void arch_disable_text_write() {
+void arch_disable_text_write(void) {
     restore_wp(wp);
 }
 

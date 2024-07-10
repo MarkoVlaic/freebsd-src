@@ -1,14 +1,16 @@
 #include <machine/zcond.h>
-#include <machine/md_var.h>
-#include <vm/vm.h>
 #include <sys/zcond.h>
+#include <vm/vm.h>
+#include <vm/pmap.h>
+#include <amd64/vmm/amd/svm.h>
+#include <machine/md_var.h>
 
 static bool wp;
-void arch_enable_text_write() {
+void arch_enable_text_write(void) {
     wp = disable_wp();
 }
 
-void arch_disable_text_write() {
+void arch_disable_text_write(void) {
     restore_wp(wp);
 }
 
@@ -38,37 +40,38 @@ static void arch_insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset)
     }
 }
 
-void arch_get_patch_insn(struct zcond *cond, struct ins_point *ins_p, bool new_state, unsigned char insn[], size_t *size) {
-    patch_addr = (char*) ins_p->patch_addr;
+void arch_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size) {
+    unsigned char *patch_addr = (unsigned char*) p->patch_addr;
 
-    if( (ins_p->ins_type == INS_TYPE_TRUE && new_state) || (ins_p->ins_type == INS_TYPE_FALSE && !new_state)) {
-        // replace nop with jmp
-        vm_offset_t offset;
-        if(*patch_addr == 0x66) {
-            // two byte nop
-           *size = 2;
-        } else if(*patch_addr == 0x0f) {
-            *size = 5;
-        } else {
-            panic("unexpected opcode: %02hhx", *patch_addr); 
-        }
-        
-        offset = p->lbl_true_addr - p->patch_addr - *size; 
-        arch_insn_jmp(insn, *size, offset);
-        printf("offset = %#08lx\n", offset);
+    if(*patch_addr == 0x66) {
+        // two byte nop
+       *size = 2;
+       goto nop;
+    } else if(*patch_addr == 0x0f) {
+        *size = 5;
+        goto nop;
+    } else if(*patch_addr == 0xeb) {
+        // two byte jump
+        *size = 2;
+        goto jmp;
+    } else if(*patch_addr == 0xe9) {
+        // five byte jump
+        *size = 5;
+        goto jmp;
     } else {
-        //  replace jmp with nop
-        if(*patch_addr == 0xeb) {
-            // two byte jump
-            *size = 2;
-        } else if(*patch_addr == 0xe9) {
-            // five byte jump
-            *size = 5;
-        } else {
-            panic("unexpected opcode: %02hhx", *patch_addr); 
-        }
-        arch_insn_nop(insn, *size);
+        panic("unexpected opcode: %02hhx", *patch_addr); 
     }
+
+    vm_offset_t offset; 
+nop:
+    // replace nop with jmp
+    offset = p->lbl_true_addr - p->patch_addr - *size; 
+    arch_insn_jmp(insn, *size, offset);
+    return;
+    
+jmp:
+    // replace jmp with nop
+    arch_insn_nop(insn, *size);
 }
 
 

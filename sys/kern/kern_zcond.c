@@ -53,7 +53,6 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     }
      
     struct ins_point *p;
-    unsigned char* patch_addr;
     unsigned char insn[5];
     size_t insn_size;
    
@@ -68,7 +67,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     printf("suspending cpus: %s\n", cpus_buf);
 
     SLIST_FOREACH(p, &cond->ins_points, next) {
-        arch_get_patch_insn(cond, p, new_state, insn, &insn_size);
+        arch_get_patch_insn(p, insn, &insn_size);
         
         printf("patch ins point %#08lx with: ", p->patch_addr);
         for(int i=0;i<insn_size;i++) {
@@ -162,12 +161,12 @@ static int zcond_list_inspection_points(SYSCTL_HANDLER_ARGS) {
     sbuf_printf(&buf, "inspection points for cond1:\n");
     struct ins_point *p;
     SLIST_FOREACH(p, &cond1.cond.ins_points, next) {
-        sbuf_printf(&buf, "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | ins_type = %d\n", p->patch_addr, p->lbl_true_addr, p->zcond, p->ins_type);
+        sbuf_printf(&buf, "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p\n", p->patch_addr, p->lbl_true_addr, p->zcond);
     }
     
     sbuf_printf(&buf, "inspection points for cond2:\n");
     SLIST_FOREACH(p, &cond2.cond.ins_points, next) {
-        sbuf_printf(&buf, "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | ins_type = %d\n", p->patch_addr, p->lbl_true_addr, p->zcond, p->ins_type);
+        sbuf_printf(&buf, "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p\n", p->patch_addr, p->lbl_true_addr, p->zcond);
     }
 
     sbuf_finish(&buf);

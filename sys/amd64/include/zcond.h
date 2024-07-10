@@ -9,7 +9,6 @@
     ".quad 1b \n\t" \
     ".quad %l[l_true] \n\t" \
     ".quad %c0 \n\t" \
-    ".byte %c1 \n\t" \
     ".quad 0 \n\t" \
     ".quad 0 \n\t" \
     ".popsection \n\t"
@@ -30,29 +29,30 @@ static char nop5_bytes[] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
     ".byte 0x00 \n\t"
 
 struct zcond;
+struct ins_point;
 
-static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p, char ins_type) {
+static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p) {
     asm goto(
             "1: " NOP5_ASM
             ZCOND_TABLE_ENTRY
-            : : "i" (zcond_p), "i" (ins_type) : : l_true );
+            : : "i" (zcond_p) : : l_true );
 
     return false;
 l_true: return true;
 }
 
-static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const zcond_p, char ins_type) {
+static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const zcond_p) {
     asm goto(
             "1: jmp %[l_true] \n\t"
             ZCOND_TABLE_ENTRY
-            : : "i" (zcond_p), "i" (ins_type) : : l_true );
+            : : "i" (zcond_p) : : l_true );
     return false;
 l_true: return true;
 }
 
-void arch_enable_text_write();
-void arch_disable_text_write();
+void arch_enable_text_write(void);
+void arch_disable_text_write(void);
 
-void arch_get_patch_insn(struct zcond *cond, struct ins_point *ins_p, unsigned char insn[], size_t *size);
+void arch_get_patch_insn(struct ins_point *ins_p, unsigned char insn[], size_t *size);
 
 #endif /*!_MACHINE_ZCOND_H*/

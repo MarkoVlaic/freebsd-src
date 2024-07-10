@@ -9,7 +9,6 @@
     ".quad 1b \n\t" \
     ".quad %l[l_true] \n\t" \
     ".quad %c0 \n\t" \
-    ".byte %c1 \n\t" \
     ".quad 0 \n\t" \
     ".quad 0 \n\t" \
     ".popsection \n\t"

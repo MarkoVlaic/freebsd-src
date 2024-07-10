@@ -30,6 +30,7 @@ static char nop5_bytes[] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
     ".byte 0x00 \n\t"
 
 struct zcond;
+struct ins_point;
 
 static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p, char ins_type) {
     asm goto(

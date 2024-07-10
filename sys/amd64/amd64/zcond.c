@@ -1,6 +1,8 @@
 #include <machine/zcond.h>
 #include <sys/zcond.h>
+#include <sys/amd64/vmm/svm.h>
 #include <machine/md_var.h>
+#include <machine/machdep.h>
 #include <vm/vm.h>
 
 static bool wp;
@@ -55,7 +57,6 @@ void arch_get_patch_insn(struct zcond *cond, struct ins_point *p, bool new_state
         
         offset = p->lbl_true_addr - p->patch_addr - *size; 
         arch_insn_jmp(insn, *size, offset);
-        printf("offset = %#08lx\n", offset);
     } else {
         //  replace jmp with nop
         if(*patch_addr == 0xeb) {

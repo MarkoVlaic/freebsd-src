@@ -12,6 +12,7 @@
 #include <vm/pmap.h>
 #include <sys/smp.h>
 #include <sys/cpuset.h>
+#include <machine/atomic.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
@@ -47,7 +48,16 @@ zcond_init(void* unused) {
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
-void __zcond_set_enabled(struct zcond* cond, bool new_state) {
+struct rendesvouz_data {
+    int patching_cpu;
+    struct zcond *cond;
+    bool new_state;
+    int blocked;
+    int patched;
+};
+
+static void zcond_patch(struct zcond *cond, bool new_state) {
+    critical_enter();
     if(cond->enabled == new_state) {
         return;
     }
@@ -55,16 +65,7 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
     struct ins_point *p;
     unsigned char insn[5];
     size_t insn_size;
-   
-    critical_enter();
-    cpuset_t other_cpus;
-    CPU_COPY(cpuset_root, &other_cpus);
-    CPU_CLR(curcpu, &other_cpus); 
-    suspend_cpus(other_cpus);
 
-    char cpus_buf[CPUSETBUFSIZ];
-    cpusetobj_strprint(cpus_buf, &other_cpus);
-    printf("suspending cpus: %s\n", cpus_buf);
 
     SLIST_FOREACH(p, &cond->ins_points, next) {
         arch_get_patch_insn(p, insn, &insn_size);
@@ -80,9 +81,30 @@ void __zcond_set_enabled(struct zcond* cond, bool new_state) {
         arch_disable_text_write();
     }
     cond->enabled = new_state;
-    
-    resume_cpus(other_cpus);
     critical_exit();
+}
+
+static void rendesvouz_cb(void *arg) {
+    struct rendesvouz_data *data = (struct rendesvouz_data *)arg;
+    if(data->patching_cpu != curcpu) {
+        atomic_add_int(&data->waiting, 1);
+        while(atomic_load(arg->patched) == 0) {}
+    } else {
+        while(atomic_load(&data->waiting) != smp_cpus - 1) {}
+        zcond_patch(arg->cond, arg->new_state);
+        atomic_store(&data->patched, 1);
+    } 
+}
+
+void __zcond_set_enabled(struct zcond *cond, bool new_state) {
+    struct rendesvouz_data arg = {
+        .patching_cpu = curcpu,
+        .cond = cond,
+        .new_state = new_state,
+        .blocked = 0,
+        .patched = 0
+    };
+    smp_rendezvous(NULL, rendezvous_cb, NULL, &arg);    
 }
 
 DEFINE_ZCOND_TRUE(cond1);

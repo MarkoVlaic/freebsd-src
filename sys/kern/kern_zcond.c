@@ -87,11 +87,11 @@ static void rendezvous_cb(void *arg) {
     struct rendezvous_data *data = (struct rendezvous_data *)arg;
     if(data->patching_cpu != curcpu) {
         atomic_add_int(&data->blocked, 1);
-        while(atomic_load(&data->patched) == 0) {}
+        while(atomic_load_int(&data->patched) == 0) {}
     } else {
-        while(atomic_load(&data->blocked) != smp_cpus - 1) {}
+        while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
         zcond_patch(data->cond, data->new_state);
-        atomic_store(&data->patched, 1);
+        atomic_store_int(&data->patched, 1);
     } 
 }
 

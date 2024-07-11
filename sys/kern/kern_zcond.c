@@ -57,7 +57,7 @@ struct rendezvous_data {
 };
 
 static void zcond_patch(struct zcond *cond, bool new_state) {
-    critical_enter();
+    //critical_enter();
     if(cond->enabled == new_state) {
         return;
     }
@@ -80,7 +80,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         arch_disable_text_write();
     }
     cond->enabled = new_state;
-    critical_exit();
+    //critical_exit();
 }
 
 static void rendezvous_cb(void *arg) {

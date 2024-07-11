@@ -48,7 +48,7 @@ zcond_init(void* unused) {
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
-struct rendesvouz_data {
+struct rendezvous_data {
     int patching_cpu;
     struct zcond *cond;
     bool new_state;
@@ -57,7 +57,7 @@ struct rendesvouz_data {
 };
 
 static void zcond_patch(struct zcond *cond, bool new_state) {
-    critical_enter();
+    //critical_enter();
     if(cond->enabled == new_state) {
         return;
     }
@@ -65,7 +65,6 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     struct ins_point *p;
     unsigned char insn[5];
     size_t insn_size;
-
 
     SLIST_FOREACH(p, &cond->ins_points, next) {
         arch_get_patch_insn(p, insn, &insn_size);
@@ -81,23 +80,23 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         arch_disable_text_write();
     }
     cond->enabled = new_state;
-    critical_exit();
+    //critical_exit();
 }
 
-static void rendesvouz_cb(void *arg) {
-    struct rendesvouz_data *data = (struct rendesvouz_data *)arg;
+static void rendezvous_cb(void *arg) {
+    struct rendezvous_data *data = (struct rendezvous_data *)arg;
     if(data->patching_cpu != curcpu) {
-        atomic_add_int(&data->waiting, 1);
-        while(atomic_load(arg->patched) == 0) {}
+        atomic_add_int(&data->blocked, 1);
+        while(atomic_load_int(&data->patched) == 0) {}
     } else {
-        while(atomic_load(&data->waiting) != smp_cpus - 1) {}
-        zcond_patch(arg->cond, arg->new_state);
-        atomic_store(&data->patched, 1);
+        while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
+        zcond_patch(data->cond, data->new_state);
+        atomic_store_int(&data->patched, 1);
     } 
 }
 
 void __zcond_set_enabled(struct zcond *cond, bool new_state) {
-    struct rendesvouz_data arg = {
+    struct rendezvous_data arg = {
         .patching_cpu = curcpu,
         .cond = cond,
         .new_state = new_state,

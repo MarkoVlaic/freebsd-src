@@ -57,7 +57,6 @@ struct rendezvous_data {
 };
 
 static void zcond_patch(struct zcond *cond, bool new_state) {
-    critical_enter();
     if(cond->enabled == new_state) {
         return;
     }
@@ -80,18 +79,17 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         arch_disable_text_write();
     }
     cond->enabled = new_state;
-    critical_exit();
 }
 
 static void rendezvous_cb(void *arg) {
     struct rendezvous_data *data = (struct rendezvous_data *)arg;
     if(data->patching_cpu != curcpu) {
-        atomic_add_int(&data->blocked, 1);
-        while(atomic_load_int(&data->patched) == 0) {}
+       // atomic_add_int(&data->blocked, 1);
+       // while(atomic_load_int(&data->patched) == 0) {}
     } else {
-        while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
+       // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
         zcond_patch(data->cond, data->new_state);
-        atomic_store_int(&data->patched, 1);
+        //atomic_store_int(&data->patched, 1);
     } 
 }
 

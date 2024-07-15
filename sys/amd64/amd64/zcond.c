@@ -1,0 +1,78 @@
+#include <machine/zcond.h>
+#include <sys/zcond.h>
+#include <vm/vm.h>
+#include <vm/pmap.h>
+#include <amd64/vmm/amd/svm.h>
+#include <machine/md_var.h>
+
+static bool wp;
+void arch_enable_text_write(void) {
+    wp = disable_wp();
+}
+
+void arch_disable_text_write(void) {
+    restore_wp(wp);
+}
+
+static void arch_insn_nop(unsigned char insn[], size_t size) {
+    int i;
+    if(size == 2) {
+        for(i=0;i<2;i++) {
+            insn[i] = nop2_bytes[i];
+        }
+    } else {
+        for(i=0;i<5;i++) {
+            insn[i] = nop5_bytes[i];
+        }
+    }
+}
+
+static void arch_insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset) {
+    if(size == 2) {
+        insn[0] = 0xeb;
+        insn[1] = offset;
+    } else {
+        insn[0] = 0xe9;
+        int i;
+        for(i=0;i<4;i++) {
+            insn[i+1] = (offset >> (i*8)) & 0xFF;
+        }
+    }
+}
+
+void arch_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size) {
+    unsigned char *patch_addr = (unsigned char*) p->patch_addr;
+
+    if(*patch_addr == 0x66) {
+        // two byte nop
+       *size = 2;
+       goto nop;
+    } else if(*patch_addr == 0x0f) {
+        *size = 5;
+        goto nop;
+    } else if(*patch_addr == 0xeb) {
+        // two byte jump
+        *size = 2;
+        goto jmp;
+    } else if(*patch_addr == 0xe9) {
+        // five byte jump
+        *size = 5;
+        goto jmp;
+    } else {
+        panic("unexpected opcode: %02hhx", *patch_addr); 
+    }
+
+    vm_offset_t offset; 
+nop:
+    // replace nop with jmp
+    offset = p->lbl_true_addr - p->patch_addr - *size; 
+    arch_insn_jmp(insn, *size, offset);
+    return;
+    
+jmp:
+    // replace jmp with nop
+    arch_insn_nop(insn, *size);
+}
+
+
+

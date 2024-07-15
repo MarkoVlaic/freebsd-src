@@ -28,6 +28,8 @@ static char nop5_bytes[] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
     ".byte 0x00 \n\t" \
     ".byte 0x00 \n\t"
 
+#define MAX_INSN_SIZE 5
+
 struct zcond;
 struct ins_point;
 

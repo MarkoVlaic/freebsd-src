@@ -62,7 +62,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     }
      
     struct ins_point *p;
-    unsigned char insn[5];
+    unsigned char insn[MAX_INSN_SIZE];
     size_t insn_size;
 
     SLIST_FOREACH(p, &cond->ins_points, next) {

@@ -141,9 +141,9 @@ static int trigger_zcond_test2(SYSCTL_HANDLER_ARGS) {
     }
     
     // simulate long jump with nops
-    asm (
+    /*asm (
         ".nops 512\n\t":::    
-    );
+    );*/
 
     sbuf_finish(&buf);
     sbuf_delete(&buf);

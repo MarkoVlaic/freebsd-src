@@ -1,3 +1,4 @@
+#ifdef _KERNEL
 #ifndef _SYS_ZCOND_H
 #define _SYS_ZCOND_H
 
@@ -69,4 +70,5 @@ void __zcond_enable(struct zcond *cond);
 void __zcond_disable(struct zcond *cond);
 void __zcond_set_enabled(struct zcond *cond, bool new_state);
 
+#endif
 #endif

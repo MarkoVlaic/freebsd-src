@@ -60,7 +60,7 @@ struct rendezvous_data {
 
 static void zcond_patch(struct zcond *cond, bool new_state) {
     struct ins_point *p;
-    unsigned char insn[MAX_INSN_SIZE];
+    unsigned char insn[ZCOND_MAX_INSN_SIZE];
     size_t insn_size;
     int i;
 
@@ -77,9 +77,9 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         }
         printf("\n");
 
-        arch_before_patch();
+        zcond_before_patch();
         memcpy((void *)p->patch_addr, &insn[0], insn_size);
-        arch_after_patch();
+        zcond_after_patch();
     }
     cond->enabled = new_state;
 }

@@ -18,12 +18,14 @@ MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 static void 
-zcond_init(void* unused) {
+zcond_init(const void* unused) {
     extern char __zcond_table_start, __zcond_table_end;
     struct ins_point *entry;
     struct zcond *entry_zcond;
     char *entry_addr;
-    size_t entry_size = sizeof(struct ins_point);
+    size_t entry_size;
+   
+   entry_size = sizeof(struct ins_point);
     
     for(entry_addr = &__zcond_table_start; entry_addr < &__zcond_table_end; entry_addr += entry_size) {
         entry = (struct ins_point *) entry_addr; 
@@ -57,26 +59,27 @@ struct rendezvous_data {
 };
 
 static void zcond_patch(struct zcond *cond, bool new_state) {
-    if(cond->enabled == new_state) {
-        return;
-    }
-     
     struct ins_point *p;
     unsigned char insn[MAX_INSN_SIZE];
     size_t insn_size;
+    int i;
+
+    if(cond->enabled == new_state) {
+        return;
+    }
 
     SLIST_FOREACH(p, &cond->ins_points, next) {
-        arch_get_patch_insn(p, insn, &insn_size);
+        zcond_get_patch_insn(p, insn, &insn_size);
         
         printf("patch ins point %#08lx with: ", p->patch_addr);
-        for(int i=0;i<insn_size;i++) {
+        for(i=0;i<insn_size;i++) {
             printf("%02hhx ", insn[i]);
         }
         printf("\n");
 
-        arch_enable_text_write();
+        arch_before_patch();
         memcpy((void *)p->patch_addr, &insn[0], insn_size);
-        arch_disable_text_write();
+        arch_after_patch();
     }
     cond->enabled = new_state;
 }

@@ -32,30 +32,30 @@ static char nop_bytes[] = { 0x1f, 0x20, 0x03, 0xd5 };
 struct zcond;
 struct ins_point;
 
-static __attribute__((always_inline)) bool arch_zcond_nop(struct zcond *const zcond_p) {
+static __attribute__((always_inline)) bool zcond_nop(struct zcond *const zcond_p) {
     asm goto(
             "1: " NOP_ASM
             ZCOND_TABLE_ENTRY
             : : "i" (zcond_p) : : l_true );
 
-    return false;
-l_true: return true;
+    return (false);
+l_true: return (true);
 }
 
-static __attribute__((always_inline))  bool arch_zcond_jmp(struct zcond *const zcond_p) {
+static __attribute__((always_inline))  bool zcond_jmp(struct zcond *const zcond_p) {
     asm goto(
             "1: b %[l_true] \n\t"
             ZCOND_TABLE_ENTRY
             : : "i" (zcond_p) : : l_true );
-    return false;
-l_true: return true;
+    return (false);
+l_true: return (true);
 }
 
 
-void arch_enable_text_write(void);
-void arch_disable_text_write(void);
+void zcond_before_patch(void);
+void zcond_after_patch(void);
 
-void arch_get_patch_insn(struct ins_point *ins_p, unsigned char insn[], size_t *size);
+void zcond_get_patch_insn(struct ins_point *ins_p, unsigned char insn[], size_t *size);
 
 #endif
 #endif

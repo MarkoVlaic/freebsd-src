@@ -2,76 +2,75 @@
 #include <sys/zcond.h>
 #include <vm/vm.h>
 #include <vm/pmap.h>
-#include <amd64/vmm/amd/svm.h>
 #include <machine/md_var.h>
 
 static bool wp;
-void arch_enable_text_write(void) {
+void zcond_before_patch(void) {
     wp = disable_wp();
 }
 
-void arch_disable_text_write(void) {
+void zcond_after_patch(void) {
     restore_wp(wp);
 }
 
-static void arch_insn_nop(unsigned char insn[], size_t size) {
+static void insn_nop(unsigned char insn[], size_t size) {
     int i;
-    if(size == 2) {
-        for(i=0;i<2;i++) {
-            insn[i] = nop2_bytes[i];
+    if(size == ZCOND_INSN_SHORT_SIZE) {
+        for(i=0;i<ZCOND_INSN_SHORT_SIZE;i++) {
+            insn[i] = nop_short_bytes[i];
         }
     } else {
-        for(i=0;i<5;i++) {
-            insn[i] = nop5_bytes[i];
+        for(i=0;i<ZCOND_INSN_LONG_SIZE;i++) {
+            insn[i] = nop_long_bytes[i];
         }
     }
 }
 
-static void arch_insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset) {
+static void insn_jmp(unsigned char insn[], size_t size, vm_offset_t offset) {
     if(size == 2) {
-        insn[0] = 0xeb;
+        insn[0] = ZCOND_JMP_SHORT_OPCODE;
         insn[1] = offset;
     } else {
-        insn[0] = 0xe9;
+        insn[0] = ZCOND_JMP_LONG_OPCODE;
         int i;
-        for(i=0;i<4;i++) {
+        for(i=0;i<ZCOND_INSN_LONG_SIZE - 1;i++) {
             insn[i+1] = (offset >> (i*8)) & 0xFF;
         }
     }
 }
 
-void arch_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size) {
+void zcond_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size) {
     unsigned char *patch_addr = (unsigned char*) p->patch_addr;
+    vm_offset_t offset; 
 
-    if(*patch_addr == 0x66) {
+    if(*patch_addr == nop_short_bytes[0]) {
         // two byte nop
-       *size = 2;
+       *size = ZCOND_INSN_SHORT_SIZE;
        goto nop;
-    } else if(*patch_addr == 0x0f) {
-        *size = 5;
+    } else if(*patch_addr == nop_long_bytes[0]) {
+        *size = ZCOND_INSN_LONG_SIZE;
         goto nop;
-    } else if(*patch_addr == 0xeb) {
+    } else if(*patch_addr == ZCOND_JMP_SHORT_OPCODE) {
         // two byte jump
-        *size = 2;
+        *size = ZCOND_INSN_SHORT_SIZE;
         goto jmp;
-    } else if(*patch_addr == 0xe9) {
+    } else if(*patch_addr == ZCOND_JMP_LONG_OPCODE) {
         // five byte jump
-        *size = 5;
+        *size = ZCOND_INSN_LONG_SIZE;
         goto jmp;
     } else {
         panic("unexpected opcode: %02hhx", *patch_addr); 
     }
 
-    vm_offset_t offset; 
 nop:
     // replace nop with jmp
     offset = p->lbl_true_addr - p->patch_addr - *size; 
-    arch_insn_jmp(insn, *size, offset);
+    insn_jmp(insn, *size, offset);
     return;
     
 jmp:
     // replace jmp with nop
-    arch_insn_nop(insn, *size);
+    insn_nop(insn, *size);
 }
 
 

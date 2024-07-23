@@ -54,6 +54,7 @@ zcond_init(const void* unused) {
 
     }
 
+    PMAP_LOCK_INIT(patching_pmap);
     pmap_pinit(&patching_pmap);
     kern_start = (vm_offset_t) &kernload; 
     kern_end = (vm_offset_t) &end;

@@ -117,7 +117,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
 
 static void rendezvous_cb(void *arg) {
     struct rendezvous_data *data;
-    uint64_t cr3;
+    //uint64_t cr3;
 
     data = (struct rendezvous_data *)arg;
     if(data->patching_cpu != curcpu) {

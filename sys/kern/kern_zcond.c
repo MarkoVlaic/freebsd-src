@@ -69,9 +69,9 @@ zcond_init(const void* unused) {
     pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 
     patch_page_mirror = vm_page_alloc_noobj(VM_ALLOC_WIRED);
-    mirror_page_addr = 0xffffffff81a01000;
+    mirror_page_addr = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(patch_page_mirror));
     //mirror_page_addr = kva_alloc(PAGE_SIZE);
-    //pmap_enter(&patching_pmap, mirror_page_addr, patch_page_mirror, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
+    pmap_enter(&patching_pmap, mirror_page_addr, patch_page_mirror, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
@@ -103,11 +103,13 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         }
         printf("\n");
 
-        zcond_before_patch();
-        
         patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
+        
+        zcond_before_patch();
+        load_cr3(patching_pmap.pm_cr3);
         pmap_zcond_enter(&patching_pmap, mirror_page_addr, patch_page);
         memcpy((void *)(mirror_page_addr + (p->patch_addr & PAGE_MASK)), &insn[0], insn_size);
+        invlpg(mirror_page_addr);
         zcond_after_patch();
     }
     cond->enabled = new_state;
@@ -115,6 +117,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
 
 static void rendezvous_cb(void *arg) {
     struct rendezvous_data *data;
+    //uint64_t cr3;
 
     data = (struct rendezvous_data *)arg;
     if(data->patching_cpu != curcpu) {
@@ -123,9 +126,10 @@ static void rendezvous_cb(void *arg) {
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
         printf("kernel cr3 %#08lx | patching cr3 %#08lx\n", kernel_pmap->pm_cr3, patching_pmap.pm_cr3);
-        load_cr3(patching_pmap.pm_cr3);  
+        //cr3 = rcr3();
+        //load_cr3(patching_pmap.pm_cr3);  
         zcond_patch(data->cond, data->new_state);
-        load_cr3(kernel_pmap->pm_cr3);
+       // load_cr3(cr3);
         //atomic_store_int(&data->patched, 1);
     } 
 }

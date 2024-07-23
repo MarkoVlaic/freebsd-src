@@ -13,6 +13,7 @@
 #include <vm/vm_page.h>
 #include <vm/vm_map.h>
 #include <vm/vm_kern.h>
+#include <vm/vm_extern.h>
 #include <vm/pmap.h>
 #include <sys/smp.h>
 #include <sys/cpuset.h>
@@ -23,6 +24,8 @@ MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 static struct pmap patching_pmap;
+static vm_page_t patch_page_mirror;
+static vm_offset_t mirror_page_addr;
 
 static void 
 zcond_init(const void* unused) {
@@ -64,6 +67,11 @@ zcond_init(const void* unused) {
     kern_end = vm_map_min(kernel_map);
     printf("kern start %#08lx | kern end %#08lx | linker end %#08lx\n", kern_start, kern_end, (vm_offset_t)&end); 
     pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
+
+    patch_page_mirror = vm_page_alloc_noobj(VM_ALLOC_WIRED);
+    //mirror_page_addr = 0xffffffff81a01000;
+    mirror_page_addr = kva_alloc(PAGE_SIZE);
+    //pmap_enter(&patching_pmap, mirror_page_addr, patch_page_mirror, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
@@ -81,7 +89,6 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     size_t insn_size;
     int i;
     vm_page_t patch_page;
-    vm_offset_t mirror_page_addr;
 
     if(cond->enabled == new_state) {
         return;
@@ -98,10 +105,9 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
 
         zcond_before_patch();
         
-        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
-        mirror_page_addr = 0xffffffff81c01000;
-        pmap_enter(&patching_pmap, mirror_page_addr, patch_page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
-        memcpy((void *)mirror_page_addr, &insn[0], insn_size);
+        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
+        pmap_zcond_enter(&patching_pmap, mirror_page_addr, patch_page);
+        memcpy((void *)(mirror_page_addr + (p->patch_addr & PAGE_MASK)), &insn[0], insn_size);
         zcond_after_patch();
     }
     cond->enabled = new_state;

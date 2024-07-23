@@ -24,6 +24,7 @@ MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 static struct pmap patching_pmap;
 static vm_page_t patch_page_mirror;
+static vm_offset_t mirror_page_addr;
 
 static void 
 zcond_init(const void* unused) {
@@ -33,7 +34,7 @@ zcond_init(const void* unused) {
     char *entry_addr;
     size_t entry_size;
     extern char kernload, end;
-    vm_offset_t kern_start, kern_end, mirror_page_addr;
+    vm_offset_t kern_start, kern_end;
    
    entry_size = sizeof(struct ins_point);
     
@@ -86,7 +87,6 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     size_t insn_size;
     int i;
     vm_page_t patch_page;
-    vm_offset_t mirror_page_addr;
 
     if(cond->enabled == new_state) {
         return;
@@ -104,8 +104,8 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         zcond_before_patch();
         
         patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
-        pmap_zcond_enter(&patching_pmap, va, patch_page);
-        memcpy((void *)mirror_page_addr + (p->patch_addr & PAGE_MASK), &insn[0], insn_size);
+        pmap_zcond_enter(&patching_pmap, mirror_page_addr, patch_page);
+        memcpy((void *)(mirror_page_addr + (p->patch_addr & PAGE_MASK)), &insn[0], insn_size);
         zcond_after_patch();
     }
     cond->enabled = new_state;

@@ -60,9 +60,9 @@ zcond_init(const void* unused) {
     memset(&patching_pmap, 0, sizeof(patching_pmap));
     PMAP_LOCK_INIT(&patching_pmap);
     pmap_pinit(&patching_pmap);
-    kern_start = vm_map_min(kernel_map);  
-    kern_end = vm_map_max(kernel_map);
-    printf("kern start %#08lx | kern end %#08lx\n", kern_start, kern_end); 
+    kern_start = vm_map_max(kernel_map);  
+    kern_end = vm_map_min(kernel_map);
+    printf("kern start %#08lx | kern end %#08lx | linker end %#08lx\n", kern_start, kern_end, (vm_offset_t)&end); 
     pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
@@ -80,6 +80,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     unsigned char insn[ZCOND_MAX_INSN_SIZE];
     size_t insn_size;
     int i;
+    vm_page_t patch_page;
 
     if(cond->enabled == new_state) {
         return;
@@ -95,6 +96,8 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         printf("\n");
 
         zcond_before_patch();
+        
+        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
         memcpy((void *)p->patch_addr, &insn[0], insn_size);
         zcond_after_patch();
     }
@@ -102,14 +105,16 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
 }
 
 static void rendezvous_cb(void *arg) {
-    struct rendezvous_data *data = (struct rendezvous_data *)arg;
+    struct rendezvous_data *data;
+
+    data = (struct rendezvous_data *)arg;
     if(data->patching_cpu != curcpu) {
        // atomic_add_int(&data->blocked, 1);
        // while(atomic_load_int(&data->patched) == 0) {}
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
         printf("kernel cr3 %#08lx | patching cr3 %#08lx\n", kernel_pmap->pm_cr3, patching_pmap.pm_cr3);
-        load_cr3(patching_pmap.pm_cr3); 
+        load_cr3(patching_pmap.pm_cr3);  
         zcond_patch(data->cond, data->new_state);
         load_cr3(kernel_pmap->pm_cr3);
         //atomic_store_int(&data->patched, 1);

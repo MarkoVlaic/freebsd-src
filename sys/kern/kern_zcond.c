@@ -69,7 +69,7 @@ zcond_init(const void* unused) {
     pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 
     patch_page_mirror = vm_page_alloc_noobj(VM_ALLOC_WIRED);
-    mirror_page_addr = 0xffffffff81a01000;
+    mirror_page_addr = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(patch_page_mirror));
     //mirror_page_addr = kva_alloc(PAGE_SIZE);
     pmap_enter(&patching_pmap, mirror_page_addr, patch_page_mirror, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
 }

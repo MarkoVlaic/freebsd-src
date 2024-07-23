@@ -13,6 +13,7 @@
 #include <vm/vm_page.h>
 #include <vm/vm_map.h>
 #include <vm/vm_kern.h>
+#include <vm/vm_extern.h>
 #include <vm/pmap.h>
 #include <sys/smp.h>
 #include <sys/cpuset.h>

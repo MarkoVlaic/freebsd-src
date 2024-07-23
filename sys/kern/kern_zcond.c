@@ -108,6 +108,7 @@ static void rendezvous_cb(void *arg) {
        // while(atomic_load_int(&data->patched) == 0) {}
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
+        printf("kernel cr3 %#08lx | patching cr3 %#08lx\n", kernel_pmap->pm_cr3, patching_pmap.pm_cr3);
         load_cr3(patching_pmap.pm_cr3); 
         zcond_patch(data->cond, data->new_state);
         load_cr3(kernel_pmap->pm_cr3);

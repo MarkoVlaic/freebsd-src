@@ -5,13 +5,13 @@
 #include <amd64/vmm/amd/svm.h>
 #include <machine/md_var.h>
 
-static bool wp;
+//static bool wp;
 void zcond_before_patch(void) {
-    wp = disable_wp();
+    //wp = disable_wp();
 }
 
 void zcond_after_patch(void) {
-    restore_wp(wp);
+    //restore_wp(wp);
 }
 
 static void insn_nop(unsigned char insn[], size_t size) {

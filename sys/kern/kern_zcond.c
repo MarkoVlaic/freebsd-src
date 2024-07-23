@@ -59,8 +59,8 @@ zcond_init(const void* unused) {
     memset(&patching_pmap, 0, sizeof(patching_pmap));
     PMAP_LOCK_INIT(&patching_pmap);
     pmap_pinit(&patching_pmap);
-    kern_start = (vm_offset_t) &kernload; 
-    kern_end = (vm_offset_t) &end;
+    kern_start = vm_map_max(kernel_map);  
+    kern_end = vm_map_min(kernel_map);
     printf("kern start %#08lx | kern end %#08lx\n", kern_start, kern_end); 
     pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 }

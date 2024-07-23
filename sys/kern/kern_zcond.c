@@ -108,9 +108,9 @@ static void rendezvous_cb(void *arg) {
        // while(atomic_load_int(&data->patched) == 0) {}
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
-        load_cr3(patching_pmap->cr3); 
+        load_cr3(patching_pmap.pm_cr3); 
         zcond_patch(data->cond, data->new_state);
-        load_cr3(kernel_pmap->cr3);
+        load_cr3(kernel_pmap->pm_cr3);
         //atomic_store_int(&data->patched, 1);
     } 
 }

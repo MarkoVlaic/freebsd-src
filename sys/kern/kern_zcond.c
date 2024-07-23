@@ -80,7 +80,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     unsigned char insn[ZCOND_MAX_INSN_SIZE];
     size_t insn_size;
     int i;
-    vm_page_t patch_page;
+    //vm_page_t patch_page;
 
     if(cond->enabled == new_state) {
         return;
@@ -97,7 +97,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
 
         zcond_before_patch();
         
-        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
+        //patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
         memcpy((void *)p->patch_addr, &insn[0], insn_size);
         zcond_after_patch();
     }

@@ -29,6 +29,7 @@ zcond_init(const void* unused) {
     char *entry_addr;
     size_t entry_size;
     extern char kernload, end;
+    vm_offset_t kern_start, kerne_end;
    
    entry_size = sizeof(struct ins_point);
     

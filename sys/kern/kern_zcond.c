@@ -7,15 +7,22 @@
 #include <sys/sbuf.h>
 #include <sys/zcond.h>
 #include <sys/malloc.h>
+#include <sys/lock.h>
+#include <sys/mutex.h>
 #include <vm/vm.h>
 #include <vm/vm_page.h>
+#include <vm/vm_map.h>
+#include <vm/vm_kern.h>
 #include <vm/pmap.h>
 #include <sys/smp.h>
 #include <sys/cpuset.h>
 #include <machine/atomic.h>
+#include <machine/cpufunc.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
+
+static struct pmap patching_pmap;
 
 static void 
 zcond_init(const void* unused) {
@@ -24,6 +31,8 @@ zcond_init(const void* unused) {
     struct zcond *entry_zcond;
     char *entry_addr;
     size_t entry_size;
+    extern char kernload, end;
+    vm_offset_t kern_start, kern_end;
    
    entry_size = sizeof(struct ins_point);
     
@@ -47,6 +56,14 @@ zcond_init(const void* unused) {
         }*/
 
     }
+
+    memset(&patching_pmap, 0, sizeof(patching_pmap));
+    PMAP_LOCK_INIT(&patching_pmap);
+    pmap_pinit(&patching_pmap);
+    kern_start = vm_map_max(kernel_map);  
+    kern_end = vm_map_min(kernel_map);
+    printf("kern start %#08lx | kern end %#08lx | linker end %#08lx\n", kern_start, kern_end, (vm_offset_t)&end); 
+    pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
@@ -63,6 +80,8 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     unsigned char insn[ZCOND_MAX_INSN_SIZE];
     size_t insn_size;
     int i;
+    vm_page_t patch_page;
+    vm_offset_t mirror_page_addr;
 
     if(cond->enabled == new_state) {
         return;
@@ -78,20 +97,29 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         printf("\n");
 
         zcond_before_patch();
-        memcpy((void *)p->patch_addr, &insn[0], insn_size);
+        
+        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
+        mirror_page_addr = 0xffffffff81c01000;
+        pmap_enter(&patching_pmap, mirror_page_addr, patch_page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
+        memcpy((void *)mirror_page_addr, &insn[0], insn_size);
         zcond_after_patch();
     }
     cond->enabled = new_state;
 }
 
 static void rendezvous_cb(void *arg) {
-    struct rendezvous_data *data = (struct rendezvous_data *)arg;
+    struct rendezvous_data *data;
+
+    data = (struct rendezvous_data *)arg;
     if(data->patching_cpu != curcpu) {
        // atomic_add_int(&data->blocked, 1);
        // while(atomic_load_int(&data->patched) == 0) {}
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
+        printf("kernel cr3 %#08lx | patching cr3 %#08lx\n", kernel_pmap->pm_cr3, patching_pmap.pm_cr3);
+        load_cr3(patching_pmap.pm_cr3);  
         zcond_patch(data->cond, data->new_state);
+        load_cr3(kernel_pmap->pm_cr3);
         //atomic_store_int(&data->patched, 1);
     } 
 }

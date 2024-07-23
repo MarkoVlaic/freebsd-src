@@ -9,6 +9,8 @@
 #include <sys/malloc.h>
 #include <vm/vm.h>
 #include <vm/vm_page.h>
+#include <vm/vm_map.h>
+#include <vm/vm_kern.h>
 #include <vm/pmap.h>
 #include <sys/smp.h>
 #include <sys/cpuset.h>
@@ -51,11 +53,11 @@ zcond_init(const void* unused) {
 
     }
 
-    pmap_pinit(patching_pmap);
+    pmap_pinit(&patching_pmap);
     kern_start = vm_map_min(kernel_map);
     kern_end = vm_map_max(kernel_map);
     printf("kern start %#08lx | kern end %#08lx\n", kern_start, kern_end); 
-    pmap_copy(patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
+    pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 

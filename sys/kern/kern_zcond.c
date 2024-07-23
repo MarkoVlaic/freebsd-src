@@ -17,6 +17,7 @@
 #include <sys/smp.h>
 #include <sys/cpuset.h>
 #include <machine/atomic.h>
+#include <machine/cpufunc.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
@@ -107,7 +108,9 @@ static void rendezvous_cb(void *arg) {
        // while(atomic_load_int(&data->patched) == 0) {}
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
+        load_cr3(patching_pmap->cr3); 
         zcond_patch(data->cond, data->new_state);
+        load_cr3(kernel_pmap->cr3);
         //atomic_store_int(&data->patched, 1);
     } 
 }

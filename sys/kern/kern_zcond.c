@@ -80,7 +80,8 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     unsigned char insn[ZCOND_MAX_INSN_SIZE];
     size_t insn_size;
     int i;
-    //vm_page_t patch_page;
+    vm_page_t patch_page;
+    vm_offset_t mirror_page_addr;
 
     if(cond->enabled == new_state) {
         return;
@@ -97,8 +98,10 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
 
         zcond_before_patch();
         
-        //patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
-        memcpy((void *)p->patch_addr, &insn[0], insn_size);
+        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
+        mirror_page_addr = 0xffffffff81c01000;
+        pmap_enter(patching_pmap, mirror_page_addr, patch_page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
+        memcpy((void *)mirror_page_addr, &insn[0], insn_size);
         zcond_after_patch();
     }
     cond->enabled = new_state;

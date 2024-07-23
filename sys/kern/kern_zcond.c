@@ -103,11 +103,13 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         }
         printf("\n");
 
-        zcond_before_patch();
-        
         patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
+        
+        zcond_before_patch();
+        load_cr3(patching_pmap.pm_cr3);
         pmap_zcond_enter(&patching_pmap, mirror_page_addr, patch_page);
         memcpy((void *)(mirror_page_addr + (p->patch_addr & PAGE_MASK)), &insn[0], insn_size);
+        invlpg(mirror_page_addr);
         zcond_after_patch();
     }
     cond->enabled = new_state;
@@ -124,10 +126,10 @@ static void rendezvous_cb(void *arg) {
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
         printf("kernel cr3 %#08lx | patching cr3 %#08lx\n", kernel_pmap->pm_cr3, patching_pmap.pm_cr3);
-        cr3 = rcr3();
-        load_cr3(patching_pmap.pm_cr3);  
+        //cr3 = rcr3();
+        //load_cr3(patching_pmap.pm_cr3);  
         zcond_patch(data->cond, data->new_state);
-        load_cr3(cr3);
+       // load_cr3(cr3);
         //atomic_store_int(&data->patched, 1);
     } 
 }

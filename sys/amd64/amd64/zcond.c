@@ -4,14 +4,18 @@
 #include <vm/pmap.h>
 #include <amd64/vmm/amd/svm.h>
 #include <machine/md_var.h>
+#include <machine/cpufunc.h>
 
 //static bool wp;
+static uint64_t cr3;
 void zcond_before_patch(void) {
     //wp = disable_wp();
+    cr3 = rcr3();
 }
 
 void zcond_after_patch(void) {
     //restore_wp(wp);
+    load_cr3(cr3);
 }
 
 static void insn_nop(unsigned char insn[], size_t size) {

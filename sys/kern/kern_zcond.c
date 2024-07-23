@@ -19,7 +19,7 @@
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
-static pmap patching_pmap;
+static struct pmap patching_pmap;
 
 static void 
 zcond_init(const void* unused) {

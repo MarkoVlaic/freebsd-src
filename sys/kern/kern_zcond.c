@@ -7,6 +7,8 @@
 #include <sys/sbuf.h>
 #include <sys/zcond.h>
 #include <sys/malloc.h>
+#include <sys/lock.h>
+#include <sys/mutex.h>
 #include <vm/vm.h>
 #include <vm/vm_page.h>
 #include <vm/vm_map.h>

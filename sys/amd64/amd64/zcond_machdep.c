@@ -1,13 +1,10 @@
-#include <sys/zcond.h>
 
 #include <vm/vm.h>
 #include <vm/pmap.h>
 
 #include <machine/cpufunc.h>
-#include <machine/md_var.h>
 #include <machine/zcond.h>
 
-#include <amd64/vmm/amd/svm.h>
 
 // static bool wp;
 static uint64_t cr3;

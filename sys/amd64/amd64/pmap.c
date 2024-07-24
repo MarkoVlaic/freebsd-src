@@ -7837,6 +7837,7 @@ pmap_enter_quick_locked(pmap_t pmap, vm_offset_t va, vm_page_t m,
 
 void
 pmap_zcond_enter(pmap_t pmap, vm_offset_t va, vm_page_t m) {
+   pmap_invlpg(kernel_pmap, va);
    KASSERT(curthread->td_critnest > 0, ("%s: called outside critical section", __func__));
    pt_entry_t *pte = pmap_pte(pmap, va);
    *pte |= VM_PAGE_TO_PHYS(m) & PG_FRAME;

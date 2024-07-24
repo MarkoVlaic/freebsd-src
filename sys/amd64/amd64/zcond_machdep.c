@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/zcond.h>
 #include <vm/vm.h>
 #include <vm/pmap.h>
 

@@ -24,8 +24,8 @@ MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 static struct pmap patching_pmap;
-static vm_page_t patch_page_mirror;
-static vm_offset_t mirror_page_addr;
+//static vm_page_t patch_page_mirror;
+//static vm_offset_t mirror_page_addr;
 
 static void 
 zcond_init(const void* unused) {
@@ -68,10 +68,10 @@ zcond_init(const void* unused) {
     printf("kern start %#08lx | kern end %#08lx | linker end %#08lx\n", kern_start, kern_end, (vm_offset_t)&end); 
     pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 
-    patch_page_mirror = vm_page_alloc_noobj(VM_ALLOC_WIRED);
-    mirror_page_addr = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(patch_page_mirror));
+    //patch_page_mirror = vm_page_alloc_noobj(VM_ALLOC_WIRED);
+    //mirror_page_addr = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(patch_page_mirror));
     //mirror_page_addr = kva_alloc(PAGE_SIZE);
-    pmap_enter(&patching_pmap, mirror_page_addr, patch_page_mirror, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
+    //pmap_enter(&patching_pmap, mirror_page_addr, patch_page_mirror, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
@@ -88,7 +88,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
     unsigned char insn[ZCOND_MAX_INSN_SIZE];
     size_t insn_size;
     int i;
-    vm_page_t patch_page;
+    //vm_page_t patch_page;
 
     if(cond->enabled == new_state) {
         return;
@@ -103,14 +103,14 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         }
         printf("\n");
 
-        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
+        //patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
         
         zcond_before_patch();
-        load_cr3(patching_pmap.pm_cr3);
-        pmap_invlpg(kernel_pmap, p->patch_addr);
-        pmap_zcond_enter(&patching_pmap, mirror_page_addr, patch_page);
-        memcpy((void *)(mirror_page_addr + (p->patch_addr & PAGE_MASK)), &insn[0], insn_size);
-        invlpg(mirror_page_addr);
+        //load_cr3(patching_pmap.pm_cr3);
+        //pmap_invlpg(kernel_pmap, p->patch_addr);
+        //pmap_zcond_enter(&patching_pmap, mirror_page_addr, patch_page);
+        memcpy((void *)(p->mirror_address + (p->patch_addr & PAGE_MASK)), &insn[0], insn_size);
+        //invlpg(mirror_page_addr);
         zcond_after_patch();
     }
     cond->enabled = new_state;
@@ -136,6 +136,9 @@ static void rendezvous_cb(void *arg) {
 }
 
 void __zcond_set_enabled(struct zcond *cond, bool new_state) {
+    uint64_t cr3;
+    struct ins_point *p;
+    vm_page_t patch_page;
     struct rendezvous_data arg = {
         .patching_cpu = curcpu,
         .cond = cond,
@@ -143,7 +146,22 @@ void __zcond_set_enabled(struct zcond *cond, bool new_state) {
         .blocked = 0,
         .patched = 0
     };
+    
+    SLIST_FOREACH(p, &cond->ins_points, next) {
+        p->mirror_address = kva_alloc(PAGE_SIZE);
+        patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
+        pmap_enter(&patching_pmap, p->mirror_address, patch_page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
+    }
+    
+    cr3 = rcr3();
+    load_cr3(patching_pmap.pm_cr3);
     smp_rendezvous(NULL, rendezvous_cb, NULL, &arg);    
+    load_cr3(cr3);
+
+    SLIST_FOREACH(p, &cond->ins_points, next) {
+        pmap_remove(&patching_pmap, p->mirror_address, p->mirror_address + PAGE_SIZE);
+        kva_free(p->mirror_address, PAGE_SIZE);
+    }
 }
 
 DEFINE_ZCOND_TRUE(cond1);

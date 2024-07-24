@@ -13,7 +13,7 @@ struct ins_point {
     vm_offset_t lbl_true_addr; /* address of the label to jump to when the condition is true */
     struct zcond* zcond;
     SLIST_ENTRY(ins_point) next;
-    vm_offset_t swap_page;
+    vm_offset_t mirror_address;
 } __attribute__((packed));
 
 struct zcond {

@@ -163,7 +163,7 @@ void __zcond_set_enabled(struct zcond *cond, bool new_state) {
     SLIST_FOREACH(p, &cond->ins_points, next) {
         //pmap_remove(&patching_pmap, p->mirror_address, p->mirror_address + PAGE_SIZE);
         pmap_qremove(p->mirror_address, 1);
-        //kva_free(p->mirror_address, PAGE_SIZE);
+        kva_free(p->mirror_address, PAGE_SIZE);
     }
 }
 

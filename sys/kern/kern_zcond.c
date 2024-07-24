@@ -23,7 +23,7 @@
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
-static struct pmap patching_pmap;
+struct pmap zcond_patching_pmap;
 //static vm_page_t patch_page_mirror;
 //static vm_offset_t mirror_page_addr;
 
@@ -50,13 +50,13 @@ zcond_init(const void* unused) {
         SLIST_INSERT_HEAD(&entry_zcond->ins_points, entry, next);    
     }
 
-    memset(&patching_pmap, 0, sizeof(patching_pmap));
-    PMAP_LOCK_INIT(&patching_pmap);
-    pmap_pinit(&patching_pmap);
+    memset(&zcond_patching_pmap, 0, sizeof(zcond_patching_pmap));
+    PMAP_LOCK_INIT(&zcond_patching_pmap);
+    pmap_pinit(&zcond_patching_pmap);
     kern_start = vm_map_max(kernel_map);  
     kern_end = vm_map_min(kernel_map);
     printf("kern start %#08lx | kern end %#08lx | linker end %#08lx\n", kern_start, kern_end, (vm_offset_t)&end); 
-    pmap_copy(&patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
+    pmap_copy(&zcond_patching_pmap, kernel_pmap, kern_start, kern_end - kern_start, kern_start);
 }
 SYSINIT(zcond, SI_SUB_LAST, SI_ORDER_ANY, zcond_init, NULL); // do we declare a new SI_SUB? is the order important?
 
@@ -103,7 +103,7 @@ static void rendezvous_cb(void *arg) {
        // while(atomic_load_int(&data->patched) == 0) {}
     } else {
        // while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
-        printf("kernel cr3 %#08lx | patching cr3 %#08lx\n", kernel_pmap->pm_cr3, patching_pmap.pm_cr3);
+        printf("kernel cr3 %#08lx | patching cr3 %#08lx\n", kernel_pmap->pm_cr3, zcond_patching_pmap.pm_cr3);
         zcond_patch(data->cond, data->new_state);
         //atomic_store_int(&data->patched, 1);
     } 
@@ -124,15 +124,14 @@ void __zcond_set_enabled(struct zcond *cond, bool new_state) {
     SLIST_FOREACH(p, &cond->ins_points, next) {
         p->mirror_address = kva_alloc(PAGE_SIZE);
         patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
-        pmap_enter(&patching_pmap, p->mirror_address, patch_page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
+        pmap_enter(&zcond_patching_pmap, p->mirror_address, patch_page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
         printf("patch_point %#08lx mapped to %#08lx\n", p->patch_addr, p->mirror_address);
     }
     
-    cr3 = rcr3();
-    load_cr3(patching_pmap.pm_cr3);
+    zcond_before_rendezvous(); 
     smp_rendezvous(NULL, rendezvous_cb, NULL, &arg);    
-    load_cr3(cr3);
-    
+    zcond_after_rendezvous(); 
+
     SLIST_FOREACH(p, &cond->ins_points, next) {
         pmap_qremove(p->mirror_address, 1);
         kva_free(p->mirror_address, PAGE_SIZE);

@@ -7,7 +7,8 @@
 #include <machine/cpufunc.h>
 
 //static bool wp;
-//static uint64_t cr3;
+static uint64_t cr3;
+extern struct pmap zcond_patching_pmap;
 void zcond_before_patch(void) {
     //wp = disable_wp();
     //cr3 = rcr3();
@@ -16,6 +17,15 @@ void zcond_before_patch(void) {
 void zcond_after_patch(void) {
     //restore_wp(wp);
     //load_cr3(cr3);
+}
+
+void zcond_before_rendezvous(void) {
+    cr3 = rcr3();
+    load_cr3(zcond_patching_pmap.pm_cr3);
+}
+
+void zcond_after_rendezvous(void) {
+    load_cr3(cr3);
 }
 
 static void insn_nop(unsigned char insn[], size_t size) {

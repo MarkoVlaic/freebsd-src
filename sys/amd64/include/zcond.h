@@ -59,6 +59,8 @@ l_true: return (true);
 
 void zcond_before_patch(void);
 void zcond_after_patch(void);
+void zcond_before_rendezvous(void);
+void zcond_after_rendezvous(void);
 
 void zcond_get_patch_insn(struct ins_point *ins_p, unsigned char insn[], size_t *size);
 

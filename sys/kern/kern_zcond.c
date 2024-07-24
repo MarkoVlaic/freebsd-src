@@ -151,17 +151,19 @@ void __zcond_set_enabled(struct zcond *cond, bool new_state) {
         p->mirror_address = kva_alloc(PAGE_SIZE);
         patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr & ~PAGE_MASK));
         pmap_enter(&patching_pmap, p->mirror_address, patch_page, VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
+        printf("patch_point %#08lx mapped to %#08lx\n", p->patch_address, p->mirror_address);
     }
     
     cr3 = rcr3();
     load_cr3(patching_pmap.pm_cr3);
     smp_rendezvous(NULL, rendezvous_cb, NULL, &arg);    
     load_cr3(cr3);
-
-    /*SLIST_FOREACH(p, &cond->ins_points, next) {
+    
+    printf("remove mappings\n");
+    SLIST_FOREACH(p, &cond->ins_points, next) {
         pmap_remove(&patching_pmap, p->mirror_address, p->mirror_address + PAGE_SIZE);
-        kva_free(p->mirror_address, PAGE_SIZE);
-    }*/
+        //kva_free(p->mirror_address, PAGE_SIZE);
+    }
 }
 
 DEFINE_ZCOND_TRUE(cond1);

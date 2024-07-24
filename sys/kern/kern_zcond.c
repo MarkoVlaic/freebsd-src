@@ -83,10 +83,6 @@ zcond_patch(struct zcond *cond, bool new_state)
 	size_t insn_size;
 	int i;
 
-	if (cond->enabled == new_state) {
-		return;
-	}
-
 	SLIST_FOREACH(p, &cond->ins_points, next) {
 		zcond_get_patch_insn(p, insn, &insn_size);
 
@@ -126,6 +122,10 @@ rendezvous_cb(void *arg)
 void
 __zcond_set_enabled(struct zcond *cond, bool new_state)
 {
+    if(cond->enabled == new_state) {
+        return;
+    }
+
 	struct ins_point *p;
 	vm_page_t patch_page;
 	struct rendezvous_data arg = { .patching_cpu = curcpu,

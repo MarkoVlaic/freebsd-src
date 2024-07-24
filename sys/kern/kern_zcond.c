@@ -110,7 +110,6 @@ static void rendezvous_cb(void *arg) {
 }
 
 void __zcond_set_enabled(struct zcond *cond, bool new_state) {
-    uint64_t cr3;
     struct ins_point *p;
     vm_page_t patch_page;
     struct rendezvous_data arg = {

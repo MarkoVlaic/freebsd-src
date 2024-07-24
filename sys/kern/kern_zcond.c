@@ -158,10 +158,10 @@ void __zcond_set_enabled(struct zcond *cond, bool new_state) {
     smp_rendezvous(NULL, rendezvous_cb, NULL, &arg);    
     load_cr3(cr3);
 
-    SLIST_FOREACH(p, &cond->ins_points, next) {
+    /*SLIST_FOREACH(p, &cond->ins_points, next) {
         pmap_remove(&patching_pmap, p->mirror_address, p->mirror_address + PAGE_SIZE);
         kva_free(p->mirror_address, PAGE_SIZE);
-    }
+    }*/
 }
 
 DEFINE_ZCOND_TRUE(cond1);

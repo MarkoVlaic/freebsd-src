@@ -5,8 +5,6 @@
 #include <machine/cpufunc.h>
 #include <machine/zcond.h>
 
-struct ins_point;
-
 // static bool wp;
 static uint64_t cr3;
 extern struct pmap zcond_patching_pmap;

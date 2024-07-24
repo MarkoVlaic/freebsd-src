@@ -107,6 +107,7 @@ static void zcond_patch(struct zcond *cond, bool new_state) {
         
         zcond_before_patch();
         load_cr3(patching_pmap.pm_cr3);
+        pmap_invlpg(kernel_pmap, p->patch_addr);
         pmap_zcond_enter(&patching_pmap, mirror_page_addr, patch_page);
         memcpy((void *)(mirror_page_addr + (p->patch_addr & PAGE_MASK)), &insn[0], insn_size);
         invlpg(mirror_page_addr);

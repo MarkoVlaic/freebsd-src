@@ -10,21 +10,31 @@
 
 #include <machine/zcond.h>
 
+/*
+ * Describes a single inspection of the zcond state (performed with an if statement).
+ * Holds all the data neccessary to perform a safe instruction patch.
+*/
 struct ins_point {
 	vm_offset_t patch_addr; /* address of the nop or jmp instruction to be
 				   patched */
 	vm_offset_t lbl_true_addr; /* address of the label to jump to when the
 				      condition is true */
-	struct zcond *zcond;
-	SLIST_ENTRY(ins_point) next;
-	vm_offset_t mirror_address;
+	struct zcond *zcond; /* pointer to the zcond inspected by this inspection point */
+	SLIST_ENTRY(ins_point) next; 
+	vm_offset_t mirror_address; /* virtual address used to perform a safe patch */
 } __attribute__((packed));
 
+/*
+ * A single optimized boolean.
+*/
 struct zcond {
 	bool enabled;
 	SLIST_HEAD(, ins_point) ins_points;
 };
 
+/*
+ * Wrapper types are needed for compile time decision making.
+*/
 struct zcond_true {
 	struct zcond cond;
 };
@@ -33,6 +43,9 @@ struct zcond_false {
 	struct zcond cond;
 };
 
+/*
+ * These macros declare and initialize a new zcond.
+*/
 #define DEFINE_ZCOND_TRUE(name)                       \
 	struct zcond_true name = { { .enabled = true, \
 	    .ins_points = SLIST_HEAD_INITIALIZER() } }
@@ -41,8 +54,10 @@ struct zcond_false {
 	struct zcond_false name = { { .enabled = false, \
 	    .ins_points = SLIST_HEAD_INITIALIZER() } }
 
-#define ZCOND_INIT(zcond_wrapped) SLIST_INIT(&zcond_wrapped->cond->ins_points)
-
+/*
+ * These macros inspect the state of a zcond (is it true or false)
+ * thus instatiating an ins_point.
+*/
 #define zcond_true(cond_wrapped)                                              \
 	({                                                                    \
 		bool branch;                                                  \
@@ -71,9 +86,17 @@ struct zcond_false {
 		branch;                                                       \
 	})
 
+/*
+ * These macros change the state of a zcond.
+*/
 #define zcond_enable(cond_wrapped) __zcond_set_enabled(&cond_wrapped.cond, true)
 #define zcond_disable(cond_wrapped) \
 	__zcond_set_enabled(&cond_wrapped.cond, false)
+
+/*
+ * Change the state of a zcond by safely patching all of its
+ * inspection points with appropriate instructions.
+*/
 void __zcond_set_enabled(struct zcond *cond, bool new_state);
 
 #endif

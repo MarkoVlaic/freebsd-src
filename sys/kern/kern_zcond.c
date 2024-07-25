@@ -26,9 +26,12 @@ MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 struct pmap zcond_patching_pmap;
-// static vm_page_t patch_page_mirror;
-// static vm_offset_t mirror_page_addr;
 
+/*
+ * Collect ins_points from the __zcond_table ELF section into a list.
+ * Prepare a CPU local copy of the kernel_pmap, used to safely patch
+ * an instruction.
+*/
 static void
 zcond_init(const void *unused)
 {
@@ -71,10 +74,11 @@ struct rendezvous_data {
 	int patching_cpu;
 	struct zcond *cond;
 	bool new_state;
-	int blocked;
-	int patched;
 };
 
+/*
+ * Patch all ins_points belonging to cond.
+*/
 static void
 zcond_patch(struct zcond *cond, bool new_state)
 {
@@ -105,18 +109,13 @@ static void
 rendezvous_cb(void *arg)
 {
 	struct rendezvous_data *data;
-
 	data = (struct rendezvous_data *)arg;
-	if (data->patching_cpu != curcpu) {
-		// atomic_add_int(&data->blocked, 1);
-		// while(atomic_load_int(&data->patched) == 0) {}
-	} else {
-		// while(atomic_load_int(&data->blocked) != smp_cpus - 1) {}
+
+	if (data->patching_cpu == curcpu) {
 		printf("kernel cr3 %#08lx | patching cr3 %#08lx\n",
 		    kernel_pmap->pm_cr3, zcond_patching_pmap.pm_cr3);
 		zcond_patch(data->cond, data->new_state);
-		// atomic_store_int(&data->patched, 1);
-	}
+    }
 }
 
 void
@@ -130,10 +129,12 @@ __zcond_set_enabled(struct zcond *cond, bool new_state)
 	vm_page_t patch_page;
 	struct rendezvous_data arg = { .patching_cpu = curcpu,
 		.cond = cond,
-		.new_state = new_state,
-		.blocked = 0,
-		.patched = 0 };
+		.new_state = new_state };
 
+    /*
+     * Map the page containing the instruction to be patched
+     * into a new virtual address range in the CPU private pmap.
+    */
 	SLIST_FOREACH(p, &cond->ins_points, next) {
 		p->mirror_address = kva_alloc(PAGE_SIZE);
 		patch_page = PHYS_TO_VM_PAGE(
@@ -154,6 +155,9 @@ __zcond_set_enabled(struct zcond *cond, bool new_state)
 	}
 }
 
+/*
+ * Testing code.
+*/
 DEFINE_ZCOND_TRUE(cond1);
 DEFINE_ZCOND_FALSE(cond2);
 

@@ -21,13 +21,13 @@ static char nop_bytes[] = { 0x1f, 0x20, 0x03, 0xd5 };
     ".byte 0x1f\n\t"
 */
 
-#define NOP_ASM          \
+#define ZCOND_NOP_ASM          \
 	".byte 0x1f\n\t" \
 	".byte 0x20\n\t" \
 	".byte 0x03\n\t" \
 	".byte 0xd5\n\t"
 
-#define MAX_INSN_SIZE 4
+#define ZCOND_MAX_INSN_SIZE 4
 
 struct zcond;
 struct ins_point;
@@ -35,7 +35,7 @@ struct ins_point;
 static __attribute__((always_inline)) bool
 zcond_nop(struct zcond *const zcond_p)
 {
-	asm goto("1: " NOP_ASM ZCOND_TABLE_ENTRY : : "i"(zcond_p) : : l_true);
+	asm goto("1: " ZCOND_NOP_ASM ZCOND_TABLE_ENTRY : : "i"(zcond_p) : : l_true);
 
 	return (false);
 l_true:

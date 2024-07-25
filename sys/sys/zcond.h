@@ -82,7 +82,7 @@ l_true:
 static __attribute__((always_inline)) bool
 zcond_jmp(struct zcond *const zcond_p)
 {
-	asm goto("1:" ZCOND_JMP_ASM "%[l_true] \n\t" ZCOND_TABLE_ENTRY
+	asm goto("1:" ZCOND_JMP_ASM " %[l_true] \n\t" ZCOND_TABLE_ENTRY
 		 :
 		 : "i"(zcond_p)
 		 :

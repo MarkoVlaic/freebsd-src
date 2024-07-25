@@ -20,11 +20,21 @@ zcond_after_patch(void)
 {
 }
 
+void
+zcond_before_rendezvous(void)
+{
+}
+
+void
+zcond_after_rendezvous(void)
+{
+}
+
 static void
 insn_nop(unsigned char insn[])
 {
 	int i;
-	for (i = 0; i < MAX_INSN_SIZE; i++) {
+	for (i = 0; i < ZCOND_MAX_INSN_SIZE; i++) {
 		insn[i] = nop_bytes[i];
 	}
 }
@@ -39,7 +49,7 @@ insn_jmp(unsigned char insn[], vm_offset_t offset)
 	imm26 = offset >> 2;
 	instr = (imm26 & 0x3fffffful) | 0x14000000;
 
-	for (i = 0; i < MAX_INSN_SIZE; i++) {
+	for (i = 0; i < ZCOND_MAX_INSN_SIZE; i++) {
 		insn[i] = (instr >> (i * 8)) & 0xFF;
 	}
 }
@@ -51,7 +61,7 @@ zcond_get_patch_insn(struct ins_point *p, unsigned char insn[], size_t *size)
 	vm_offset_t offset;
 
 	patch_addr = (unsigned char *)p->patch_addr;
-	*size = MAX_INSN_SIZE;
+	*size = ZCOND_MAX_INSN_SIZE;
 	printf("patch opcode: %02hhx at %p", *patch_addr, patch_addr);
 	if (*patch_addr == nop_bytes[0]) {
 		offset = p->lbl_true_addr - p->patch_addr;

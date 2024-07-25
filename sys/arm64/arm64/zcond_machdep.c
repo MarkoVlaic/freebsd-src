@@ -20,6 +20,16 @@ zcond_after_patch(void)
 {
 }
 
+void
+zcond_before_rendezvous(void)
+{
+}
+
+void
+zcond_after_rendezsvouz(void)
+{
+}
+
 static void
 insn_nop(unsigned char insn[])
 {

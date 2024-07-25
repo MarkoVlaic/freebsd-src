@@ -44,6 +44,56 @@ struct zcond_false {
 };
 
 /*
+ * __zcond_table is an ELF section which keeps
+ * all the data related to the zcond mechanism.
+ * A single entry describes a single ins_point.
+*/
+#define ZCOND_TABLE_ENTRY                         \
+	".pushsection __zcond_table, \"aw\" \n\t" \
+	".quad 1b \n\t"                           \
+	".quad %l[l_true] \n\t"                   \
+	".quad %c0 \n\t"                          \
+	".quad 0 \n\t"                            \
+	".quad 0 \n\t"                            \
+	".popsection \n\t"
+
+/*
+ * Emits a __zcond_table entry, describing one ins_point.
+ * Bakes in a nop instruction instruction, so the return value is initially false. 
+*/
+static __attribute__((always_inline)) bool
+zcond_nop(struct zcond *const zcond_p)
+{
+	asm goto("1: " ZCOND_NOP_ASM ZCOND_TABLE_ENTRY
+		 :
+		 : "i"(zcond_p)
+		 :
+		 : l_true);
+
+	return (false);
+l_true:
+	return (true);
+}
+
+/*
+ * Emits a __zcond_table entry, describing one ins_point.
+ * Bakes in a jmp instruction instruction, so the return value is initially true. 
+*/
+static __attribute__((always_inline)) bool
+zcond_jmp(struct zcond *const zcond_p)
+{
+	asm goto("1:" ZCOND_JMP_ASM "%[l_true] \n\t" ZCOND_TABLE_ENTRY
+		 :
+		 : "i"(zcond_p)
+		 :
+		 : l_true);
+	return (false);
+l_true:
+	return (true);
+}
+
+
+/*
  * These macros declare and initialize a new zcond.
 */
 #define DEFINE_ZCOND_TRUE(name)                       \
@@ -99,5 +149,33 @@ struct zcond_false {
 */
 void __zcond_set_enabled(struct zcond *cond, bool new_state);
 
+/*
+ * Called before a single ins_point is patched.
+*/
+void zcond_before_patch(void);
+
+/*
+ * Called after a single ins_point was patched.
+*/
+void zcond_after_patch(void);
+
+/*
+ * Called before CPUs are parked. Use this hook to perform MD pmap loading
+ * and other MD setup.
+*/
+void zcond_before_rendezvous(void);
+
+/*
+ * Called after the whole zcond is patched and CPUs are resumed.
+ *  Use this hook to perform MD pmap cleanup.
+*/
+void zcond_after_rendezvous(void);
+
+/*
+ * Calculates the bytes of instruction with which the ins_p inspection point is to be patched with.
+ * insn[] is populated with the instruction bytes and size is set to the number of instruction bytes.
+*/
+void zcond_get_patch_insn(struct ins_point *ins_p, unsigned char insn[],
+    size_t *size);
 #endif
 #endif

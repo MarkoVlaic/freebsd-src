@@ -135,8 +135,7 @@ __zcond_set_enabled(struct zcond *cond, bool new_state)
 	 */
 	SLIST_FOREACH(p, &cond->ins_points, next) {
 		p->mirror_address = kva_alloc(PAGE_SIZE);
-		patch_page = PHYS_TO_VM_PAGE(
-		    vtophys(p->patch_addr & ~PAGE_MASK));
+		patch_page = PHYS_TO_VM_PAGE(pmap_extract(zcond_patching_pmap, p->patch_addr));
 		pmap_enter(&zcond_patching_pmap, p->mirror_address, patch_page,
 		    VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
 		printf("patch_point %#08lx mapped to %#08lx\n", p->patch_addr,

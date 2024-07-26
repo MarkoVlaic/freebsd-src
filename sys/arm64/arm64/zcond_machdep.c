@@ -5,10 +5,11 @@
 #include <vm/vm.h>
 #include <vm/pmap.h>
 
-#include <machine/md_var.h>
+#include <machine/cpufunc.h>
 #include <machine/zcond.h>
 
-#include <amd64/vmm/amd/svm.h>
+static uint64_t ttbr0;
+extern struct pmap zcond_patching_pmap;
 
 void
 zcond_before_patch(void)
@@ -23,11 +24,14 @@ zcond_after_patch(void)
 void
 zcond_before_rendezvous(void)
 {
+    ttbr0 = READ_SPECIALREG(ttbr0_el1);
+    set_ttbr0(pmap_to_ttbr0(&zcond_patching_pmap));
 }
 
 void
 zcond_after_rendezvous(void)
 {
+    set_ttbr0(ttbr0);
 }
 
 static void

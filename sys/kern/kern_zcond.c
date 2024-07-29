@@ -5,7 +5,6 @@
 #include <sys/cpuset.h>
 #include <sys/kernel.h>
 #include <sys/lock.h>
-#include <sys/malloc.h>
 #include <sys/mutex.h>
 #include <sys/sbuf.h>
 #include <sys/smp.h>
@@ -21,6 +20,8 @@
 
 #include <machine/atomic.h>
 #include <machine/cpufunc.h>
+
+#include <sys/malloc.h>
 
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");

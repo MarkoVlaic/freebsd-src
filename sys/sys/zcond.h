@@ -100,13 +100,15 @@ l_true:
 /*
  * These macros declare and initialize a new zcond.
  */
-#define DEFINE_ZCOND_TRUE(name)                       \
-	struct zcond_true name = { { .enabled = true, \
+
+#define ZCOND_INIT(state)  { { .enabled = (state), \
 	    .ins_points = SLIST_HEAD_INITIALIZER() } }
 
+#define DEFINE_ZCOND_TRUE(name)                       \
+	struct zcond_true name = ZCOND_INIT(true) 
+
 #define DEFINE_ZCOND_FALSE(name)                        \
-	struct zcond_false name = { { .enabled = false, \
-	    .ins_points = SLIST_HEAD_INITIALIZER() } }
+	struct zcond_false name = ZCOND_INIT(false) 
 
 /*
  * These macros inspect the state of a zcond (is it true or false)

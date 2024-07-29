@@ -172,6 +172,7 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 		    .mod = #_mod,					\
 		    .func = #_func,					\
 		    .name = #_name,					\
+            .enabled = ZCOND_INIT(false)    \
 		},							\
 	};								\
 	DATA_SET(sdt_probes_set, _SDT_PROBE_NAME(_prov, _mod, _func, _name))
@@ -183,7 +184,7 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 
 #define SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4)	do {	\
 	if (SDT_PROBES_ENABLED()) {						\
-		if (__predict_false(_SDT_PROBE_NAME(prov, mod, func, name)->id)) \
+		if (zcond_false(_SDT_PROBE_NAME(prov, mod, func, name)->enabled)) \
 		(*sdt_probe_func)(_SDT_PROBE_NAME(prov, mod, func, name)->id,	\
 		    (uintptr_t) arg0, (uintptr_t) arg1, (uintptr_t) arg2,	\
 		    (uintptr_t) arg3, (uintptr_t) arg4);			\
@@ -442,6 +443,7 @@ struct sdt_probe {
 	id_t		id;		/* DTrace probe ID. */
 	int		n_args;		/* Number of arguments. */
 	struct linker_file *sdtp_lf;	/* Module in which we're defined. */
+    struct zcond_false enabled;
 };
 
 struct sdt_provider {

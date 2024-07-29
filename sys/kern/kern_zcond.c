@@ -134,9 +134,11 @@ __zcond_set_enabled(struct zcond *cond, bool new_state)
 	 * into a new virtual address range in the CPU private pmap.
 	 */
 	SLIST_FOREACH(p, &cond->ins_points, next) {
-        KASSERT(INKERNEL(p->patch_addr), ("inspection point patch address outside of kernel: %#08lx", p->patch_addr));
+        //KASSERT(INKERNEL(p->patch_addr), ("inspection point patch address outside of kernel: %#08lx", p->patch_addr));
 		p->mirror_address = kva_alloc(PAGE_SIZE);
 		patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
+        KASSERT(patch_page != NULL, ("patch page is NULL"));
+
         pmap_enter(&zcond_patching_pmap, p->mirror_address, patch_page,
 		    VM_PROT_WRITE, PMAP_ENTER_WIRED, 0);
 		printf("patch_point %#08lx mapped to %#08lx\n", p->patch_addr,

@@ -79,6 +79,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/linker_set.h>
+#include <sys/zcond.h>
 
 extern volatile bool sdt_probes_enabled;
 

@@ -384,7 +384,7 @@ typedef void (*sdt_probe6_func_t)(uint32_t, uintptr_t arg0, uintptr_t arg1,
 /*
  * The 'sdt' provider will set it to dtrace_probe when it loads.
  */
-extern sdt_probe_func_t		sdt_probe_func;
+extern sdt_probe6_func_t		sdt_probe_func;
 extern sdt_probe6_func_t    sdt_probe6_func;
 
 struct sdt_probe;

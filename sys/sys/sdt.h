@@ -314,7 +314,7 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 #define	SDT_PROBE5(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4) \
 	SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4)
 #define	SDT_PROBE6(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4, arg5) \
-	_SDT_PROBE(prov, mod, func, name, __COUNTER__, sdt_probe6,	\
+	SDT_PROBE(prov, mod, func, name, __COUNTER__, sdt_probe6,	\
 	    (uintptr_t)arg0, (uintptr_t)arg1, (uintptr_t)arg2,		\
 	    (uintptr_t)arg3, (uintptr_t)arg4, (uintptr_t)arg5)
 

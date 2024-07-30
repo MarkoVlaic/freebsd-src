@@ -77,6 +77,7 @@
 
 #else /* _KERNEL */
 
+#include <sys/cdefs.h>
 #include <sys/linker_set.h>
 #include <machine/sdt_machdep.h>
 #include <sys/zcond.h>

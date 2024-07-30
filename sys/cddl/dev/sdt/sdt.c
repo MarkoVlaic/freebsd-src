@@ -215,56 +215,6 @@ sdt_provide_probes(void *arg, dtrace_probedesc_t *desc)
 {
 }
 
-struct sdt_enable_cb_arg {
-	struct sdt_probe *probe;
-	int cpu;
-	int arrived;
-	int done;
-	bool enable;
-};
-
-static void
-sdt_probe_update_cb(void *_arg)
-{
-	struct sdt_enable_cb_arg *arg;
-	struct sdt_tracepoint *tp;
-
-	arg = _arg;
-	if (arg->cpu != curcpu) {
-		atomic_add_rel_int(&arg->arrived, 1);
-		while (atomic_load_acq_int(&arg->done) == 0)
-			cpu_spinwait();
-		return;
-	} else {
-		while (atomic_load_acq_int(&arg->arrived) != mp_ncpus - 1)
-			cpu_spinwait();
-	}
-
-	STAILQ_FOREACH(tp, &arg->probe->tracepoint_list, tracepoint_entry) {
-		if (arg->enable)
-			sdt_tracepoint_patch(tp->patchpoint, tp->target);
-		else
-			sdt_tracepoint_restore(tp->patchpoint);
-	}
-
-	atomic_store_rel_int(&arg->done, 1);
-}
-
-static void
-sdt_probe_update(struct sdt_probe *probe, bool enable)
-{
-	struct sdt_enable_cb_arg cbarg;
-
-	sched_pin();
-	cbarg.probe = probe;
-	cbarg.cpu = curcpu;
-	atomic_store_rel_int(&cbarg.arrived, 0);
-	atomic_store_rel_int(&cbarg.done, 0);
-	cbarg.enable = enable;
-	smp_rendezvous(NULL, sdt_probe_update_cb, NULL, &cbarg);
-	sched_unpin();
-}
-
 static void
 sdt_enable(void *arg __unused, dtrace_id_t id, void *parg)
 {
@@ -282,8 +232,8 @@ sdt_enable(void *arg __unused, dtrace_id_t id, void *parg)
 	sdt_probes_enabled_count++;
 	if (sdt_probes_enabled_count == 1)
 		sdt_probes_enabled = true;
-
-	sdt_probe_update(probe, true);
+    
+    zcond_enable(probe->enabled);
 }
 
 static void
@@ -294,7 +244,7 @@ sdt_disable(void *arg __unused, dtrace_id_t id, void *parg)
 	probe = parg;
 	KASSERT(probe->sdtp_lf->nenabled > 0, ("no probes enabled"));
 
-	sdt_probe_update(probe, false);
+    zcond_disable(probe->enabled);
 
 	sdt_probes_enabled_count--;
 	if (sdt_probes_enabled_count == 0)
@@ -306,7 +256,6 @@ sdt_disable(void *arg __unused, dtrace_id_t id, void *parg)
 	}
 	probe->id = 0;
 	probe->sdtp_lf->nenabled--;
-    zcond_disable(probe->enabled);
 }
 
 static void

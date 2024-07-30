@@ -79,6 +79,7 @@
 
 #include <sys/linker_set.h>
 #include <machine/sdt_machdep.h>
+#include <sys/zcond.h>
 
 extern volatile bool sdt_probes_enabled;
 
@@ -187,58 +188,14 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 
 #define	SDT_PROBES_ENABLED()	__predict_false(sdt_probes_enabled)
 
-#ifdef _ILP32
-#define	_SDT_ASM_WORD			".long"
-#else
-#define	_SDT_ASM_WORD			".quad"
-#endif
-
-#ifndef _SDT_ASM_PROBE_CONSTRAINT
-#define	_SDT_ASM_PROBE_CONSTRAINT	"i"
-#endif
-#ifndef	_SDT_ASM_PROBE_OPERAND
-#define	_SDT_ASM_PROBE_OPERAND		"c"
-#endif
-
-/*
- * The asm below generates records corresponding to the structure's layout, so
- * the two must be kept in sync.
- */
-struct sdt_tracepoint {
-	struct sdt_probe *probe;
-	uintptr_t	patchpoint;
-	uintptr_t	target;
-	STAILQ_ENTRY(sdt_tracepoint) tracepoint_entry;
-};
-
-#define __SDT_PROBE(prov, mod, func, name, uniq, f, ...) do {		\
-	__WEAK(__CONCAT(__start_set_, _SDT_TRACEPOINT_SET));		\
-	__WEAK(__CONCAT(__stop_set_, _SDT_TRACEPOINT_SET));		\
-	asm goto(							\
-	    "0:\n"							\
-	    _SDT_ASM_PATCH_INSTR "\n"					\
-	    ".pushsection " _SDT_TRACEPOINT_SECTION ", \"aw\"\n"	\
-	    _SDT_ASM_WORD " %" _SDT_ASM_PROBE_OPERAND "0\n"		\
-	    _SDT_ASM_WORD " 0b\n"					\
-	    _SDT_ASM_WORD " %l1\n"					\
-	    _SDT_ASM_WORD " 0\n"					\
-	    ".popsection\n"						\
-	    :								\
-	    : _SDT_ASM_PROBE_CONSTRAINT (_SDT_PROBE_NAME(prov, mod,	\
-	    func, name))						\
-	    :								\
-	    : __sdt_probe##uniq);					\
-	if (0) {							\
-__sdt_probe##uniq:;							\
-		f(_SDT_PROBE_NAME(prov, mod, func, name)->id, __VA_ARGS__); \
-	}								\
-} while (0)
-#define _SDT_PROBE(prov, mod, func, name, uniq, f, ...)			\
-	__SDT_PROBE(prov, mod, func, name, uniq, f, __VA_ARGS__)
-#define SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4)	\
-	_SDT_PROBE(prov, mod, func, name, __COUNTER__, sdt_probe,	\
-	    (uintptr_t)arg0, (uintptr_t)arg1, (uintptr_t)arg2,		\
-	    (uintptr_t)arg3, (uintptr_t)arg4)
+#define SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4) do { \
+        if(SDT_PRBES_ENABLED()) { \
+            if(zcond_true(_SDT_PROBE_NAME(prov, mod, func, name)->id)) \
+            (*sdt_probe_func)(_SDT_PROBE_NAME(prov, mod, func, name)->id,	\
+                (uintptr_t) arg0, (uintptr_t) arg1, (uintptr_t) arg2,	\
+                (uintptr_t) arg3, (uintptr_t) arg4);			\
+        } \
+    } while(0)
 
 #define SDT_PROBE_ARGTYPE(_prov, _mod, _func, _name, _num, _type, _xtype) \
 	static struct sdt_argtype					\

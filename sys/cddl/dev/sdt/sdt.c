@@ -382,6 +382,7 @@ sdt_load(void)
 	TAILQ_INIT(&sdt_prov_list);
 
 	sdt_probe_func = dtrace_probe;
+    sdt_probe6_func = (sdt_probe6_func_t)dtrace_probe;
 
 	sdt_kld_load_tag = EVENTHANDLER_REGISTER(kld_load, sdt_kld_load, NULL,
 	    EVENTHANDLER_PRI_ANY);
@@ -407,6 +408,7 @@ sdt_unload(void)
 	EVENTHANDLER_DEREGISTER(kld_unload_try, sdt_kld_unload_try_tag);
 
 	sdt_probe_func = sdt_probe_stub;
+    sdt_probe6_func = (sdt_probe6_func_t) sdt_probe_stub;
 
 	TAILQ_FOREACH_SAFE(prov, &sdt_prov_list, prov_entry, tmp) {
 		ret = dtrace_unregister(prov->id);

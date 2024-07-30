@@ -378,10 +378,14 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 typedef	void (*sdt_probe_func_t)(uint32_t, uintptr_t arg0, uintptr_t arg1,
     uintptr_t arg2, uintptr_t arg3, uintptr_t arg4);
 
+typedef void (*sdt_probe6_func_t)(uint32_t, uintptr_t arg0, uintptr_t arg1,
+    uintptr_t arg2, uintptr_t arg3, uintptr_t arg4, uintptr_t arg5);
+
 /*
  * The 'sdt' provider will set it to dtrace_probe when it loads.
  */
 extern sdt_probe_func_t		sdt_probe_func;
+extern sdt_probe6_func_t    sdt_probe6_func;
 
 struct sdt_probe;
 struct sdt_provider;

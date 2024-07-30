@@ -38,6 +38,7 @@ SDT_PROVIDER_DEFINE(sdt);
  * dtrace_probe() when it loads.
  */
 sdt_probe_func_t sdt_probe_func = sdt_probe_stub;
+sdt_probe6_func_t sdt_probe6_func = (sdt_probe6_func_t) sdt_probe_stub;
 volatile bool __read_frequently sdt_probes_enabled;
 
 /*

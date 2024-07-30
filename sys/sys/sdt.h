@@ -191,7 +191,7 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 
 #define SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4) do { \
         if(SDT_PROBES_ENABLED()) { \
-            if(zcond_true(_SDT_PROBE_NAME(prov, mod, func, name)->id)) \
+            if(zcond_true(_SDT_PROBE_NAME(prov, mod, func, name)->enabled)) \
             (*sdt_probe_func)(_SDT_PROBE_NAME(prov, mod, func, name)->id,	\
                 (uintptr_t) arg0, (uintptr_t) arg1, (uintptr_t) arg2,	\
                 (uintptr_t) arg3, (uintptr_t) arg4);			\

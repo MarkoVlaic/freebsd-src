@@ -302,21 +302,19 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 	SDT_PROBE_ARGTYPE(prov, mod, func, name, 5, arg5, xarg5)
 
 #define	SDT_PROBE0(prov, mod, func, name)				\
-	SDT_PROBE(prov, mod, func, name, 0, 0, 0, 0, 0)
+	SDT_PROBE(prov, mod, func, name, 0, 0, 0, 0, 0, 0)
 #define	SDT_PROBE1(prov, mod, func, name, arg0)				\
-	SDT_PROBE(prov, mod, func, name, arg0, 0, 0, 0, 0)
+	SDT_PROBE(prov, mod, func, name, arg0, 0, 0, 0, 0, 0)
 #define	SDT_PROBE2(prov, mod, func, name, arg0, arg1)			\
-	SDT_PROBE(prov, mod, func, name, arg0, arg1, 0, 0, 0)
+	SDT_PROBE(prov, mod, func, name, arg0, arg1, 0, 0, 0, 0)
 #define	SDT_PROBE3(prov, mod, func, name, arg0, arg1, arg2)		\
-	SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2,  0, 0)
+	SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2,  0, 0, 0)
 #define	SDT_PROBE4(prov, mod, func, name, arg0, arg1, arg2, arg3)	\
-	SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, 0)
+	SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, 0, 0)
 #define	SDT_PROBE5(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4) \
-	SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4)
+	SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4, 0)
 #define	SDT_PROBE6(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4, arg5) \
-	SDT_PROBE(prov, mod, func, name, __COUNTER__, sdt_probe6,	\
-	    (uintptr_t)arg0, (uintptr_t)arg1, (uintptr_t)arg2,		\
-	    (uintptr_t)arg3, (uintptr_t)arg4, (uintptr_t)arg5)
+    SDT_PROBE(prov, mod, func, name, arg0, arg1, arg2, arg3, arg4, arg5)
 
 #ifndef KDTRACE_NO_MIB_SDT
 #define	MIB_SDT_PROBE1(...)	SDT_PROBE1(mib, __VA_ARGS__)

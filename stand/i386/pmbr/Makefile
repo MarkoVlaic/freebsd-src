@@ -1,3 +1,4 @@
+
 PROG=	pmbr
 STRIP=
 BINMODE=${NOBINMODE}

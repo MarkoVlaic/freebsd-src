@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/backlight
 KMOD=	backlight
 SRCS=	backlight.c

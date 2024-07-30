@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/geom/zero
 
 KMOD=	geom_zero

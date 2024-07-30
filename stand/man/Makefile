@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 M.${MK_EFI}+=		boot1.efi.8

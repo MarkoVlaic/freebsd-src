@@ -1,3 +1,4 @@
+
 PROG=	spray
 MAN=	spray.8
 

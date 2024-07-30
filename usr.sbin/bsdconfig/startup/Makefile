@@ -1,3 +1,4 @@
+
 SUBDIR= include share
 
 FILESDIR=	${LIBEXECDIR}/bsdconfig/140.startup

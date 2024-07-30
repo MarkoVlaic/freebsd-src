@@ -1,3 +1,4 @@
+
 SHELL=	/bin/sh
 
 PROG=	kttcp

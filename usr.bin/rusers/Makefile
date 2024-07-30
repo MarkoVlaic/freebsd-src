@@ -1,3 +1,4 @@
+
 PROG = rusers
 
 LIBADD=	rpcsvc

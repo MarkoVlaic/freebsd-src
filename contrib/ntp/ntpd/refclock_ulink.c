@@ -564,5 +564,5 @@ ulink_poll(
 }
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_ulink_bs;
 #endif /* REFCLOCK */

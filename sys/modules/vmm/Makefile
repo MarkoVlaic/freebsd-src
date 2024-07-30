@@ -1,14 +1,10 @@
+
 .include <kmod.opts.mk>
 
 KMOD=	vmm
 
-.if ${MACHINE_CPUARCH} == "amd64"
-SRCS+=	opt_acpi.h		\
-	opt_bhyve_snapshot.h	\
-	opt_ddb.h
-.endif
-
-SRCS+=	acpi_if.h bus_if.h device_if.h pci_if.h pcib_if.h vnode_if.h
+SRCS=	opt_acpi.h opt_bhyve_snapshot.h opt_ddb.h \
+	acpi_if.h bus_if.h device_if.h pci_if.h pcib_if.h vnode_if.h
 
 CFLAGS+= -DVMM_KEEP_STATS
 CFLAGS+= -I${SRCTOP}/sys/${MACHINE}/vmm
@@ -38,7 +34,8 @@ SRCS+=	vgic.c \
 	vgic_v3.c \
 	vtimer.c
 
-CLEANFILES+=	vmm_hyp_exception.o vmm_hyp.o
+SRCS+=	vmm_hyp_exception.S vmm_hyp.c
+
 CLEANFILES+=	vmm_hyp_blob.elf.full
 CLEANFILES+=	vmm_hyp_blob.elf vmm_hyp_blob.bin
 
@@ -53,7 +50,7 @@ vmm_hyp.o: vmm_hyp.c
 
 vmm_hyp_blob.elf.full:	vmm_hyp_exception.o vmm_hyp.o
 	${LD} -m ${LD_EMULATION} -Bdynamic -T ${SYSDIR}/conf/ldscript.arm64 \
-	    ${_LDFLAGS:N-zbti-report*} --no-warn-mismatch --warn-common --export-dynamic \
+	    ${_LDFLAGS} --no-warn-mismatch --warn-common --export-dynamic \
 	    --dynamic-linker /red/herring -X -o ${.TARGET} ${.ALLSRC} \
 	    --defsym=_start='0x0' --defsym=text_start='0x0'
 

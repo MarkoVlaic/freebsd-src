@@ -251,8 +251,6 @@ Metadata:
     allowed_architectures is empty
     allowed_platforms is empty
     description is empty
-    execenv is empty
-    execenv_jail_params is empty
     has_cleanup = false
     is_exclusive = false
     required_configs is empty

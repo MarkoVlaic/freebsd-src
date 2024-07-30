@@ -1,3 +1,4 @@
+
 PROG=	pwm
 MAN=	pwm.8
 

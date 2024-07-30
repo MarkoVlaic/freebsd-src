@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/contrib/tzcode
 
 PROG=	zdump

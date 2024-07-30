@@ -37,12 +37,11 @@
 #include <grp.h>
 #include <string.h>
 #include <unistd.h>
-#include <ssp/ssp.h>
 
 extern int __getgroupmembership(const char *, gid_t, gid_t *, int, int *);
 
 int
-__ssp_real(getgrouplist)(const char *uname, gid_t agroup, gid_t *groups, int *grpcnt)
+getgrouplist(const char *uname, gid_t agroup, gid_t *groups, int *grpcnt)
 {
 	return __getgroupmembership(uname, agroup, groups, *grpcnt, grpcnt);
 }

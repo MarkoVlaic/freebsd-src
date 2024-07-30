@@ -41,7 +41,8 @@
 #include <asm/atomic.h>
 
 struct kref {
-	refcount_t refcount;
+	/* XXX In Linux this is a refcount_t */
+	atomic_t refcount;
 };
 
 static inline void

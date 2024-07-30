@@ -41,7 +41,9 @@
 #include <linux/bottom_half.h>
 #include <linux/lockdep.h>
 
-typedef struct mtx spinlock_t;
+typedef struct {
+	struct mtx m;
+} spinlock_t;
 
 /*
  * By defining CONFIG_SPIN_SKIP LinuxKPI spinlocks and asserts will be
@@ -57,7 +59,7 @@ typedef struct mtx spinlock_t;
 #define	spin_lock(_l) do {			\
 	if (SPIN_SKIP())			\
 		break;				\
-	mtx_lock(_l);				\
+	mtx_lock(&(_l)->m);			\
 	local_bh_disable();			\
 } while (0)
 
@@ -74,7 +76,7 @@ typedef struct mtx spinlock_t;
 	if (SPIN_SKIP())			\
 		break;				\
 	local_bh_enable();			\
-	mtx_unlock(_l);				\
+	mtx_unlock(&(_l)->m);			\
 } while (0)
 
 #define	spin_unlock_bh(_l) do {			\
@@ -91,7 +93,7 @@ typedef struct mtx spinlock_t;
 	if (SPIN_SKIP()) {			\
 		__ret = 1;			\
 	} else {				\
-		__ret = mtx_trylock(_l);	\
+		__ret = mtx_trylock(&(_l)->m);	\
 		if (likely(__ret != 0))		\
 			local_bh_disable();	\
 	}					\
@@ -109,7 +111,7 @@ typedef struct mtx spinlock_t;
 #define	spin_lock_nested(_l, _n) do {		\
 	if (SPIN_SKIP())			\
 		break;				\
-	mtx_lock_flags(_l, MTX_DUPOK);		\
+	mtx_lock_flags(&(_l)->m, MTX_DUPOK);	\
 	local_bh_disable();			\
 } while (0)
 
@@ -139,19 +141,31 @@ typedef struct mtx spinlock_t;
 #define	_spin_lock_name(...)		__spin_lock_name(__VA_ARGS__)
 #define	spin_lock_name(name)		_spin_lock_name(name, __FILE__, __LINE__)
 
-#define	spin_lock_init(lock)	mtx_init(lock, spin_lock_name("lnxspin"), \
-				  NULL, MTX_DEF | MTX_NOWITNESS | MTX_NEW)
+#define	spin_lock_init(lock)	linux_spin_lock_init(lock, spin_lock_name("lnxspin"))
 
-#define	spin_lock_destroy(_l)	mtx_destroy(_l)
+static inline void
+linux_spin_lock_init(spinlock_t *lock, const char *name)
+{
+
+	memset(lock, 0, sizeof(*lock));
+	mtx_init(&lock->m, name, NULL, MTX_DEF | MTX_NOWITNESS);
+}
+
+static inline void
+spin_lock_destroy(spinlock_t *lock)
+{
+
+       mtx_destroy(&lock->m);
+}
 
 #define	DEFINE_SPINLOCK(lock)					\
 	spinlock_t lock;					\
-	MTX_SYSINIT(lock, &lock, spin_lock_name("lnxspin"), MTX_DEF)
+	MTX_SYSINIT(lock, &(lock).m, spin_lock_name("lnxspin"), MTX_DEF)
 
 #define	assert_spin_locked(_l) do {		\
 	if (SPIN_SKIP())			\
 		break;				\
-	mtx_assert(_l, MA_OWNED);		\
+	mtx_assert(&(_l)->m, MA_OWNED);		\
 } while (0)
 
 #define	atomic_dec_and_lock_irqsave(cnt, lock, flags) \

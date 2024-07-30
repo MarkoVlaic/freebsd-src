@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/arm/allwinner
 
 KMOD=	aw_rtc

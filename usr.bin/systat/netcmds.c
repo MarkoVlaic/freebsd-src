@@ -245,7 +245,7 @@ showports(void)
 		if (sp)
 			printw("%s ", sp->s_name);
 		else
-			printw("%ld ", p->port);
+			printw("%d ", p->port);
 	}
 }
 

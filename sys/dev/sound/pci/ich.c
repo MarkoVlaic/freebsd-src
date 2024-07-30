@@ -860,12 +860,12 @@ ich_init(struct sc_info *sc)
 static int
 ich_pci_probe(device_t dev)
 {
-	size_t i;
+	int i;
 	uint16_t devid, vendor;
 
 	vendor = pci_get_vendor(dev);
 	devid = pci_get_device(dev);
-	for (i = 0; i < nitems(ich_devs); i++) {
+	for (i = 0; i < sizeof(ich_devs)/sizeof(ich_devs[0]); i++) {
 		if (vendor == ich_devs[i].vendor &&
 				devid == ich_devs[i].devid) {
 			device_set_desc(dev, ich_devs[i].name);

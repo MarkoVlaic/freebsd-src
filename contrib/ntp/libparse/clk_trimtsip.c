@@ -388,7 +388,7 @@ cvt_trimtsip(
 }
 
 #else /* not (REFCLOCK && CLOCK_PARSE && CLOCK_TRIMTSIP && !PARSESTREAM) */
-NONEMPTY_TRANSLATION_UNIT
+int clk_trimtsip_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE && CLOCK_TRIMTSIP && !PARSESTREAM) */
 
 /*

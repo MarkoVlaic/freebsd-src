@@ -1,3 +1,4 @@
+
 .PATH:		${SRCTOP}/sys/dev/iicbus
 KMOD		= iichid
 SRCS		= iichid.c

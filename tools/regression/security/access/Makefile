@@ -1,3 +1,4 @@
+
 PROG=	testaccess
 MAN=
 

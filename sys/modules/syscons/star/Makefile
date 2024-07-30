@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/syscons/star
 
 KMOD=	star_saver

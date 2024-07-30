@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2018-2022,2023 Thomas E. Dickey                                *
+ * Copyright 2018-2019,2020 Thomas E. Dickey                                *
  * Copyright 2008-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -52,7 +52,7 @@
 # endif
 #endif
 
-MODULE_ID("$Id: tinfo_driver.c,v 1.74 2023/09/16 10:44:33 tom Exp $")
+MODULE_ID("$Id: tinfo_driver.c,v 1.71 2020/12/12 01:06:40 tom Exp $")
 
 /*
  * SCO defines TIOCGSIZE and the corresponding struct.  Other systems (SunOS,
@@ -206,8 +206,8 @@ drv_CanHandle(TERMINAL_CONTROL_BLOCK * TCB, const char *tname, int *errret)
     save_ttytype(termp);
 #endif
 
-    if (VALID_STRING(command_character))
-	_nc_tinfo_cmdch(termp, UChar(*command_character));
+    if (command_character)
+	_nc_tinfo_cmdch(termp, *command_character);
 
     /*
      * If an application calls setupterm() rather than initscr() or
@@ -1282,7 +1282,10 @@ drv_read(TERMINAL_CONTROL_BLOCK * TCB, int *buf)
     assert(buf);
     SetSP();
 
-    _nc_set_read_thread(TRUE);
+# if USE_PTHREADS_EINTR
+    if ((pthread_self) && (pthread_kill) && (pthread_equal))
+	_nc_globals.read_thread = pthread_self();
+# endif
 #ifdef EXP_WIN32_DRIVER
     n = _nc_console_read(sp,
 			 _nc_console_handle(sp->_ifd),
@@ -1290,7 +1293,9 @@ drv_read(TERMINAL_CONTROL_BLOCK * TCB, int *buf)
 #else
     n = (int) read(sp->_ifd, &c2, (size_t) 1);
 #endif
-    _nc_set_read_thread(FALSE);
+#if USE_PTHREADS_EINTR
+    _nc_globals.read_thread = 0;
+#endif
 #ifndef EXP_WIN32_DRIVER
     *buf = (int) c2;
 #endif

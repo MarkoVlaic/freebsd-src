@@ -1,3 +1,4 @@
+
 KMOD=	ng_ether
 SRCS= 	ng_ether.c
 

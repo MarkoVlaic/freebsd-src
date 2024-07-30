@@ -1,3 +1,4 @@
+
 PACKAGE=	kerberos-lib
 
 LIB=	gssapi_krb5

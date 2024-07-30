@@ -138,8 +138,7 @@ ffs_susp_rdwr(struct cdev *dev, struct uio *uio, int ioflag)
 			    NOCRED, &bp);
 			if (error != 0)
 				goto out;
-			switch (uio->uio_rw) {
-			case UIO_WRITE:
+			if (uio->uio_rw == UIO_WRITE) {
 				error = copyin(base, bp->b_data, len);
 				if (error != 0) {
 					bp->b_flags |= B_INVAL | B_NOCACHE;
@@ -149,13 +148,11 @@ ffs_susp_rdwr(struct cdev *dev, struct uio *uio, int ioflag)
 				error = bwrite(bp);
 				if (error != 0)
 					goto out;
-				break;
-			case UIO_READ:
+			} else {
 				error = copyout(bp->b_data, base, len);
 				brelse(bp);
 				if (error != 0)
 					goto out;
-				break;
 			}
 			uio->uio_iov[i].iov_base =
 			    (char *)uio->uio_iov[i].iov_base + len;

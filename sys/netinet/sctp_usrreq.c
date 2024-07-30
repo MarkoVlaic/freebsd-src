@@ -843,10 +843,8 @@ sctp_shutdown(struct socket *so, enum shutdown_how how)
 				}
 				sctp_free_a_readq(stcb, control);
 			} else {
-				if (stcb != NULL) {
-					stcb->asoc.size_on_all_streams +=
-					    control->length;
-				}
+				stcb->asoc.size_on_all_streams +=
+				    control->length;
 			}
 		}
 		SOCK_UNLOCK(so);

@@ -372,8 +372,6 @@
             ..
             rpc
             ..
-            secure
-            ..
             setjmp
             ..
             ssp
@@ -420,8 +418,6 @@
         libcrypt
         ..
         libdevdctl
-        ..
-        libdiff
         ..
         libexecinfo
         ..
@@ -837,8 +833,6 @@
                     etalon
                     ..
                 ..
-                virstor
-                ..
             ..
         ..
         kern
@@ -1226,8 +1220,6 @@
     ..
     usr.sbin
         chown
-        ..
-        ctladm
         ..
         daemon
         ..

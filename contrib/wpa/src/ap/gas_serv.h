@@ -90,6 +90,6 @@ void gas_serv_deinit(struct hostapd_data *hapd);
 
 void gas_serv_req_dpp_processing(struct hostapd_data *hapd,
 				 const u8 *sa, u8 dialog_token,
-				 int prot, struct wpabuf *buf, int freq);
+				 int prot, struct wpabuf *buf);
 
 #endif /* GAS_SERV_H */

@@ -1,3 +1,4 @@
+
 PROG =	rpc.sprayd
 SRCS =	sprayd.c
 MAN =	rpc.sprayd.8

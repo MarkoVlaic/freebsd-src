@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/iicbus/controller/rockchip
 
 KMOD=	rk_i2c

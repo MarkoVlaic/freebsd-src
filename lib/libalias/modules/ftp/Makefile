@@ -1,3 +1,4 @@
+
 PACKAGE=	natd
 NAME=		ftp
 SRCS=		alias_ftp.c

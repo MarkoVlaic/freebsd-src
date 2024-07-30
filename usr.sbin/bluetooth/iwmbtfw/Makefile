@@ -1,3 +1,4 @@
+
 PACKAGE=	bluetooth
 CONFS=		iwmbtfw.conf
 CONFSDIR=       /etc/devd

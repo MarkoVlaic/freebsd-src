@@ -1,3 +1,4 @@
+
 PROG=	rpctest
 MAN=
 LIBADD=	rpcsec_gss

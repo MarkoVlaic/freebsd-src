@@ -197,7 +197,6 @@ struct l_file_handle {
 };
 
 int	linux_enobufs2eagain(struct thread *, int, int);
-int	linux_common_openflags(int);
 #endif
 
 /*

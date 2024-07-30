@@ -90,7 +90,7 @@ static void
 configure_final(void *dummy)
 {
 
-	enable_interrupts(PSR_I);
+	enable_interrupts(PSR_I | PSR_F);
 	cninit_finish();
 	cold = 0;
 }

@@ -1,3 +1,4 @@
+
 PROG=	athpow
 
 .include <../Makefile.inc>

@@ -44,7 +44,7 @@
  */
 #include <stdlib.h>
 
-#include <sys/types.h>
+#include <sys/cdefs.h>
 
 __BEGIN_DECLS
 #if !defined(__GLIBC__) || \

@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/lge
 
 KMOD=	if_lge

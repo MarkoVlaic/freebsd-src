@@ -1,3 +1,4 @@
+
 PACKAGE=	bsnmp
 
 FILES=	FREEBSD-MIB.txt

@@ -134,7 +134,7 @@ iic_identify(driver_t *driver, device_t parent)
 {
 
 	if (device_find_child(parent, "iic", -1) == NULL)
-		BUS_ADD_CHILD(parent, 0, "iic", DEVICE_UNIT_ANY);
+		BUS_ADD_CHILD(parent, 0, "iic", -1);
 }
 
 static int
@@ -239,8 +239,7 @@ iicuio_move(struct iic_cdevpriv *priv, struct uio *uio, int last)
 		num_bytes = MIN(uio->uio_resid, sizeof(buffer));
 		transferred_bytes = 0;
 
-		switch (uio->uio_rw) {
-		case UIO_WRITE:
+		if (uio->uio_rw == UIO_WRITE) {
 			error = uiomove(buffer, num_bytes, uio);
 
 			while ((error == 0) && (transferred_bytes < num_bytes)) {
@@ -249,14 +248,13 @@ iicuio_move(struct iic_cdevpriv *priv, struct uio *uio, int last)
 				    num_bytes - transferred_bytes, &written_bytes, 0);
 				transferred_bytes += written_bytes;
 			}
-			break;
-		case UIO_READ:
+
+		} else if (uio->uio_rw == UIO_READ) {
 			error = iicbus_read(parent, buffer,
 			    num_bytes, &transferred_bytes,
 			    ((uio->uio_resid <= sizeof(buffer)) ? last : 0), 0);
 			if (error == 0)
 				error = uiomove(buffer, transferred_bytes, uio);
-			break;
 		}
 	}
 
@@ -292,14 +290,10 @@ iicuio(struct cdev *dev, struct uio *uio, int ioflag)
 		return (error);
 	}
 
-	switch (uio->uio_rw) {
-	case UIO_READ:
+	if (uio->uio_rw == UIO_READ)
 		addr = priv->addr | LSB;
-		break;
-	case UIO_WRITE:
+	else
 		addr = priv->addr & ~LSB;
-		break;
-	}
 
 	error = iicbus_start(parent, addr, 0);
 	if (error != 0)

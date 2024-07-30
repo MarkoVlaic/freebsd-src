@@ -445,8 +445,7 @@ static struct wpabuf * eap_ttls_build_phase2_mschapv2(
 			sizeof(data->mschapv2_auth_response));
 	} else {
 		pos = eap_ttls_avp_hdr(pos, RADIUS_ATTR_MS_CHAP_ERROR,
-				       RADIUS_VENDOR_ID_MICROSOFT, 1, 7);
-		*pos++ = data->mschapv2_ident;
+				       RADIUS_VENDOR_ID_MICROSOFT, 1, 6);
 		os_memcpy(pos, "Failed", 6);
 		pos += 6;
 		AVP_PAD(req, pos);

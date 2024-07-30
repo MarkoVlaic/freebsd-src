@@ -235,7 +235,7 @@ aw_spi_attach(device_t dev)
 		goto fail;
 	}
 
-	sc->spibus = device_add_child(dev, "spibus", DEVICE_UNIT_ANY);
+	sc->spibus = device_add_child(dev, "spibus", -1);
 
 	return (bus_generic_attach(dev));
 

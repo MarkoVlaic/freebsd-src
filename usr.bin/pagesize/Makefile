@@ -1,3 +1,4 @@
+
 SCRIPTS=pagesize.sh
 MAN=	pagesize.1
 

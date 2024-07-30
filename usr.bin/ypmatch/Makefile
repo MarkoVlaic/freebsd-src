@@ -1,3 +1,4 @@
+
 PACKAGE=	yp
 PROG=	ypmatch
 

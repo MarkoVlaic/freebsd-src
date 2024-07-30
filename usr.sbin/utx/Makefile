@@ -1,3 +1,4 @@
+
 PACKAGE=	acct
 
 PROG=	utx

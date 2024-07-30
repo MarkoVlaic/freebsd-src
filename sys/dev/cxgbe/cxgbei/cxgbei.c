@@ -901,8 +901,9 @@ cxgbei_deactivate_all(struct adapter *sc, void *arg __unused)
 }
 
 static struct uld_info cxgbei_uld_info = {
-	.uld_activate = cxgbei_activate,
-	.uld_deactivate = cxgbei_deactivate,
+	.uld_id = ULD_ISCSI,
+	.activate = cxgbei_activate,
+	.deactivate = cxgbei_deactivate,
 };
 
 static int
@@ -915,7 +916,7 @@ cxgbei_mod_load(void)
 	t4_register_cpl_handler(CPL_RX_ISCSI_DDP, do_rx_iscsi_ddp);
 	t4_register_cpl_handler(CPL_RX_ISCSI_CMP, do_rx_iscsi_cmp);
 
-	rc = t4_register_uld(&cxgbei_uld_info, ULD_ISCSI);
+	rc = t4_register_uld(&cxgbei_uld_info);
 	if (rc != 0)
 		return (rc);
 
@@ -930,7 +931,7 @@ cxgbei_mod_unload(void)
 
 	t4_iterate(cxgbei_deactivate_all, NULL);
 
-	if (t4_unregister_uld(&cxgbei_uld_info, ULD_ISCSI) == EBUSY)
+	if (t4_unregister_uld(&cxgbei_uld_info) == EBUSY)
 		return (EBUSY);
 
 	t4_register_cpl_handler(CPL_ISCSI_HDR, NULL);

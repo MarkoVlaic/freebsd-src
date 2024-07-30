@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 .include "../Makefile.inc"
 
@@ -32,8 +33,7 @@ CFLAGS+= -DCONFIG_IPV6
 LIBADD+=	pcap util \
 		wpadrivers wpaap wpal2_packet wpaeap_server \
 		wpaeapol_auth wpaeap_common \
-		wparadius wpatls wpawps wpacommon wpacrypto wpautils \
-		wpapasn
+		wparadius wpatls wpawps wpacommon wpacrypto wpautils
 
 # User customizations for wpa_supplicant/hostapd build environment
 CFLAGS+=${HOSTAPD_CFLAGS}

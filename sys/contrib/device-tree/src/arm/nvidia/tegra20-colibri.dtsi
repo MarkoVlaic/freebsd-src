@@ -446,20 +446,18 @@
 	tegra_ac97: ac97@70002000 {
 		status = "okay";
 		nvidia,codec-reset-gpio =
-			<&gpio TEGRA_GPIO(V, 0) GPIO_ACTIVE_LOW>;
+			<&gpio TEGRA_GPIO(V, 0) GPIO_ACTIVE_HIGH>;
 		nvidia,codec-sync-gpio =
 			<&gpio TEGRA_GPIO(P, 0) GPIO_ACTIVE_HIGH>;
 	};
 
 	serial@70006040 {
 		compatible = "nvidia,tegra20-hsuart";
-		reset-names = "serial";
 		/delete-property/ reg-shift;
 	};
 
 	serial@70006300 {
 		compatible = "nvidia,tegra20-hsuart";
-		reset-names = "serial";
 		/delete-property/ reg-shift;
 	};
 

@@ -1028,5 +1028,5 @@ jupiter_recv(
 }
 
 #else /* not (REFCLOCK && CLOCK_JUPITER && HAVE_PPSAPI) */
-NONEMPTY_TRANSLATION_UNIT
+int refclock_jupiter_bs;
 #endif /* not (REFCLOCK && CLOCK_JUPITER && HAVE_PPSAPI) */

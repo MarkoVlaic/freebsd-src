@@ -1,6 +1,6 @@
-# $Id: mk-2nd.awk,v 1.23 2021/06/17 21:20:30 tom Exp $
+# $Id: mk-2nd.awk,v 1.22 2020/08/31 23:49:17 tom Exp $
 ##############################################################################
-# Copyright 2020,2021 Thomas E. Dickey                                       #
+# Copyright 2020 Thomas E. Dickey                                            #
 # Copyright 1998-2004,2005 Free Software Foundation, Inc.                    #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #

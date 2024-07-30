@@ -1,3 +1,4 @@
+
 PROG=	athsurvey
 
 .include <../Makefile.inc>

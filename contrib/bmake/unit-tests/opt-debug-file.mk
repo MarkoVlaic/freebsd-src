@@ -1,4 +1,4 @@
-# $NetBSD: opt-debug-file.mk,v 1.11 2024/06/30 15:21:24 rillig Exp $
+# $NetBSD: opt-debug-file.mk,v 1.10 2023/11/19 21:47:52 rillig Exp $
 #
 # Tests for the -dF command line option, which redirects the debug log
 # to a file instead of writing it to stderr.
@@ -54,18 +54,15 @@ DEBUG_OUTPUT:=	${:!cat opt-debug-file.debuglog!}
 .endif
 
 
-# See Main_ParseArgLine, which calls Error.
+# See ApplyModifier_Subst, which calls Error.
 .MAKEFLAGS: -dFstdout
-# expect: make: Unterminated quoted string [make 'This goes to stdout only, once.]
-.MAKEFLAGS: 'This goes to stdout only, once.
+: This goes to stderr only, once. ${:U:S
 .MAKEFLAGS: -dFstderr
-# expect: make: Unterminated quoted string [make 'This goes to stderr only, once.]
-.MAKEFLAGS: 'This goes to stderr only, once.
+: This goes to stderr only, once. ${:U:S
 .MAKEFLAGS: -dFopt-debug-file.debuglog
-# expect: make: Unterminated quoted string [make 'This goes to stderr, and in addition to the debug log.]
-.MAKEFLAGS: 'This goes to stderr, and in addition to the debug log.
+: This goes to stderr, and in addition to the debug log. ${:U:S
 .MAKEFLAGS: -dFstderr -d0c
-.if ${:!cat opt-debug-file.debuglog!:MUnterminated:[#]} != 1
+.if ${:!cat opt-debug-file.debuglog!:Mdelimiter:[#]} != 1
 .  error
 .endif
 

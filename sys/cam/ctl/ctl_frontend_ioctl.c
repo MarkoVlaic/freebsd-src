@@ -267,7 +267,7 @@ cfi_ioctl_port_remove(struct ctl_req *req)
 	if (port_id == -1) {
 		req->status = CTL_LUN_ERROR;
 		snprintf(req->error_str, sizeof(req->error_str),
-		    "Missing required argument: port_id");
+		    "port_id not provided");
 		return;
 	}
 

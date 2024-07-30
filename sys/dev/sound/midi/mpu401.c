@@ -118,7 +118,7 @@ static int
 mpu401_intr(struct mpu401 *m)
 {
 #define MPU_INTR_BUF	16
-	uint8_t b[MPU_INTR_BUF];
+	MIDI_TYPE b[MPU_INTR_BUF];
 	int i;
 	int s;
 

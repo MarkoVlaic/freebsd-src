@@ -341,13 +341,6 @@ struct buf {
  */
 #define	BUF_ISLOCKED(bp)						\
 	lockstatus(&(bp)->b_lock)
-
-/*
- * Check if a buffer lock is currently held by LK_KERNPROC.
- */
-#define	BUF_DISOWNED(bp)						\
-	lockmgr_disowned(&(bp)->b_lock)
-
 /*
  * Free a buffer lock.
  */
@@ -603,7 +596,7 @@ void	vfs_unbusy_pages(struct buf *);
 int	vmapbuf(struct buf *, void *, size_t, int);
 void	vunmapbuf(struct buf *);
 void	brelvp(struct buf *);
-int	bgetvp(struct vnode *, struct buf *) __result_use_check;
+void	bgetvp(struct vnode *, struct buf *);
 void	pbgetbo(struct bufobj *bo, struct buf *bp);
 void	pbgetvp(struct vnode *, struct buf *);
 void	pbrelbo(struct buf *);

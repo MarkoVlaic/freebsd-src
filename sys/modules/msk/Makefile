@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/msk
 
 KMOD=	if_msk

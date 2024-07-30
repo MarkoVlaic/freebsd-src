@@ -1,5 +1,4 @@
 #! /ntpbuild/bin/perl -w
-# ntpdc/nl.pl.  Generated from nl.pl.in by configure.
 
 $found = 0;
 $last = 0;

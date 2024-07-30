@@ -43,7 +43,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <unistd.h>
 
 #define	MAXOFILES	20
@@ -213,9 +212,6 @@ gatherline(struct openfile *ip)
 	*p = '\0';
 	if (c == EOF) {
 		ip->eof = 1;
-		if (ferror(ip->fp)) {
-			err(EX_IOERR, NULL);
-		}
 		if (ip->fp == stdin)
 			fclose(stdin);
 		morefiles--;

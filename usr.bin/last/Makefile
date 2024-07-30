@@ -1,3 +1,4 @@
+
 PROG=	last
 PACKAGE=	acct
 LIBADD=	xo

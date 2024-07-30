@@ -509,6 +509,7 @@ z8530_bus_param(struct uart_softc *sc, int baudrate, int databits,
 static int
 z8530_bus_probe(struct uart_softc *sc)
 {
+	char buf[80];
 	int error;
 	char ch;
 
@@ -521,7 +522,8 @@ z8530_bus_probe(struct uart_softc *sc)
 
 	ch = sc->sc_bas.chan - 1 + 'A';
 
-	device_set_descf(sc->sc_dev, "z8530, channel %c", ch);
+	snprintf(buf, sizeof(buf), "z8530, channel %c", ch);
+	device_set_desc_copy(sc->sc_dev, buf);
 	return (0);
 }
 

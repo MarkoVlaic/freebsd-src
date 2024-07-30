@@ -1,3 +1,4 @@
+
 KMOD=	ng_gif_demux
 SRCS= 	ng_gif_demux.c
 

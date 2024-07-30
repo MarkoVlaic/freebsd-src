@@ -1,3 +1,4 @@
+
 .include "${.CURDIR}/../Makefile.common"
 .PATH:	${.CURDIR:H}
 

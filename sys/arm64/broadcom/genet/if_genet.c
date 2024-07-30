@@ -1069,10 +1069,6 @@ gen_encap(struct gen_softc *sc, struct mbuf **mp)
 	GEN_ASSERT_LOCKED(sc);
 
 	q = &sc->tx_queue[DEF_TXQUEUE];
-	if (q->queued == q->nentries) {
-		/* tx_queue is full */
-		return (ENOBUFS);
-	}
 
 	m = *mp;
 

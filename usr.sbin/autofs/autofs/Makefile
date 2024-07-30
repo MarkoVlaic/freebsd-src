@@ -1,3 +1,4 @@
+
 PACKAGE=	autofs
 
 CONFS=		include_ldap \

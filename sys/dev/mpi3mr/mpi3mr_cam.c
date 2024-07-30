@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2020-2024, Broadcom Inc. All rights reserved.
+ * Copyright (c) 2020-2023, Broadcom Inc. All rights reserved.
  * Support: <fbsd-storage-driver.pdl@broadcom.com>
  *
  * Authors: Sumit Saxena <sumit.saxena@broadcom.com>
@@ -82,7 +82,6 @@
 #include "mpi3mr.h"
 #include <sys/time.h>			/* XXX for pcpu.h */
 #include <sys/pcpu.h>			/* XXX for PCPU_GET */
-#include <asm/unaligned.h>
 
 #define	smp_processor_id()  PCPU_GET(cpuid)
 
@@ -101,37 +100,6 @@ extern void mpi3mr_add_sg_single(void *paddr, U8 flags, U32 length,
     bus_addr_t dma_addr);
 
 static U32 event_count;
-
-static
-inline void mpi3mr_divert_ws(Mpi3SCSIIORequest_t *req,
-			     struct ccb_scsiio *csio,
-			     U16 ws_len)
-{
-	U8 unmap = 0, ndob = 0;
-	U32 num_blocks = 0;
-	U8 opcode = scsiio_cdb_ptr(csio)[0];
-	U16 service_action = ((scsiio_cdb_ptr(csio)[8] << 8) | scsiio_cdb_ptr(csio)[9]);
-
-
-	if (opcode == WRITE_SAME_16 ||
-	   (opcode == VARIABLE_LEN_CDB &&
-	    service_action == WRITE_SAME_32)) {
-
-		int unmap_ndob_index = (opcode == WRITE_SAME_16) ? 1 : 10;
-
-		unmap = scsiio_cdb_ptr(csio)[unmap_ndob_index] & 0x08;
-		ndob = scsiio_cdb_ptr(csio)[unmap_ndob_index] & 0x01;
-		num_blocks = get_unaligned_be32(scsiio_cdb_ptr(csio) +
-						((opcode == WRITE_SAME_16) ? 10 : 28));
-
-		/* Check conditions for diversion to firmware */
-		if (unmap && ndob && num_blocks > ws_len) {
-			req->MsgFlags |= MPI3_SCSIIO_MSGFLAGS_DIVERT_TO_FIRMWARE;
-			req->Flags = htole32(le32toh(req->Flags) |
-					     MPI3_SCSIIO_FLAGS_DIVERT_REASON_WRITE_SAME_TOO_LARGE);
-		}
-	}
-}
 
 static void mpi3mr_prepare_sgls(void *arg,
 	bus_dma_segment_t *segs, int nsegs, int error)
@@ -486,7 +454,7 @@ void mpi3mr_poll_pend_io_completions(struct mpi3mr_softc *sc)
 }
 
 void
-trigger_reset_from_watchdog(struct mpi3mr_softc *sc, U8 reset_type, U16 reset_reason)
+trigger_reset_from_watchdog(struct mpi3mr_softc *sc, U8 reset_type, U32 reset_reason)
 {
 	if (sc->reset_in_progress) {
 		mpi3mr_dprint(sc, MPI3MR_INFO, "Another reset is in progress, no need to trigger the reset\n");
@@ -1111,9 +1079,6 @@ mpi3mr_action_scsiio(struct mpi3mr_cam_softc *cam_sc, union ccb *ccb)
 		break;
 	}
 
-	if (targ->ws_len)
-		mpi3mr_divert_ws(req, csio, targ->ws_len);
-
 	req->Flags = htole32(mpi_control);
 
 	if (csio->ccb_h.flags & CAM_CDB_POINTER)
@@ -1595,7 +1560,7 @@ mpi3mr_sastopochg_evt_debug(struct mpi3mr_softc *sc,
 		if (!handle)
 			continue;
 		phy_number = event_data->StartPhyNum + i;
-		reason_code = event_data->PhyEntry[i].PhyStatus &
+		reason_code = event_data->PhyEntry[i].Status &
 		    MPI3_EVENT_SAS_TOPO_PHY_RC_MASK;
 		switch (reason_code) {
 		case MPI3_EVENT_SAS_TOPO_PHY_RC_TARG_NOT_RESPONDING:
@@ -1648,7 +1613,7 @@ mpi3mr_process_sastopochg_evt(struct mpi3mr_softc *sc, struct mpi3mr_fw_event_wo
 			continue;
 		
 		target->link_rate = link_rate;
-		reason_code = event_data->PhyEntry[i].PhyStatus &
+		reason_code = event_data->PhyEntry[i].Status &
 			MPI3_EVENT_SAS_TOPO_PHY_RC_MASK;
 
 		switch (reason_code) {
@@ -1837,9 +1802,9 @@ out:
 
 int mpi3mr_remove_device_from_os(struct mpi3mr_softc *sc, U16 handle)
 {
+	U32 i = 0;
 	int retval = 0;
 	struct mpi3mr_target *target;
-	unsigned int target_outstanding;
 
 	mpi3mr_dprint(sc, MPI3MR_EVENT,
 		"Removing Device (dev_handle: %d)\n", handle);
@@ -1857,17 +1822,16 @@ int mpi3mr_remove_device_from_os(struct mpi3mr_softc *sc, U16 handle)
 
 	target->flags |= MPI3MRSAS_TARGET_INREMOVAL;
 
-	target_outstanding = mpi3mr_atomic_read(&target->outstanding);
-	if (target_outstanding) {
-		mpi3mr_dprint(sc, MPI3MR_ERROR, "there are [%2d] outstanding IOs on target: %d "
-			      "Poll reply queue once\n", target_outstanding, target->per_id);
- 		mpi3mr_poll_pend_io_completions(sc);
-		target_outstanding = mpi3mr_atomic_read(&target->outstanding);
-		if (target_outstanding)
-			target_outstanding = mpi3mr_atomic_read(&target->outstanding);
-			mpi3mr_dprint(sc, MPI3MR_ERROR, "[%2d] outstanding IOs present on target: %d "
-				      "despite poll\n", target_outstanding, target->per_id);
- 	}
+	while (mpi3mr_atomic_read(&target->outstanding) && (i < 30)) {
+		i++;
+		if (!(i % 2)) {
+			mpi3mr_dprint(sc, MPI3MR_INFO,
+			    "[%2d]waiting for "
+			    "waiting for outstanding commands to complete on target: %d\n",
+			    i, target->per_id);
+		}
+		DELAY(1000 * 1000);
+	}
 
 	if (target->exposed_to_os && !sc->reset_in_progress) {
 		mpi3mr_rescan_target(sc, target);
@@ -1884,16 +1848,18 @@ out:
 void mpi3mr_remove_device_from_list(struct mpi3mr_softc *sc,
 	struct mpi3mr_target *target, bool must_delete)
 {
-	if ((must_delete == false) &&
-	    (target->state != MPI3MR_DEV_REMOVE_HS_COMPLETED))
-		return;
-
 	mtx_lock_spin(&sc->target_lock);
-	TAILQ_REMOVE(&sc->cam_sc->tgt_list, target, tgt_next);
+	if ((target->state == MPI3MR_DEV_REMOVE_HS_STARTED) ||
+	    (must_delete == true)) {
+		TAILQ_REMOVE(&sc->cam_sc->tgt_list, target, tgt_next);
+		target->state = MPI3MR_DEV_DELETED;
+	}
 	mtx_unlock_spin(&sc->target_lock);
 
-	free(target, M_MPI3MR);
-	target = NULL;
+	if (target->state == MPI3MR_DEV_DELETED) {
+		free(target, M_MPI3MR);
+		target = NULL;
+	}
 	
 	return;
 }

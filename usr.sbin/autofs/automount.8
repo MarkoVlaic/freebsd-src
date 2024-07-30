@@ -1,6 +1,3 @@
-.\"-
-.\" SPDX-License-Identifier: BSD-2-Clause
-.\"
 .\" Copyright (c) 2014 The FreeBSD Foundation
 .\"
 .\" This software was developed by Edward Tomasz Napierala under sponsorship
@@ -49,10 +46,10 @@ command parses the
 .Xr auto_master 5
 configuration file and any direct maps that it references, and mounts
 or unmounts
-.Xr autofs 4
+.Xr autofs 5
 filesystems to match.
 These options are available:
-.Bl -tag -width "-D"
+.Bl -tag -width ".Fl v"
 .It Fl D
 Define a variable.
 It is only useful with
@@ -78,10 +75,10 @@ It is only useful with
 .It Fl u
 Try to unmount filesystems mounted by
 .Xr automountd 8 .
-.Xr autofs 4
+.Xr autofs 5
 mounts are not unmounted.
 To unmount all
-.Xr autofs 4
+.Xr autofs
 mounts, use
 .Cm "umount -At autofs".
 .It Fl v
@@ -94,8 +91,8 @@ Unmount all filesystems mounted by
 .Xr automountd 8 :
 .Dl Nm Fl u
 .Sh SEE ALSO
-.Xr autofs 4 ,
 .Xr auto_master 5 ,
+.Xr autofs 5 ,
 .Xr automountd 8 ,
 .Xr autounmountd 8
 .Sh HISTORY

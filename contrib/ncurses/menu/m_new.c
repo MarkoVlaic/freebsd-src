@@ -38,7 +38,7 @@
 
 #include "menu.priv.h"
 
-MODULE_ID("$Id: m_new.c,v 1.27 2021/06/17 21:26:02 tom Exp $")
+MODULE_ID("$Id: m_new.c,v 1.26 2021/02/13 19:43:10 tom Exp $")
 
 /*---------------------------------------------------------------------------
 |   Facility      :  libnmenu

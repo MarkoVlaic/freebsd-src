@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 TESTSDIR=	${TESTSBASE}/sys/netinet6/frag6

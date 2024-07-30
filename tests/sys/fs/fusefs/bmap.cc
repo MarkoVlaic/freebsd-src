@@ -77,6 +77,8 @@ class BmapEof: public Bmap, public WithParamInterface<int> {};
 
 /*
  * Test FUSE_BMAP
+ * XXX The FUSE protocol does not include the runp and runb variables, so those
+ * must be guessed in-kernel.
  */
 TEST_F(Bmap, bmap)
 {
@@ -103,19 +105,8 @@ TEST_F(Bmap, bmap)
 	arg.runb = -1;
 	ASSERT_EQ(0, ioctl(fd, FIOBMAP2, &arg)) << strerror(errno);
 	EXPECT_EQ(arg.bn, pbn);
-       /*
-	* XXX The FUSE protocol does not include the runp and runb variables,
-	* so those must be guessed in-kernel.  There's no "right" answer, so
-	* just check that they're within reasonable limits.
-	*/
-	EXPECT_LE(arg.runb, lbn);
-	EXPECT_LE((unsigned long)arg.runb, m_maxreadahead / m_maxbcachebuf);
-	EXPECT_LE((unsigned long)arg.runb, m_maxphys / m_maxbcachebuf);
-	EXPECT_GT(arg.runb, 0);
-	EXPECT_LE(arg.runp, filesize / m_maxbcachebuf - lbn);
-	EXPECT_LE((unsigned long)arg.runp, m_maxreadahead / m_maxbcachebuf);
-	EXPECT_LE((unsigned long)arg.runp, m_maxphys / m_maxbcachebuf);
-	EXPECT_GT(arg.runp, 0);
+	EXPECT_EQ(arg.runp, m_maxphys / m_maxbcachebuf - 1);
+	EXPECT_EQ(arg.runb, m_maxphys / m_maxbcachebuf - 1);
 
 	leak(fd);
 }
@@ -151,7 +142,7 @@ TEST_F(Bmap, default_)
 	arg.runb = -1;
 	ASSERT_EQ(0, ioctl(fd, FIOBMAP2, &arg)) << strerror(errno);
 	EXPECT_EQ(arg.bn, 0);
-	EXPECT_EQ((unsigned long )arg.runp, m_maxphys / m_maxbcachebuf - 1);
+	EXPECT_EQ(arg.runp, m_maxphys / m_maxbcachebuf - 1);
 	EXPECT_EQ(arg.runb, 0);
 
 	/* In the middle */
@@ -161,8 +152,8 @@ TEST_F(Bmap, default_)
 	arg.runb = -1;
 	ASSERT_EQ(0, ioctl(fd, FIOBMAP2, &arg)) << strerror(errno);
 	EXPECT_EQ(arg.bn, lbn * m_maxbcachebuf / DEV_BSIZE);
-	EXPECT_EQ((unsigned long )arg.runp, m_maxphys / m_maxbcachebuf - 1);
-	EXPECT_EQ((unsigned long )arg.runb, m_maxphys / m_maxbcachebuf - 1);
+	EXPECT_EQ(arg.runp, m_maxphys / m_maxbcachebuf - 1);
+	EXPECT_EQ(arg.runb, m_maxphys / m_maxbcachebuf - 1);
 
 	/* Last block */
 	lbn = filesize / m_maxbcachebuf - 1;
@@ -172,7 +163,7 @@ TEST_F(Bmap, default_)
 	ASSERT_EQ(0, ioctl(fd, FIOBMAP2, &arg)) << strerror(errno);
 	EXPECT_EQ(arg.bn, lbn * m_maxbcachebuf / DEV_BSIZE);
 	EXPECT_EQ(arg.runp, 0);
-	EXPECT_EQ((unsigned long )arg.runb, m_maxphys / m_maxbcachebuf - 1);
+	EXPECT_EQ(arg.runb, m_maxphys / m_maxbcachebuf - 1);
 
 	leak(fd);
 }

@@ -13,18 +13,19 @@ properties:
   compatible:
     enum:
       - rockchip,rk3568-pcie3-phy
-      - rockchip,rk3588-pcie3-phy
 
   reg:
     maxItems: 1
 
   clocks:
-    minItems: 1
+    minItems: 3
     maxItems: 3
 
   clock-names:
-    minItems: 1
-    maxItems: 3
+    items:
+      - const: refclk_m
+      - const: refclk_n
+      - const: pclk
 
   data-lanes:
     description: which lanes (by position) should be mapped to which
@@ -59,30 +60,6 @@ required:
   - reg
   - rockchip,phy-grf
   - "#phy-cells"
-
-allOf:
-  - if:
-      properties:
-        compatible:
-          enum:
-            - rockchip,rk3588-pcie3-phy
-    then:
-      properties:
-        clocks:
-          maxItems: 1
-        clock-names:
-          items:
-            - const: pclk
-    else:
-      properties:
-        clocks:
-          minItems: 3
-
-        clock-names:
-          items:
-            - const: refclk_m
-            - const: refclk_n
-            - const: pclk
 
 additionalProperties: false
 

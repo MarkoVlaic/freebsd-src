@@ -1,3 +1,4 @@
+
 PROG=	smbios
 MAN=
 .PATH:	${SRCTOP}/stand/libsa

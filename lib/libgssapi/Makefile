@@ -1,3 +1,4 @@
+
 PACKAGE= runtime
 LIB=		gssapi
 SHLIB_MAJOR=	10

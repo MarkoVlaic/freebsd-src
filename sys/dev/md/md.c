@@ -887,6 +887,23 @@ mdstart_vnode(struct md_s *sc, struct bio *bp)
 	int ma_offs, npages;
 	bool mapped;
 
+	switch (bp->bio_cmd) {
+	case BIO_READ:
+		auio.uio_rw = UIO_READ;
+		break;
+	case BIO_WRITE:
+		auio.uio_rw = UIO_WRITE;
+		break;
+	case BIO_FLUSH:
+		break;
+	case BIO_DELETE:
+		if (sc->candelete)
+			break;
+		/* FALLTHROUGH */
+	default:
+		return (EOPNOTSUPP);
+	}
+
 	td = curthread;
 	vp = sc->vnode;
 	piov = NULL;
@@ -903,14 +920,7 @@ mdstart_vnode(struct md_s *sc, struct bio *bp)
 	 * still valid.
 	 */
 
-	switch (bp->bio_cmd) {
-	case BIO_READ:
-		auio.uio_rw = UIO_READ;
-		break;
-	case BIO_WRITE:
-		auio.uio_rw = UIO_WRITE;
-		break;
-	case BIO_FLUSH:
+	if (bp->bio_cmd == BIO_FLUSH) {
 		do {
 			(void)vn_start_write(vp, &mp, V_WAIT);
 			vn_lock(vp, LK_EXCLUSIVE | LK_RETRY);
@@ -919,17 +929,11 @@ mdstart_vnode(struct md_s *sc, struct bio *bp)
 			vn_finished_write(mp);
 		} while (error == ERELOOKUP);
 		return (error);
-	case BIO_DELETE:
-		if (sc->candelete) {
-			error = vn_deallocate(vp, &off, &len, 0,
-			    sc->flags & MD_ASYNC ? 0 : IO_SYNC, sc->cred,
-			    NOCRED);
-			bp->bio_resid = len;
-			return (error);
-		}
-		/* FALLTHROUGH */
-	default:
-		return (EOPNOTSUPP);
+	} else if (bp->bio_cmd == BIO_DELETE) {
+		error = vn_deallocate(vp, &off, &len, 0,
+		    sc->flags & MD_ASYNC ? 0 : IO_SYNC, sc->cred, NOCRED);
+		bp->bio_resid = len;
+		return (error);
 	}
 
 	auio.uio_offset = (vm_ooffset_t)bp->bio_offset;
@@ -977,7 +981,7 @@ unmapped_step:
 		auio.uio_iovcnt = 1;
 	}
 	iostart = auio.uio_offset;
-	if (bp->bio_cmd == BIO_READ) {
+	if (auio.uio_rw == UIO_READ) {
 		vn_lock(vp, LK_EXCLUSIVE | LK_RETRY);
 		error = VOP_READ(vp, &auio, 0, sc->cred);
 		VOP_UNLOCK(vp);
@@ -1345,7 +1349,7 @@ mdcreate_malloc(struct md_s *sc, struct md_req *mdr)
 		sc->fwsectors = mdr->md_fwsectors;
 	if (mdr->md_fwheads != 0)
 		sc->fwheads = mdr->md_fwheads;
-	sc->flags = mdr->md_options & (MD_COMPRESS | MD_FORCE | MD_RESERVE);
+	sc->flags = mdr->md_options & (MD_COMPRESS | MD_FORCE);
 	sc->indir = dimension(sc->mediasize / sc->sectorsize);
 	sc->uma = uma_zcreate(sc->name, sc->sectorsize, NULL, NULL, NULL, NULL,
 	    0x1ff, 0);
@@ -1470,7 +1474,7 @@ mdcreate_vnode(struct md_s *sc, struct md_req *mdr, struct thread *td)
 	snprintf(sc->ident, sizeof(sc->ident), "MD-DEV%ju-INO%ju",
 	    (uintmax_t)vattr.va_fsid, (uintmax_t)vattr.va_fileid);
 	sc->flags = mdr->md_options & (MD_ASYNC | MD_CACHE | MD_FORCE |
-	    MD_VERIFY | MD_MUSTDEALLOC);
+	    MD_VERIFY);
 	if (!(flags & FWRITE))
 		sc->flags |= MD_READONLY;
 	sc->vnode = nd.ni_vp;

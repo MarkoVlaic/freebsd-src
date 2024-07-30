@@ -90,7 +90,6 @@
 #include <netipsec/esp.h>
 #include <netipsec/esp_var.h>
 #include <netipsec/ipcomp_var.h>
-#include <netipsec/ipsec_offload.h>
 
 #include <netipsec/key.h>
 #include <netipsec/keydb.h>
@@ -238,11 +237,6 @@ ipsec_common_input(struct mbuf *m, int skip, int protoff, int af, int sproto)
 int
 ipsec4_input(struct mbuf *m, int offset, int proto)
 {
-	int error;
-
-	error = ipsec_accel_input(m, offset, proto);
-	if (error != ENXIO)
-		return (error);
 
 	switch (proto) {
 	case IPPROTO_AH:
@@ -542,12 +536,7 @@ ipsec6_lasthdr(int proto)
 int
 ipsec6_input(struct mbuf *m, int offset, int proto)
 {
-	int error;
 
-	error = ipsec_accel_input(m, offset, proto);
-	if (error != ENXIO)
-		return (error);
-		
 	switch (proto) {
 	case IPPROTO_AH:
 	case IPPROTO_ESP:

@@ -57,12 +57,20 @@ SOFTWARE.
 #include <stdlib.h>
 #endif
 
-#ifdef WIN32
-# include <sys/timeb.h>
+#if TIME_WITH_SYS_TIME
+# ifdef WIN32
+#  include <sys/timeb.h>
+# else
+#  include <sys/time.h>
+# endif
+# include <time.h>
 #else
-# include <sys/time.h>
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
 #endif
-#include <time.h>
 
 #include <sys/types.h>
 
@@ -259,5 +267,5 @@ netsnmp_daemonize(int quit_immediately, int stderr_log)
 }
 
 #else /* !NEED_NETSNMP_DAEMONIZE */
-NONEMPTY_TRANSLATION_UNIT
+int netsnp_daemonize_bs;
 #endif

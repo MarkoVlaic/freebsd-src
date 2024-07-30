@@ -63,12 +63,6 @@
 #include <netgraph/ng_parse.h>
 #include <netgraph/ng_tcpmss.h>
 
-#ifdef NG_SEPARATE_MALLOC
-static MALLOC_DEFINE(M_NETGRAPH_TCPMSS, "netgraph_tcpmss", "netgraph tcpmss node");
-#else
-#define M_NETGRAPH_TCPMSS M_NETGRAPH
-#endif
-
 /* Per hook info. */
 typedef struct {
 	hook_p				outHook;
@@ -165,7 +159,7 @@ ng_tcpmss_newhook(node_p node, hook_p hook, const char *name)
 {
 	hpriv_p priv;
 
-	priv = malloc(sizeof(*priv), M_NETGRAPH_TCPMSS, M_NOWAIT | M_ZERO);
+	priv = malloc(sizeof(*priv), M_NETGRAPH, M_NOWAIT | M_ZERO);
 	if (priv == NULL)
 		return (ENOMEM);
 
@@ -377,7 +371,7 @@ ng_tcpmss_disconnect(hook_p hook)
 			priv->outHook = NULL;
 	}
 
-	free(NG_HOOK_PRIVATE(hook), M_NETGRAPH_TCPMSS);
+	free(NG_HOOK_PRIVATE(hook), M_NETGRAPH);
 
 	if (NG_NODE_NUMHOOKS(NG_HOOK_NODE(hook)) == 0)
 		ng_rmnode_self(NG_HOOK_NODE(hook));

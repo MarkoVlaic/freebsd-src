@@ -326,8 +326,3 @@ int crypto_global_init(void)
 void crypto_global_deinit(void)
 {
 }
-
-
-void crypto_unload(void)
-{
-}

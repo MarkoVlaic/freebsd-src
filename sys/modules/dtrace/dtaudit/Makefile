@@ -1,3 +1,4 @@
+
 SYSDIR?=	${SRCTOP}/sys
 
 .PATH:		${SYSDIR}/security/audit

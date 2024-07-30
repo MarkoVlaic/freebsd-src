@@ -1,3 +1,4 @@
+
 PROG =	rpc.rstatd
 SRCS =	rstatd.c rstat_proc.c
 MAN =	rpc.rstatd.8

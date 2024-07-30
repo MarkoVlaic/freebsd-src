@@ -180,7 +180,6 @@ static __inline void
 sched_unpin(void)
 {
 	atomic_interrupt_fence();
-	MPASS(curthread->td_pinned > 0);
 	curthread->td_pinned--;
 }
 

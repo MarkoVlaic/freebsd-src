@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2018-2024 Gavin D. Howard and contributors.
+ * Copyright (c) 2018-2023 Gavin D. Howard and contributors.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -54,9 +54,6 @@ typedef struct BcFile
 	// with the existing code as possible.
 	FILE* f;
 
-	// True if errors should be fatal, false otherwise.
-	bool errors_fatal;
-
 } BcFile;
 
 #else // BC_ENABLE_LINE_LIB
@@ -66,9 +63,6 @@ typedef struct BcFile
 {
 	// The actual file descriptor.
 	int fd;
-
-	// True if errors should be fatal, false otherwise.
-	bool errors_fatal;
 
 	// The buffer for the file.
 	char* buf;
@@ -129,25 +123,23 @@ typedef enum BcFlushType
 
 /**
  * Initialize a file.
- * @param f             The file to initialize.
- * @param file          The stdio file.
- * @param errors_fatal  True if errors should be fatal, false otherwise.
+ * @param f     The file to initialize.
+ * @param file  The stdio file.
  */
 void
-bc_file_init(BcFile* f, FILE* file, bool errors_fatal);
+bc_file_init(BcFile* f, FILE* file);
 
 #else // BC_ENABLE_LINE_LIB
 
 /**
  * Initialize a file.
- * @param f             The file to initialize.
- * @param fd            The file descriptor.
- * @param buf           The buffer for the file.
- * @param cap           The capacity of the buffer.
- * @param errors_fatal  True if errors should be fatal, false otherwise.
+ * @param f    The file to initialize.
+ * @param fd   The file descriptor.
+ * @param buf  The buffer for the file.
+ * @param cap  The capacity of the buffer.
  */
 void
-bc_file_init(BcFile* f, int fd, char* buf, size_t cap, bool errors_fatal);
+bc_file_init(BcFile* f, int fd, char* buf, size_t cap);
 
 #endif // BC_ENABLE_LINE_LIB
 

@@ -26,11 +26,9 @@
 
 #include "assym.inc"
 #include "opt_kstack_pages.h"
-#include <sys/elf_common.h>
 #include <sys/syscall.h>
 #include <machine/asm.h>
 #include <machine/armreg.h>
-#include <machine/cpu.h>
 #include <machine/hypervisor.h>
 #include <machine/param.h>
 #include <machine/pte.h>
@@ -66,6 +64,19 @@
 ENTRY(_start)
 	/* Enter the kernel exception level */
 	bl	enter_kernel_el
+
+	/*
+	 * Disable the MMU. We may have entered the kernel with it on and
+	 * will need to update the tables later. If this has been set up
+	 * with anything other than a VA == PA map then this will fail,
+	 * but in this case the code to find where we are running from
+	 * would have also failed.
+	 */
+	dsb	sy
+	mrs	x2, sctlr_el1
+	bic	x2, x2, SCTLR_M
+	msr	sctlr_el1, x2
+	isb
 
 	/* Set the context id */
 	msr	contextidr_el1, xzr
@@ -181,50 +192,12 @@ END(_start)
 
 #ifdef SMP
 /*
- * void
- * mpentry_psci(unsigned long)
+ * mpentry(unsigned long)
  *
- * Called by a core when it is being brought online with psci.
+ * Called by a core when it is being brought online.
  * The data in x0 is passed straight to init_secondary.
  */
-ENTRY(mpentry_psci)
-	mov	x26, xzr
-	b	mpentry_common
-END(mpentry_psci)
-
-/*
- * void
- * mpentry_spintable(void)
- *
- * Called by a core when it is being brought online with a spin-table.
- * Reads the new CPU ID and passes this to init_secondary.
- */
-ENTRY(mpentry_spintable)
-	ldr	x26, =spintable_wait
-	b	mpentry_common
-END(mpentry_spintable)
-
-/* Wait for the current CPU to be released */
-LENTRY(spintable_wait)
-	/* Read the affinity bits from mpidr_el1 */
-	mrs	x1, mpidr_el1
-	ldr	x2, =CPU_AFF_MASK
-	and	x1, x1, x2
-
-	adrp	x2, ap_cpuid
-1:
-	ldr	x0, [x2, :lo12:ap_cpuid]
-	cmp	x0, x1
-	b.ne	1b
-
-	str	xzr, [x2, :lo12:ap_cpuid]
-	dsb	sy
-	sev
-
-	ret
-LEND(mpentry_spintable)
-
-LENTRY(mpentry_common)
+ENTRY(mpentry)
 	/* Disable interrupts */
 	msr	daifset, #DAIF_INTR
 
@@ -254,14 +227,6 @@ LENTRY(mpentry_common)
 
 mp_virtdone:
 	BTI_J
-
-	/*
-	 * Allow this CPU to wait until the kernel is ready for it,
-	 * e.g. with spin-table but each CPU uses the same release address
-	 */
-	cbz	x26, 1f
-	blr	x26
-1:
 
 	/* Start using the AP boot stack */
 	adrp	x4, bootstack
@@ -293,7 +258,7 @@ mp_virtdone:
 	msr	tpidr_el1, x18
 
 	b	init_secondary
-LEND(mpentry_common)
+END(mpentry)
 #endif
 
 /*
@@ -301,37 +266,19 @@ LEND(mpentry_common)
  * registers and drop to EL1.
  */
 LENTRY(enter_kernel_el)
-#define	INIT_SCTLR_EL1	(SCTLR_LSMAOE | SCTLR_nTLSMD | SCTLR_EIS | \
-    SCTLR_TSCXT | SCTLR_EOS)
 	mrs	x23, CurrentEL
 	and	x23, x23, #(CURRENTEL_EL_MASK)
 	cmp	x23, #(CURRENTEL_EL_EL2)
 	b.eq	1f
-
-	ldr	x2, =INIT_SCTLR_EL1
-	msr	sctlr_el1, x2
-	/* SCTLR_EOS is set so eret is a context synchronizing event so we
-	 * need an isb here to ensure it's observed by later instructions,
-	 * but don't need it in the eret below.
-	 */
-	isb
-
-	/* Ensure SPSR_EL1 and pstate are in sync. The only wat to set the
-	 * latter is to set the former and return from an exception with eret.
-	 */
-	mov	x2, #(PSR_DAIF | PSR_M_EL1h)
-	msr	spsr_el1, x2
-	msr	elr_el1, lr
-	eret
-
+	ret
 1:
-	dsb	sy
 	/*
-	 * Set just the reserved bits in sctlr_el2. This will disable the
-	 * MMU which may have broken the kernel if we enter the kernel in
-	 * EL2, e.g. when using VHE.
+	 * Disable the MMU. If the HCR_EL2.E2H field is set we will clear it
+	 * which may break address translation.
 	 */
-	ldr	x2, =(SCTLR_EL2_RES1 | SCTLR_EL2_EIS | SCTLR_EL2_EOS)
+	dsb	sy
+	mrs	x2, sctlr_el2
+	bic	x2, x2, SCTLR_M
 	msr	sctlr_el2, x2
 	isb
 
@@ -351,8 +298,8 @@ LENTRY(enter_kernel_el)
 	mrs	x2, mpidr_el1
 	msr	vmpidr_el2, x2
 
-	/* Set the initial sctlr_el1 */
-	ldr	x2, =INIT_SCTLR_EL1
+	/* Set the bits that need to be 1 in sctlr_el1 */
+	ldr	x2, .Lsctlr_res1
 	msr	sctlr_el1, x2
 
 	/*
@@ -370,10 +317,8 @@ LENTRY(enter_kernel_el)
 	msr	hstr_el2, xzr
 
 	/* Enable access to the physical timers at EL1 */
-	tst	x4, #HCR_E2H
-	ldr	x3, =(CNTHCTL_EL1PCTEN | CNTHCTL_EL1PCEN)
-	ldr	x5, =(CNTHCTL_E2H_EL1PCTEN | CNTHCTL_E2H_EL1PTEN)
-	csel	x2, x3, x5, eq
+	mrs	x2, cnthctl_el2
+	orr	x2, x2, #(CNTHCTL_EL1PCTEN | CNTHCTL_EL1PCEN)
 	msr	cnthctl_el2, x2
 
 	/* Set the counter offset to a known value */
@@ -394,8 +339,9 @@ LENTRY(enter_kernel_el)
 	mrs	x2, id_aa64pfr0_el1
 	/* Extract GIC bits from the register */
 	ubfx	x2, x2, #ID_AA64PFR0_GIC_SHIFT, #ID_AA64PFR0_GIC_BITS
-	/* GIC[3:0] != 0000 - GIC CPU interface via special regs. supported */
-	cbz	x2, 2f
+	/* GIC[3:0] == 0001 - GIC CPU interface via special regs. supported */
+	cmp	x2, #(ID_AA64PFR0_GIC_CPUIF_EN >> ID_AA64PFR0_GIC_SHIFT)
+	b.ne	2f
 
 	mrs	x2, icc_sre_el2
 	orr	x2, x2, #ICC_SRE_EL2_EN	/* Enable access from insecure EL1 */
@@ -408,7 +354,10 @@ LENTRY(enter_kernel_el)
 	isb
 
 	eret
-#undef INIT_SCTLR_EL1
+
+	.align 3
+.Lsctlr_res1:
+	.quad SCTLR_RES1
 LEND(enter_kernel_el)
 
 /*
@@ -433,16 +382,14 @@ LEND(get_load_phys_addr)
  *  All the memory must not cross a 1GiB boundaty
  *  x28 contains the physical address we were loaded from
  *
- *  There are 7 or 8 pages before that address for the page tables
+ * TODO: This is out of date.
+ *  There are at least 5 pages before that address for the page tables
  *   The pages used are:
- *    - The Kernel L3 tables (only for 16k kernel)
  *    - The Kernel L2 table
  *    - The Kernel L1 table
  *    - The Kernel L0 table             (TTBR1)
- *    - The identity (PA = VA) L2 table
  *    - The identity (PA = VA) L1 table
- *    - The identity (PA = VA) L0 table (Early TTBR0)
- *    - The Kernel empty L0 table       (Late TTBR0)
+ *    - The identity (PA = VA) L0 table (TTBR0)
  */
 LENTRY(create_pagetables)
 	/* Save the Link register */
@@ -520,32 +467,23 @@ booti_no_fdt:
 common:
 #if PAGE_SIZE != PAGE_SIZE_4K
 	/*
-	 * Create L3 and L3C pages. The kernel will be loaded at a 2M aligned
-	 * address, enabling the creation of L3C pages. However, when the page
-	 * size is larger than 4k, L2 blocks are too large to map the kernel
-	 * with 2M alignment.
+	 * Create L3 pages. The kernel will be loaded at a 2M aligned
+	 * address, however L2 blocks are too large when the page size is
+	 * not 4k to map the kernel with such an aligned address. However,
+	 * when the page size is larger than 4k, L2 blocks are too large to
+	 * map the kernel with such an alignment.
 	 */
-#define	PTE_SHIFT	L3_SHIFT
-#define	BUILD_PTE_FUNC	build_l3_page_pagetable
-#else
-#define	PTE_SHIFT	L2_SHIFT
-#define	BUILD_PTE_FUNC	build_l2_block_pagetable
-#endif
 
-	/* Get the number of blocks/pages to allocate, rounded down */
-	lsr	x10, x8, #(PTE_SHIFT)
+	/* Get the number of l3 pages to allocate, rounded down */
+	lsr	x10, x8, #(L3_SHIFT)
 
-	/* Create the kernel space PTE table */
+	/* Create the kernel space L2 table */
 	mov	x6, x26
 	mov	x7, #(ATTR_S1_IDX(VM_MEMATTR_WRITE_BACK))
 	mov	x8, #(KERNBASE)
 	mov	x9, x28
-	bl	BUILD_PTE_FUNC
+	bl	build_l3_page_pagetable
 
-#undef PTE_SHIFT
-#undef BUILD_PTE_FUNC
-
-#if PAGE_SIZE != PAGE_SIZE_4K
 	/* Move to the l2 table */
 	ldr	x9, =(PAGE_SIZE * L3_PAGE_COUNT)
 	add	x26, x26, x9
@@ -554,6 +492,16 @@ common:
 	mov	x9, x6
 	mov	x6, x26
 	bl	link_l2_pagetable
+#else
+	/* Get the number of l2 pages to allocate, rounded down */
+	lsr	x10, x8, #(L2_SHIFT)
+
+	/* Create the kernel space L2 table */
+	mov	x6, x26
+	mov	x7, #(ATTR_S1_IDX(VM_MEMATTR_WRITE_BACK))
+	mov	x8, #(KERNBASE)
+	mov	x9, x28
+	bl	build_l2_block_pagetable
 #endif
 
 	/* Move to the l1 table */
@@ -787,17 +735,13 @@ LENTRY(link_l2_pagetable)
 LEND(link_l2_pagetable)
 
 /*
- * Builds count level 3 page table entries. Uses ATTR_CONTIGUOUS to create
- * large page (L3C) mappings when the current VA and remaining count allow
- * it.
+ * Builds count level 3 page table entries
  *  x6  = L3 table
  *  x7  = Block attributes
  *  x8  = VA start
  *  x9  = PA start (trashed)
  *  x10 = Entry count (trashed)
  *  x11, x12 and x13 are trashed
- *
- * VA start (x8) modulo L3C_SIZE must equal PA start (x9) modulo L3C_SIZE.
  */
 LENTRY(build_l3_page_pagetable)
 	/*
@@ -818,17 +762,8 @@ LENTRY(build_l3_page_pagetable)
 	/* Only use the output address bits */
 	lsr	x9, x9, #L3_SHIFT
 
-	/* Check if an ATTR_CONTIGUOUS mapping is possible */
-1:	tst	x11, #(L3C_ENTRIES - 1)
-	b.ne	2f
-	cmp	x10, #L3C_ENTRIES
-	b.lo	3f
-	orr	x12, x12, #(ATTR_CONTIGUOUS)
-	b	2f
-3:	and	x12, x12, #(~ATTR_CONTIGUOUS)
-
 	/* Set the physical address for this virtual address */
-2:	orr	x13, x12, x9, lsl #L3_SHIFT
+1:	orr	x13, x12, x9, lsl #L3_SHIFT
 
 	/* Store the entry */
 	str	x13, [x6, x11, lsl #3]
@@ -1010,5 +945,3 @@ aarch32_esigcode:
 	.global sz_aarch32_sigcode
 sz_aarch32_sigcode:
 	.quad aarch32_esigcode - aarch32_sigcode
-
-GNU_PROPERTY_AARCH64_FEATURE_1_NOTE(GNU_PROPERTY_AARCH64_FEATURE_1_VAL)

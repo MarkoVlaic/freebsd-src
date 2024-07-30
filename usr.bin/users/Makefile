@@ -1,3 +1,4 @@
+
 WARNS?=		3
 PROG_CXX=	users
 PACKAGE=	acct

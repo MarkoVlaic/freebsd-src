@@ -31,13 +31,12 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <ssp/ssp.h>
 #include "libc_private.h"
 
 #include <stddef.h>
 
 ssize_t
-__ssp_real(recv)(int s, void *buf, size_t len, int flags)
+recv(int s, void *buf, size_t len, int flags)
 {
 	/*
 	 * POSIX says recv() shall be a cancellation point, so call the

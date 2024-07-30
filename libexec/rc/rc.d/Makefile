@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 CONFDIR=	/etc/rc.d
@@ -23,6 +24,7 @@ CONFS=	DAEMON \
 	dmesg \
 	dumpon \
 	fsck \
+	gbde \
 	geli \
 	geli2 \
 	gptboot \
@@ -65,6 +67,7 @@ CONFS=	DAEMON \
 	nfsuserd \
 	nisdomain \
 	${_nscd} \
+	ntpdate \
 	${_opensm} \
 	os-release \
 	pf \
@@ -280,10 +283,7 @@ _nscd=		nscd
 .endif
 
 .if ${MK_NTP} != "no"
-CONFGROUPS+=	NTP
-NTP+=		ntpd \
-		ntpdate
-NTPPACKAGE=	ntp
+CONFS+=		ntpd
 .endif
 
 .if ${MK_OFED} != "no"

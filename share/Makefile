@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 # Do not include `info' in the SUBDIR list, it is handled separately.

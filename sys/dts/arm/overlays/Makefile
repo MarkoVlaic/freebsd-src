@@ -1,3 +1,4 @@
+
 DTSO!=ls ${.CURDIR}/*.dtso
 
 all: test-dtso

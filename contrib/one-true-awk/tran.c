@@ -57,7 +57,8 @@ Cell	*fnrloc;	/* FNR */
 Cell	*ofsloc;	/* OFS */
 Cell	*orsloc;	/* ORS */
 Cell	*rsloc;		/* RS */
-Cell	*ARGVcell;	/* cell with symbol table containing ARGV[...] */
+Array	*ARGVtab;	/* symbol table containing ARGV[...] */
+Array	*ENVtab;	/* symbol table containing ENVIRON[...] */
 Cell	*rstartloc;	/* RSTART */
 Cell	*rlengthloc;	/* RLENGTH */
 Cell	*subseploc;	/* SUBSEP */
@@ -106,39 +107,36 @@ void syminit(void)	/* initialize symbol table with builtin vars */
 
 void arginit(int ac, char **av)	/* set up ARGV and ARGC */
 {
-	Array *ap;
 	Cell *cp;
 	int i;
 	char temp[50];
 
 	ARGC = &setsymtab("ARGC", "", (Awkfloat) ac, NUM, symtab)->fval;
 	cp = setsymtab("ARGV", "", 0.0, ARR, symtab);
-	ap = makesymtab(NSYMTAB);	/* could be (int) ARGC as well */
+	ARGVtab = makesymtab(NSYMTAB);	/* could be (int) ARGC as well */
 	free(cp->sval);
-	cp->sval = (char *) ap;
+	cp->sval = (char *) ARGVtab;
 	for (i = 0; i < ac; i++) {
 		double result;
 
 		sprintf(temp, "%d", i);
 		if (is_number(*av, & result))
-			setsymtab(temp, *av, result, STR|NUM, ap);
+			setsymtab(temp, *av, result, STR|NUM, ARGVtab);
 		else
-			setsymtab(temp, *av, 0.0, STR, ap);
+			setsymtab(temp, *av, 0.0, STR, ARGVtab);
 		av++;
 	}
-	ARGVcell = cp;
 }
 
 void envinit(char **envp)	/* set up ENVIRON variable */
 {
-	Array *ap;
 	Cell *cp;
 	char *p;
 
 	cp = setsymtab("ENVIRON", "", 0.0, ARR, symtab);
-	ap = makesymtab(NSYMTAB);
+	ENVtab = makesymtab(NSYMTAB);
 	free(cp->sval);
-	cp->sval = (char *) ap;
+	cp->sval = (char *) ENVtab;
 	for ( ; *envp; envp++) {
 		double result;
 
@@ -148,9 +146,9 @@ void envinit(char **envp)	/* set up ENVIRON variable */
 			continue;
 		*p++ = 0;	/* split into two strings at = */
 		if (is_number(p, & result))
-			setsymtab(*envp, p, result, STR|NUM, ap);
+			setsymtab(*envp, p, result, STR|NUM, ENVtab);
 		else
-			setsymtab(*envp, p, 0.0, STR, ap);
+			setsymtab(*envp, p, 0.0, STR, ENVtab);
 		p[-1] = '=';	/* restore in case env is passed down to a shell */
 	}
 }

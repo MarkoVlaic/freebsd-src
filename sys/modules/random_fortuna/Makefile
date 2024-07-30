@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/random
 
 KMOD	= random_fortuna

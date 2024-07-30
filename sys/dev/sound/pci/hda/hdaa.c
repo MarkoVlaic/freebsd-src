@@ -267,8 +267,7 @@ hdaa_channels_handler(struct hdaa_audio_as *as)
 	struct hdaa_chan *ch = &devinfo->chans[as->chans[0]];
 	struct hdaa_widget *w;
 	uint8_t *eld;
-	int total, sub, assume, channels;
-	size_t i;
+	int i, total, sub, assume, channels;
 	uint16_t cpins, upins, tpins;
 
 	cpins = upins = 0;
@@ -348,7 +347,7 @@ hdaa_channels_handler(struct hdaa_audio_as *as)
 			printf("\n");
 		);
 		/* Look for maximal fitting matrix. */
-		for (i = 0; i < nitems(matrixes); i++) {
+		for (i = 0; i < sizeof(matrixes) / sizeof(struct matrix); i++) {
 			if (as->pinset != 0 && matrixes[i].analog == 0)
 				continue;
 			if ((matrixes[i].m.mask & ~channels) == 0) {
@@ -1253,8 +1252,7 @@ hdaa_sysctl_config(SYSCTL_HANDLER_ARGS)
 static void
 hdaa_config_fetch(const char *str, uint32_t *on, uint32_t *off)
 {
-	size_t k;
-	int i = 0, j, len, inv;
+	int i = 0, j, k, len, inv;
 
 	for (;;) {
 		while (str[i] != '\0' &&
@@ -1294,8 +1292,7 @@ static int
 hdaa_sysctl_quirks(SYSCTL_HANDLER_ARGS)
 {
 	char buf[256];
-	int error, n = 0;
-	size_t i;
+	int error, n = 0, i;
 	uint32_t quirks, quirks_off;
 
 	quirks = *(uint32_t *)oidp->oid_arg1;
@@ -5542,7 +5539,7 @@ hdaa_create_pcms(struct hdaa_devinfo *devinfo)
 	for (i = 0; i < devinfo->num_devs; i++) {
 		struct hdaa_pcm_devinfo *pdevinfo = &devinfo->devs[i];
 
-		pdevinfo->dev = device_add_child(devinfo->dev, "pcm", DEVICE_UNIT_ANY);
+		pdevinfo->dev = device_add_child(devinfo->dev, "pcm", -1);
 		device_set_ivars(pdevinfo->dev, (void *)pdevinfo);
 	}
 }

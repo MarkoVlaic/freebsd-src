@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/aic7xxx
 KMOD=	ahd
 
@@ -16,11 +17,11 @@ ahdfirmware: ${GENSRCS}
 ${GENSRCS}:								 \
 		${SRCTOP}/sys/dev/aic7xxx/aic79xx.{reg,seq}	 \
 		${SRCTOP}/sys/cam/scsi/scsi_message.h
-	../aicasm/aicasm ${INCLUDES} -I${SRCTOP}/sys/cam/scsi	 \
+	aicasm ${INCLUDES} -I${SRCTOP}/sys/cam/scsi	 \
 			-I${SRCTOP}/sys/dev/aic7xxx		 \
 			-o aic79xx_seq.h -r aic79xx_reg.h		 \
 			${REG_PRINT_OPT}				 \
-			-i "<dev/aic7xxx/aic79xx_osm.h>" \
+			-i ${SRCTOP}/sys/dev/aic7xxx/aic79xx_osm.h \
 			${SRCTOP}/sys/dev/aic7xxx/aic79xx.seq
 .else
 ${GENSRCS}: .NOMETA

@@ -154,6 +154,7 @@ options 	BOOT_TAG=\"\"
 # size for both BOOT_TAG and the assocated tunable.
 options 	BOOT_TAG_SZ=32
 
+options 	GEOM_BDE		# Disk encryption.
 options 	GEOM_CACHE		# Disk cache.
 options 	GEOM_CONCAT		# Disk concatenation.
 options 	GEOM_ELI		# Disk encryption.
@@ -1028,7 +1029,6 @@ device		wg
 # TCP_BLACKBOX enables enhanced TCP event logging.
 #
 # TCP_HHOOK enables the hhook(9) framework hooks for the TCP stack.
-# SOCKET_HHOOK enables the hhook(9) framework hooks for socket operations.
 #
 # ROUTE_MPATH provides support for multipath routing.
 #
@@ -1050,7 +1050,6 @@ options 	PF_DEFAULT_TO_DROP	#drop everything by default
 options 	TCPPCAP
 options 	TCP_BLACKBOX
 options 	TCP_HHOOK
-options		SOCKET_HHOOK
 options 	ROUTE_MPATH
 
 # The MBUF_STRESS_TEST option enables options which create
@@ -2092,7 +2091,6 @@ device		sound
 # snd_fm801:		Forte Media FM801 PCI.
 # snd_hda:		Intel High Definition Audio (Controller) and
 #			compatible.
-# snd_hdsp:		RME HDSP 9632 and HDSP 9652
 # snd_hdspe:		RME HDSPe AIO and RayDAT.
 # snd_ich:		Intel ICH AC'97 and some more audio controllers
 #			embedded in a chipset, for example nVidia
@@ -2120,7 +2118,6 @@ device		snd_envy24ht
 device		snd_es137x
 device		snd_fm801
 device		snd_hda
-device		snd_hdsp
 device		snd_hdspe
 device		snd_ich
 device		snd_maestro3
@@ -2433,8 +2430,8 @@ device		virtio_blk	# VirtIO Block device
 device		virtio_console	# VirtIO Console device
 device		virtio_gpu	# VirtIO GPU device
 device		virtio_random	# VirtIO Entropy device
-device		virtio_scmi	# VirtIO SCMI device
-device		virtio_scsi	# VirtIO SCSI device
+device		virtio_scmi	# VirtIO SCSI device
+device		virtio_scsi	# VirtIO SCMI device
 
 #####################################################################
 # HID support

@@ -115,13 +115,16 @@ static const struct {
 	}
 };
 
+#define FEEDFORMAT_TAB_SIZE						\
+	((int32_t)(sizeof(feed_format_ops) / sizeof(feed_format_ops[0])))
+
 static int
 feed_format_init(struct pcm_feeder *f)
 {
 	struct feed_format_info *info;
 	intpcm_read_t *rd_op;
 	intpcm_write_t *wr_op;
-	size_t i;
+	int i;
 
 	if (f->desc->in == f->desc->out ||
 	    AFMT_CHANNEL(f->desc->in) != AFMT_CHANNEL(f->desc->out))
@@ -130,7 +133,7 @@ feed_format_init(struct pcm_feeder *f)
 	rd_op = NULL;
 	wr_op = NULL;
 
-	for (i = 0; i < nitems(feed_format_ops) &&
+	for (i = 0; i < FEEDFORMAT_TAB_SIZE &&
 	    (rd_op == NULL || wr_op == NULL); i++) {
 		if (rd_op == NULL &&
 		    AFMT_ENCODING(f->desc->in) == feed_format_ops[i].format)
@@ -273,9 +276,9 @@ FEEDER_DECLARE(feeder_format, NULL);
 intpcm_read_t *
 feeder_format_read_op(uint32_t format)
 {
-	size_t i;
+	int i;
 
-	for (i = 0; i < nitems(feed_format_ops); i++) {
+	for (i = 0; i < FEEDFORMAT_TAB_SIZE; i++) {
 		if (AFMT_ENCODING(format) == feed_format_ops[i].format)
 			return (feed_format_ops[i].read);
 	}
@@ -286,9 +289,9 @@ feeder_format_read_op(uint32_t format)
 intpcm_write_t *
 feeder_format_write_op(uint32_t format)
 {
-	size_t i;
+	int i;
 
-	for (i = 0; i < nitems(feed_format_ops); i++) {
+	for (i = 0; i < FEEDFORMAT_TAB_SIZE; i++) {
 		if (AFMT_ENCODING(format) == feed_format_ops[i].format)
 			return (feed_format_ops[i].write);
 	}

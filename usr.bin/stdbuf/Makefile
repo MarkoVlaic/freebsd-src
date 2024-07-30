@@ -1,3 +1,4 @@
+
 PROG=   stdbuf
 SRCS=   stdbuf.c
 

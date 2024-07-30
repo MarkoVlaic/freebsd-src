@@ -3,8 +3,6 @@
  * Copyright 2020 Compass Electronics Group, LLC
  */
 
-#include "imx8mm-overdrive.dtsi"
-
 / {
 	aliases {
 		rtc0 = &rtc;
@@ -114,7 +112,7 @@
 		rohm,reset-snvs-powered;
 
 		#clock-cells = <0>;
-		clocks = <&osc_32k>;
+		clocks = <&osc_32k 0>;
 		clock-output-names = "clk-32k-out";
 
 		regulators {

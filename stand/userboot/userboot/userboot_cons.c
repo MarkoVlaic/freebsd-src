@@ -42,13 +42,14 @@ static int userboot_cons_getchar(void);
 static int userboot_cons_poll(void);
 
 struct console userboot_console = {
-	.c_name = "userboot",
-	.c_desc = "userboot",
-	.c_probe = userboot_cons_probe,
-	.c_init = userboot_cons_init,
-	.c_out = userboot_cons_putchar,
-	.c_in = userboot_cons_getchar,
-	.c_ready = userboot_cons_poll,
+	"userboot",
+	"userboot",
+	0,
+	userboot_cons_probe,
+	userboot_cons_init,
+	userboot_cons_putchar,
+	userboot_cons_getchar,
+	userboot_cons_poll,
 };
 
 /*
@@ -56,13 +57,14 @@ struct console userboot_console = {
  * console to comconsole without resulting in an error
  */
 struct console userboot_comconsole = {
-	.c_name = "comconsole",
-	.c_desc = "comconsole",
-	.c_probe = userboot_comcons_probe,
-	.c_init = userboot_comcons_init,
-	.c_out = userboot_cons_putchar,
-	.c_in = userboot_cons_getchar,
-	.c_ready = userboot_cons_poll,
+	"comconsole",
+	"comconsole",
+	0,
+	userboot_comcons_probe,
+	userboot_comcons_init,
+	userboot_cons_putchar,
+	userboot_cons_getchar,
+	userboot_cons_poll,
 };
 
 static void

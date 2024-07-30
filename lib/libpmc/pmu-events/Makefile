@@ -1,3 +1,4 @@
+
 PROG=	jevents
 SRCS=	jevents.c jsmn.c json.c
 CFLAGS+= -Wno-cast-qual

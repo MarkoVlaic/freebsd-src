@@ -4641,8 +4641,8 @@ again:
 		return !error;
 	}
 
-	if (!(kflags & WPI_KFLAG_MULTICAST) &&
-	    ieee80211_is_key_global(vap, k)) {
+	if (!(kflags & WPI_KFLAG_MULTICAST) && &vap->iv_nw_keys[0] <= k &&
+	    k < &vap->iv_nw_keys[IEEE80211_WEP_NKID]) {
 		kflags |= WPI_KFLAG_MULTICAST;
 		node.kflags = htole16(kflags);
 
@@ -4726,8 +4726,8 @@ again:
 		return !error;
 	}
 
-	if (!(kflags & WPI_KFLAG_MULTICAST) &&
-	    ieee80211_is_key_global(vap, k)) {
+	if (!(kflags & WPI_KFLAG_MULTICAST) && &vap->iv_nw_keys[0] <= k &&
+	    k < &vap->iv_nw_keys[IEEE80211_WEP_NKID]) {
 		kflags |= WPI_KFLAG_MULTICAST;
 		node.kflags = htole16(kflags);
 
@@ -4782,7 +4782,8 @@ wpi_process_key(struct ieee80211vap *vap, const struct ieee80211_key *k,
 	}
 
 	/* Handle group keys. */
-	if (ieee80211_is_key_global(vap, k)) {
+	if (&vap->iv_nw_keys[0] <= k &&
+	    k < &vap->iv_nw_keys[IEEE80211_WEP_NKID]) {
 		WPI_NT_LOCK(sc);
 		if (set)
 			wvp->wv_gtk |= WPI_VAP_KEY(k->wk_keyix);

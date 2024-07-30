@@ -1,3 +1,4 @@
+
 PACKAGE=	ipf
 PROG=		ipnat
 SRCS=		${GENHDRS} ipnat.c ipnat_y.c ipnat_l.c

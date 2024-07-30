@@ -137,6 +137,7 @@ device		nvd		# expose NVMe namespaces as disks, depends on nvme
 # SCSI Controllers
 device		aacraid		# Adaptec by PMC RAID
 device		ahc		# AHA2940 and onboard AIC7xxx devices
+options 	AHC_ALLOW_MEMIO	# Attempt to use memory mapped I/O
 device		isp		# Qlogic family
 device		ispfw		# Firmware module for Qlogic host adapters
 device		mrsas		# LSI/Avago MegaRAID SAS/SATA, 6Gb/s and 12Gb/s
@@ -191,7 +192,6 @@ device		mlx5en		# Ethernet driver
 
 # Pseudo devices.
 device		crypto		# core crypto support
-device		ossl		# OpenSSL OpenCrypto module
 device		loop		# Network loopback
 device		ether		# Ethernet support
 device		vlan		# 802.1Q VLAN support
@@ -214,14 +214,11 @@ device		ohci		# OHCI PCI->USB interface
 device		ehci		# EHCI PCI->USB interface
 device		xhci		# XHCI PCI->USB interface
 device		usb		# USB Bus (required)
-device		usbhid		# USB HID Transport
 device		uhid		# "Human Interface Devices"
-device		hkbd		# HID Keyboard
-device		ukbd		# USB Keyboard
+device		ukbd		# Keyboard
 options 	KBD_INSTALL_CDEV # install a CDEV entry in /dev
 device		umass		# Disks/Mass storage - Requires scbus and da0
-device		hms		# HID Mouse
-device		ums		# USB Mouse
+device		ums		# Mouse
 # USB Ethernet
 device		aue		# ADMtek USB Ethernet
 device		axe		# ASIX Electronics USB Ethernet
@@ -291,4 +288,3 @@ device          virtio_balloon          # VirtIO Memory Balloon device
 # HID support
 options 	HID_DEBUG		# enable debug msgs
 device		hid			# Generic HID support
-device		hidbus			# Generic HID Bus

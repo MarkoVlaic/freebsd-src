@@ -22,8 +22,3 @@ int des_encrypt(const u8 *clear, const u8 *key, u8 *cypher)
 {
 	return 0;
 }
-
-
-void crypto_unload(void)
-{
-}

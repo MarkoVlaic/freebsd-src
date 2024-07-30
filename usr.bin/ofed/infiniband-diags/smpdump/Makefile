@@ -1,3 +1,4 @@
+
 PROG=	smpdump
 SRCS=	smpdump.c
 MAN=	smpdump.8

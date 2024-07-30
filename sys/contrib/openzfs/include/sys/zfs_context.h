@@ -249,7 +249,8 @@ extern struct proc p0;
 extern kthread_t *zk_thread_create(const char *name, void (*func)(void *),
     void *arg, size_t stksize, int state);
 
-#define	issig()		(FALSE)
+#define	issig(why)	(FALSE)
+#define	ISSIG(thr, why)	(FALSE)
 
 #define	KPREEMPT_SYNC		(-1)
 

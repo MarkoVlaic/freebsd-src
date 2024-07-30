@@ -31,13 +31,12 @@ using namespace llvm;
 // This part is for ELF object output.
 RISCVTargetELFStreamer::RISCVTargetELFStreamer(MCStreamer &S,
                                                const MCSubtargetInfo &STI)
-    : RISCVTargetStreamer(S), CurrentVendor("riscv") {
+    : RISCVTargetStreamer(S), CurrentVendor("riscv"), STI(STI) {
   MCAssembler &MCA = getStreamer().getAssembler();
   const FeatureBitset &Features = STI.getFeatureBits();
   auto &MAB = static_cast<RISCVAsmBackend &>(MCA.getBackend());
   setTargetABI(RISCVABI::computeTargetABI(STI.getTargetTriple(), Features,
                                           MAB.getTargetOptions().getABIName()));
-  setFlagsFromFeatures(STI);
   // `j label` in `.option norelax; j label; .option relax; ...; label:` needs a
   // relocation to ensure the jump target is correct after linking. This is due
   // to a limitation that shouldForceRelocation has to make the decision upfront
@@ -88,13 +87,14 @@ void RISCVTargetELFStreamer::finishAttributeSection() {
 void RISCVTargetELFStreamer::finish() {
   RISCVTargetStreamer::finish();
   MCAssembler &MCA = getStreamer().getAssembler();
+  const FeatureBitset &Features = STI.getFeatureBits();
   RISCVABI::ABI ABI = getTargetABI();
 
   unsigned EFlags = MCA.getELFHeaderEFlags();
 
-  if (hasRVC())
+  if (Features[RISCV::FeatureStdExtC])
     EFlags |= ELF::EF_RISCV_RVC;
-  if (hasTSO())
+  if (Features[RISCV::FeatureStdExtZtso])
     EFlags |= ELF::EF_RISCV_TSO;
 
   switch (ABI) {

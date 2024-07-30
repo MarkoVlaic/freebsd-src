@@ -1220,7 +1220,6 @@ kern_setsockopt(struct thread *td, int s, int level, int name, const void *val,
 {
 	struct socket *so;
 	struct file *fp;
-	struct filecaps fcaps;
 	struct sockopt sopt;
 	int error;
 
@@ -1246,10 +1245,8 @@ kern_setsockopt(struct thread *td, int s, int level, int name, const void *val,
 	}
 
 	AUDIT_ARG_FD(s);
-	error = getsock_cap(td, s, &cap_setsockopt_rights, &fp,
-	    &fcaps);
+	error = getsock(td, s, &cap_setsockopt_rights, &fp);
 	if (error == 0) {
-		sopt.sopt_rights = &fcaps.fc_rights;
 		so = fp->f_data;
 		error = sosetopt(so, &sopt);
 		fdrop(fp, td);
@@ -1287,7 +1284,6 @@ kern_getsockopt(struct thread *td, int s, int level, int name, void *val,
 {
 	struct socket *so;
 	struct file *fp;
-	struct filecaps fcaps;
 	struct sockopt sopt;
 	int error;
 
@@ -1313,9 +1309,8 @@ kern_getsockopt(struct thread *td, int s, int level, int name, void *val,
 	}
 
 	AUDIT_ARG_FD(s);
-	error = getsock_cap(td, s, &cap_getsockopt_rights, &fp, &fcaps);
+	error = getsock(td, s, &cap_getsockopt_rights, &fp);
 	if (error == 0) {
-		sopt.sopt_rights = &fcaps.fc_rights;
 		so = fp->f_data;
 		error = sogetopt(so, &sopt);
 		*valsize = sopt.sopt_valsize;

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021,2022 Thomas E. Dickey                                *
+ * Copyright 2019-2020,2021 Thomas E. Dickey                                *
  * Copyright 1998-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -37,7 +37,7 @@
 #include <curses.priv.h>
 #include <ctype.h>
 
-MODULE_ID("$Id: lib_addch.c,v 1.141 2022/06/12 15:16:41 tom Exp $")
+MODULE_ID("$Id: lib_addch.c,v 1.137 2021/02/20 22:24:34 tom Exp $")
 
 static const NCURSES_CH_T blankchar = NewChar(BLANK_TEXT);
 
@@ -321,29 +321,20 @@ waddch_literal(WINDOW *win, NCURSES_CH_T ch)
 	int len = _nc_wacs_width(CharOf(ch));
 	int i;
 	int j;
+	wchar_t *chars;
 
 	if (len == 0) {		/* non-spacing */
 	    if ((x > 0 && y >= 0)
 		|| (win->_maxx >= 0 && win->_cury >= 1)) {
-		NCURSES_CH_T *dst;
-		wchar_t *chars;
-		if (x > 0 && y >= 0) {
-		    for (j = x - 1; j >= 0; --j) {
-			if (!isWidecExt(win->_line[y].text[j])) {
-			    win->_curx = (NCURSES_SIZE_T) j;
-			    break;
-			}
-		    }
-		    dst = &(win->_line[y].text[j]);
-		} else {
-		    dst = &(win->_line[y - 1].text[win->_maxx]);
-		}
-		chars = dst->chars;
+		if (x > 0 && y >= 0)
+		    chars = (win->_line[y].text[x - 1].chars);
+		else
+		    chars = (win->_line[y - 1].text[win->_maxx].chars);
 		for (i = 0; i < CCHARW_MAX; ++i) {
 		    if (chars[i] == 0) {
 			TR(TRACE_VIRTPUT,
-			   ("adding non-spacing %s (level %d)",
-			    _tracech_t(CHREF(ch)), i));
+			   ("added non-spacing %d: %x",
+			    x, (int) CharOf(ch)));
 			chars[i] = CharOf(ch);
 			break;
 		    }
@@ -419,9 +410,9 @@ waddch_literal(WINDOW *win, NCURSES_CH_T ch)
   testwrapping:
     );
 
-    TR(TRACE_VIRTPUT, ("cell (%d, %d..%d) = %s",
-		       win->_cury, win->_curx, x - 1,
-		       _tracech_t(CHREF(line->text[win->_curx]))));
+    TR(TRACE_VIRTPUT, ("cell (%ld, %ld..%d) = %s",
+		       (long) win->_cury, (long) win->_curx, x - 1,
+		       _tracech_t(CHREF(ch))));
 
     if (x > win->_maxx) {
 	return wrap_to_next_line(win);

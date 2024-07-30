@@ -14,8 +14,7 @@ desc="Device state change daemon"
 rcvar="devd_enable"
 command="/sbin/${name}"
 
-devd_offcmd=devd_off
-start_precmd=find_pidfile
+start_precmd=${name}_prestart
 stop_precmd=find_pidfile
 
 find_pidfile()
@@ -27,8 +26,10 @@ find_pidfile()
 	fi
 }
 
-devd_off()
+devd_prestart()
 {
+	find_pidfile
+
 	# If devd is disabled, turn it off in the kernel to avoid unnecessary
 	# memory usage.
 	if ! checkyesno ${rcvar}; then
@@ -37,8 +38,4 @@ devd_off()
 }
 
 load_rc_config $name
-
-# doesn't make sense to run in a svcj: executing potential privileged operations
-devd_svcj="NO"
-
 run_rc_command "$1"

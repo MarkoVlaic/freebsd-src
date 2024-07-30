@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/iicbus/sensor
 KMOD=	max44009
 SRCS=	max44009.c

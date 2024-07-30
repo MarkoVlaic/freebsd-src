@@ -733,7 +733,7 @@ gps_input(
 }
 
 #else /* not (REFCLOCK && CLOCK_PARSE && CLOCK_MEINBERG) */
-NONEMPTY_TRANSLATION_UNIT
+int clk_meinberg_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE && CLOCK_MEINBERG) */
 
 /*

@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 ${PACKAGE}FILES+=	binary.0

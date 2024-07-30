@@ -111,9 +111,6 @@ SDT_PROBE_DEFINE1_XLATE(sdt, , , m__free,
 SDT_PROBE_DEFINE1_XLATE(sdt, , , m__freem,
     "struct mbuf *", "mbufinfo_t *");
 
-SDT_PROBE_DEFINE1_XLATE(sdt, , , m__freemp,
-    "struct mbuf *", "mbufinfo_t *");
-
 #include <security/mac/mac_framework.h>
 
 /*

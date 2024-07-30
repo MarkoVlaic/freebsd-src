@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/enetc
 
 KMOD	= if_enetc

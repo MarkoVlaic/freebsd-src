@@ -146,13 +146,11 @@ struct tid_info {
 	u_int stids_in_use;
 	u_int nstids_free_head;	/* # of available stids at the beginning */
 	struct stid_head stids;
-	bool stid_tab_stopped;
 
 	struct mtx atid_lock __aligned(CACHE_LINE_SIZE);
 	union aopen_entry *atid_tab;
 	union aopen_entry *afree;
 	u_int atids_in_use;
-	bool atid_alloc_stopped;
 
 	/* High priority filters and normal filters share the lock and cv. */
 	struct mtx ftid_lock __aligned(CACHE_LINE_SIZE);
@@ -211,10 +209,12 @@ enum {
 struct adapter;
 struct port_info;
 struct uld_info {
-	int (*uld_activate)(struct adapter *);
-	int (*uld_deactivate)(struct adapter *);
-	int (*uld_stop)(struct adapter *);
-	int (*uld_restart)(struct adapter *);
+	SLIST_ENTRY(uld_info) link;
+	int refcount;
+	int uld_id;
+	int (*activate)(struct adapter *);
+	int (*deactivate)(struct adapter *);
+	void (*async_event)(struct adapter *);
 };
 
 struct tom_tunables {
@@ -242,8 +242,8 @@ struct tls_tunables {
 };
 
 #ifdef TCP_OFFLOAD
-int t4_register_uld(struct uld_info *, int);
-int t4_unregister_uld(struct uld_info *, int);
+int t4_register_uld(struct uld_info *);
+int t4_unregister_uld(struct uld_info *);
 int t4_activate_uld(struct adapter *, int);
 int t4_deactivate_uld(struct adapter *, int);
 int uld_active(struct adapter *, int);

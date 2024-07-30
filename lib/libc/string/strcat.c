@@ -31,8 +31,6 @@
 
 #include <string.h>
 
-#undef strcat	/* _FORTIFY_SOURCE */
-
 char *
 strcat(char * __restrict s, const char * __restrict append)
 {

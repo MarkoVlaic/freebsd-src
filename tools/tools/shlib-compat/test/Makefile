@@ -1,3 +1,4 @@
+
 SUBDIR=	libtest1 \
 	libtest2 \
 	libtest3 \

@@ -1,3 +1,4 @@
+
 # Makefile for the IEEE1394 OHCI chipset
 
 .PATH: ${SRCTOP}/sys/dev/firewire

@@ -1,3 +1,4 @@
+
 PACKAGE=	devmatch
 PROG=	devinfo
 MAN=	devinfo.8

@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/geom/gate
 
 KMOD=	geom_gate

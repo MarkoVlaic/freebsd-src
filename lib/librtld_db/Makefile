@@ -1,3 +1,4 @@
+
 .include <bsd.own.mk>
 
 LIB=		rtld_db

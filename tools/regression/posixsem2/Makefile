@@ -1,3 +1,4 @@
+
 PROG=	semtest
 SRCS=	semtest.c
 MAN=

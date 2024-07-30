@@ -1,3 +1,4 @@
+
 PACKAGE=runtime
 PROG=	swapon
 MAN=	swapon.8

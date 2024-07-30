@@ -1,3 +1,4 @@
+
 PROG=	fifolog_writer
 
 CFLAGS+= -I${.CURDIR:H}/lib

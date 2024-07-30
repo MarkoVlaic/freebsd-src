@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2018-2019-2020,2021 Thomas E. Dickey                           *
+ * Copyright 2018-2019,2020 Thomas E. Dickey                                *
  * Copyright 1998-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -31,7 +31,7 @@
  *   Author:  Juergen Pfeifer, 1995,1997                                    *
  ****************************************************************************/
 
-/* $Id: form.h,v 0.32 2021/06/17 21:26:02 tom Exp $ */
+/* $Id: form.h,v 0.31 2020/07/04 20:38:43 tom Exp $ */
 
 #ifndef FORM_H
 #define FORM_H

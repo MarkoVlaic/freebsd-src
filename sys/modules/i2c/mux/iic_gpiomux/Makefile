@@ -1,3 +1,4 @@
+
 .PATH:		${SRCTOP}/sys/dev/iicbus/mux
 
 KMOD=	iic_gpiomux

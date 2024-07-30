@@ -1,3 +1,4 @@
+
 PACKAGE=runtime
 PROG=	mount_cd9660
 SRCS=	mount_cd9660.c getmntopts.c

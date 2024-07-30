@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 _spath=	${SRCTOP}/contrib/ofed/libibnetdisc

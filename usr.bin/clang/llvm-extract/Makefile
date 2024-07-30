@@ -1,3 +1,4 @@
+
 PROG_CXX=	llvm-extract
 
 SRCDIR=		llvm/tools/llvm-extract

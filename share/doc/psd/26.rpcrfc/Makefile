@@ -1,3 +1,4 @@
+
 VOLUME=		psd/26.rpcrfc
 SRCS=		stubs rpc.rfc.ms
 MACROS=		-ms

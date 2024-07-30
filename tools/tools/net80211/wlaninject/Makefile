@@ -1,3 +1,4 @@
+
 PROG=	wlaninject
 BINDIR=	/usr/local/bin
 CFLAGS=-g

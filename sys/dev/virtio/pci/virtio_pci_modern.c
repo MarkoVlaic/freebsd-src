@@ -244,6 +244,7 @@ DRIVER_MODULE(virtio_pci_modern, pci, vtpci_modern_driver, 0, 0);
 static int
 vtpci_modern_probe(device_t dev)
 {
+	char desc[64];
 	const char *name;
 	uint16_t devid;
 
@@ -268,7 +269,8 @@ vtpci_modern_probe(device_t dev)
 	if (name == NULL)
 		name = "Unknown";
 
-	device_set_descf(dev, "VirtIO PCI (modern) %s adapter", name);
+	snprintf(desc, sizeof(desc), "VirtIO PCI (modern) %s adapter", name);
+	device_set_desc_copy(dev, desc);
 
 	return (BUS_PROBE_DEFAULT);
 }

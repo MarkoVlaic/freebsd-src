@@ -1589,20 +1589,9 @@ shm_mmap_large(struct shmfd *shmfd, vm_map_t map, vm_offset_t *addr,
 	if (align == 0) {
 		align = pagesizes[shmfd->shm_lp_psind];
 	} else if (align == MAP_ALIGNED_SUPER) {
-		/*
-		 * MAP_ALIGNED_SUPER is only supported on superpage sizes,
-		 * i.e., [1, VM_NRESERVLEVEL].  shmfd->shm_lp_psind < 1 is
-		 * handled above.
-		 */
-		if (
-#if VM_NRESERVLEVEL > 0
-		    shmfd->shm_lp_psind > VM_NRESERVLEVEL
-#else
-		    shmfd->shm_lp_psind > 1
-#endif
-		    )
+		if (shmfd->shm_lp_psind != 1)
 			return (EINVAL);
-		align = pagesizes[shmfd->shm_lp_psind];
+		align = pagesizes[1];
 	} else {
 		align >>= MAP_ALIGNMENT_SHIFT;
 		align = 1ULL << align;
@@ -1921,19 +1910,21 @@ shm_fill_kinfo_locked(struct shmfd *shmfd, struct kinfo_file *kif, bool list)
 	kif->kf_un.kf_file.kf_file_mode = S_IFREG | shmfd->shm_mode;
 	kif->kf_un.kf_file.kf_file_size = shmfd->shm_size;
 	if (shmfd->shm_path != NULL) {
-		path = shmfd->shm_path;
-		pr_path = curthread->td_ucred->cr_prison->pr_path;
-		if (strcmp(pr_path, "/") != 0) {
-			/* Return the jail-rooted pathname. */
-			pr_pathlen = strlen(pr_path);
-			visible = strncmp(path, pr_path, pr_pathlen) == 0 &&
-			    path[pr_pathlen] == '/';
-			if (list && !visible)
-				return (EPERM);
-			if (visible)
-				path += pr_pathlen;
+		if (shmfd->shm_path != NULL) {
+			path = shmfd->shm_path;
+			pr_path = curthread->td_ucred->cr_prison->pr_path;
+			if (strcmp(pr_path, "/") != 0) {
+				/* Return the jail-rooted pathname. */
+				pr_pathlen = strlen(pr_path);
+				visible = strncmp(path, pr_path, pr_pathlen)
+				    == 0 && path[pr_pathlen] == '/';
+				if (list && !visible)
+					return (EPERM);
+				if (visible)
+					path += pr_pathlen;
+			}
+			strlcpy(kif->kf_path, path, sizeof(kif->kf_path));
 		}
-		strlcpy(kif->kf_path, path, sizeof(kif->kf_path));
 	}
 	return (0);
 }

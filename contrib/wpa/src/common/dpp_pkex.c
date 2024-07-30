@@ -30,7 +30,8 @@ static struct wpabuf * dpp_pkex_build_exchange_req(struct dpp_pkex *pkex,
 						   bool v2)
 {
 	struct crypto_ec *ec = NULL;
-	struct crypto_ec_point *Qi = NULL, *M = NULL, *X = NULL;
+	const struct crypto_ec_point *X;
+	struct crypto_ec_point *Qi = NULL, *M = NULL;
 	u8 *Mx, *My;
 	struct wpabuf *msg = NULL;
 	size_t attr_len;
@@ -41,7 +42,7 @@ static struct wpabuf * dpp_pkex_build_exchange_req(struct dpp_pkex *pkex,
 
 	/* Qi = H([MAC-Initiator |] [identifier |] code) * Pi */
 	Qi = dpp_pkex_derive_Qi(curve, v2 ? NULL : pkex->own_mac, pkex->code,
-				pkex->code_len, pkex->identifier, &ec);
+				pkex->identifier, &ec);
 	if (!Qi)
 		goto fail;
 
@@ -145,13 +146,10 @@ skip_finite_cyclic_group:
 	My = wpabuf_put(msg, curve->prime_len);
 	if (crypto_ec_point_to_bin(ec, M, Mx, My))
 		goto fail;
-	wpabuf_free(pkex->enc_key);
-	pkex->enc_key = wpabuf_alloc_copy(Mx, 2 * curve->prime_len);
 
 	os_memcpy(pkex->Mx, Mx, curve->prime_len);
 
 out:
-	crypto_ec_point_deinit(X, 1);
 	crypto_ec_point_deinit(M, 1);
 	crypto_ec_point_deinit(Qi, 1);
 	crypto_ec_deinit(ec);
@@ -173,7 +171,7 @@ static void dpp_pkex_fail(struct dpp_pkex *pkex, const char *txt)
 struct dpp_pkex * dpp_pkex_init(void *msg_ctx, struct dpp_bootstrap_info *bi,
 				const u8 *own_mac,
 				const char *identifier, const char *code,
-				size_t code_len, bool v2)
+				bool v2)
 {
 	struct dpp_pkex *pkex;
 
@@ -198,10 +196,9 @@ struct dpp_pkex * dpp_pkex_init(void *msg_ctx, struct dpp_bootstrap_info *bi,
 		if (!pkex->identifier)
 			goto fail;
 	}
-	pkex->code = os_memdup(code, code_len);
+	pkex->code = os_strdup(code);
 	if (!pkex->code)
 		goto fail;
-	pkex->code_len = code_len;
 	pkex->exchange_req = dpp_pkex_build_exchange_req(pkex, v2);
 	if (!pkex->exchange_req)
 		goto fail;
@@ -343,7 +340,7 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 					   const u8 *own_mac,
 					   const u8 *peer_mac,
 					   const char *identifier,
-					   const char *code, size_t code_len,
+					   const char *code,
 					   const u8 *buf, size_t len, bool v2)
 {
 	const u8 *attr_group, *attr_id, *attr_key;
@@ -352,8 +349,9 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	u16 ike_group;
 	struct dpp_pkex *pkex = NULL;
 	struct crypto_ec_point *Qi = NULL, *Qr = NULL, *M = NULL, *X = NULL,
-		*N = NULL, *Y = NULL;
+		*N = NULL;
 	struct crypto_ec *ec = NULL;
+	const struct crypto_ec_point *Y;
 	u8 *x_coord = NULL, *y_coord = NULL;
 	u8 Kx[DPP_MAX_SHARED_SECRET_LEN];
 	size_t Kx_len;
@@ -440,8 +438,8 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	}
 
 	/* Qi = H([MAC-Initiator |] [identifier |] code) * Pi */
-	Qi = dpp_pkex_derive_Qi(curve, v2 ? NULL : peer_mac, code, code_len,
-				identifier, &ec);
+	Qi = dpp_pkex_derive_Qi(curve, v2 ? NULL : peer_mac, code, identifier,
+				&ec);
 	if (!Qi)
 		goto fail;
 
@@ -471,19 +469,16 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	pkex->t = bi->pkex_t;
 	pkex->msg_ctx = msg_ctx;
 	pkex->own_bi = bi;
-	if (own_mac)
-		os_memcpy(pkex->own_mac, own_mac, ETH_ALEN);
-	if (peer_mac)
-		os_memcpy(pkex->peer_mac, peer_mac, ETH_ALEN);
+	os_memcpy(pkex->own_mac, own_mac, ETH_ALEN);
+	os_memcpy(pkex->peer_mac, peer_mac, ETH_ALEN);
 	if (identifier) {
 		pkex->identifier = os_strdup(identifier);
 		if (!pkex->identifier)
 			goto fail;
 	}
-	pkex->code = os_memdup(code, code_len);
+	pkex->code = os_strdup(code);
 	if (!pkex->code)
 		goto fail;
-	pkex->code_len = code_len;
 
 	os_memcpy(pkex->Mx, attr_key, attr_key_len / 2);
 
@@ -499,8 +494,8 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 		goto fail;
 
 	/* Qr = H([MAC-Responder |] [identifier |] code) * Pr */
-	Qr = dpp_pkex_derive_Qr(curve, v2 ? NULL : own_mac, code, code_len,
-				identifier, NULL);
+	Qr = dpp_pkex_derive_Qr(curve, v2 ? NULL : own_mac, code, identifier,
+				NULL);
 	if (!Qr)
 		goto fail;
 
@@ -554,8 +549,7 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 				pkex->peer_version, DPP_VERSION,
 				pkex->Mx, curve->prime_len,
 				pkex->Nx, curve->prime_len, pkex->code,
-				pkex->code_len,	Kx, Kx_len, pkex->z,
-				curve->hash_len);
+				Kx, Kx_len, pkex->z, curve->hash_len);
 	os_memset(Kx, 0, Kx_len);
 	if (res < 0)
 		goto fail;
@@ -570,7 +564,6 @@ out:
 	crypto_ec_point_deinit(M, 1);
 	crypto_ec_point_deinit(N, 1);
 	crypto_ec_point_deinit(X, 1);
-	crypto_ec_point_deinit(Y, 1);
 	crypto_ec_deinit(ec);
 	return pkex;
 fail:
@@ -749,8 +742,7 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 	}
 #endif /* CONFIG_DPP2 */
 
-	if (peer_mac)
-		os_memcpy(pkex->peer_mac, peer_mac, ETH_ALEN);
+	os_memcpy(pkex->peer_mac, peer_mac, ETH_ALEN);
 
 	attr_status = dpp_get_attr(buf, buflen, DPP_ATTR_STATUS,
 				   &attr_status_len);
@@ -796,8 +788,7 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 
 	/* Qr = H([MAC-Responder |] [identifier |] code) * Pr */
 	Qr = dpp_pkex_derive_Qr(curve, pkex->v2 ? NULL : pkex->peer_mac,
-				pkex->code, pkex->code_len, pkex->identifier,
-				&ec);
+				pkex->code, pkex->identifier, &ec);
 	if (!Qr)
 		goto fail;
 
@@ -875,7 +866,7 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 				DPP_VERSION, pkex->peer_version,
 				pkex->Mx, curve->prime_len,
 				attr_key /* N.x */, attr_key_len / 2,
-				pkex->code, pkex->code_len, Kx, Kx_len,
+				pkex->code, Kx, Kx_len,
 				pkex->z, curve->hash_len);
 	os_memset(Kx, 0, Kx_len);
 	if (res < 0)
@@ -1350,12 +1341,9 @@ dpp_pkex_finish(struct dpp_global *dpp, struct dpp_pkex *pkex, const u8 *peer,
 		return NULL;
 	bi->id = dpp_next_id(dpp);
 	bi->type = DPP_BOOTSTRAP_PKEX;
-	if (peer)
-		os_memcpy(bi->mac_addr, peer, ETH_ALEN);
-	if (freq) {
-		bi->num_freq = 1;
-		bi->freq[0] = freq;
-	}
+	os_memcpy(bi->mac_addr, peer, ETH_ALEN);
+	bi->num_freq = 1;
+	bi->freq[0] = freq;
 	bi->curve = pkex->own_bi->curve;
 	bi->pubkey = pkex->peer_bootstrap_key;
 	pkex->peer_bootstrap_key = NULL;
@@ -1363,8 +1351,6 @@ dpp_pkex_finish(struct dpp_global *dpp, struct dpp_pkex *pkex, const u8 *peer,
 		dpp_bootstrap_info_free(bi);
 		return NULL;
 	}
-	os_memcpy(pkex->own_bi->peer_pubkey_hash, bi->pubkey_hash,
-		  SHA256_MAC_LEN);
 	dpp_pkex_free(pkex);
 	dl_list_add(&dpp->bootstrap, &bi->list);
 	return bi;
@@ -1383,6 +1369,5 @@ void dpp_pkex_free(struct dpp_pkex *pkex)
 	crypto_ec_key_deinit(pkex->peer_bootstrap_key);
 	wpabuf_free(pkex->exchange_req);
 	wpabuf_free(pkex->exchange_resp);
-	wpabuf_free(pkex->enc_key);
 	os_free(pkex);
 }

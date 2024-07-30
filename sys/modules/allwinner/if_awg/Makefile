@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/arm/allwinner
 
 KMOD=	if_awg

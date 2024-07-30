@@ -47,7 +47,6 @@ mdconfig -a -t vnode -f $D -u $mdstart
 for mode in "" "-U"; do
 	printf "newfs -O2 $mode /dev/md${mdstart}\n\n"
 	newfs -O2 $mode /dev/md$mdstart > /dev/null 2>&1
-	[ "$mode" = "" ] && tunefs -n disable md$mdstart
 	mount /dev/md$mdstart $mntpoint
 
 	for i in `jot 5`; do

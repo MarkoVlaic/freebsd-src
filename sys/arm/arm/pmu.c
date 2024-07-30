@@ -46,7 +46,6 @@
 #include <sys/timetc.h>
 #include <sys/pmc.h>
 #include <sys/pmckern.h>
-#include <sys/proc.h>
 
 #include <machine/bus.h>
 #include <machine/cpu.h>
@@ -66,6 +65,9 @@ uint32_t ccnt_hi[MAXCPU];
 static int
 pmu_intr(void *arg)
 {
+#ifdef HWPMC_HOOKS
+	struct trapframe *tf;
+#endif
 	uint32_t r;
 #if defined(__arm__) && (__ARM_ARCH > 6)
 	u_int cpu;
@@ -85,8 +87,10 @@ pmu_intr(void *arg)
 
 #ifdef HWPMC_HOOKS
 	/* Only call into the HWPMC framework if we know there is work. */
-	if (r != 0 && pmc_intr)
-		(*pmc_intr)(curthread->td_intr_frame);
+	if (r != 0 && pmc_intr) {
+		tf = arg;
+		(*pmc_intr)(tf);
+	}
 #endif
 
 	return (FILTER_HANDLED);

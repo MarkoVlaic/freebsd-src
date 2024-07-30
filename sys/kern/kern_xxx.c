@@ -315,8 +315,7 @@ freebsd4_uname(struct thread *td, struct freebsd4_uname_args *uap)
 {
 	int name[2], error;
 	size_t len;
-	const char *s;
-	char *us;
+	char *s, *us;
 
 	name[0] = CTL_KERN;
 	name[1] = KERN_OSTYPE;

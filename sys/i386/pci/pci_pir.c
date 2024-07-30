@@ -653,8 +653,11 @@ pci_pir_probe(int bus, int require_parse)
 static int
 pir_probe(device_t dev)
 {
-	device_set_descf(dev, "PCI Interrupt Routing Table: %d Entries",
+	char buf[64];
+
+	snprintf(buf, sizeof(buf), "PCI Interrupt Routing Table: %d Entries",
 	    pci_route_count);
+	device_set_desc_copy(dev, buf);
 	return (0);
 }
 

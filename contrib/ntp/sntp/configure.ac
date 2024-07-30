@@ -33,7 +33,7 @@ AC_LANG([C])
 # the date YYYYMMDD optionally with -HHMM if there is more than one
 # bump in a day.
 
-sntp_configure_cache_version=20240218
+sntp_configure_cache_version=20120806
 
 # When the version of config.cache and configure do not
 # match, NTP_CACHEVERSION will flush the cache.
@@ -62,7 +62,8 @@ AM_PROG_AR
 
 NTP_LIBNTP
 
-LT_INIT([disable-shared])
+AC_DISABLE_SHARED
+AC_PROG_LIBTOOL
 AC_SUBST([LIBTOOL_DEPS])
 
 NTP_WITHSNTP
@@ -81,7 +82,7 @@ esac
 # Therefore, by default:
 # - use the version we ship with
 # - do not install it
-# - build a static copy (disable-shared - done earlier)
+# - build a static copy (AC_DISABLE_SHARED - done earlier)
 case "${enable_local_libopts+set}" in
  set) ;;
  *) enable_local_libopts=yes ;;
@@ -120,6 +121,7 @@ NTP_FACILITYNAMES
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 
+NTP_OPENSSL
 NTP_IPV6
 
 ###

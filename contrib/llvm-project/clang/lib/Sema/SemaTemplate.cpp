@@ -2404,6 +2404,9 @@ struct ConvertConstructorToDeductionGuideTransform {
       Args.addOuterRetainedLevel();
     }
 
+    if (NestedPattern)
+      Args.addOuterRetainedLevels(NestedPattern->getTemplateDepth());
+
     FunctionProtoTypeLoc FPTL = CD->getTypeSourceInfo()->getTypeLoc()
                                    .getAsAdjusted<FunctionProtoTypeLoc>();
     assert(FPTL && "no prototype for constructor declaration");
@@ -2523,27 +2526,11 @@ private:
 
     //    -- The types of the function parameters are those of the constructor.
     for (auto *OldParam : TL.getParams()) {
-      ParmVarDecl *NewParam = OldParam;
-      // Given
-      //   template <class T> struct C {
-      //     template <class U> struct D {
-      //       template <class V> D(U, V);
-      //     };
-      //   };
-      // First, transform all the references to template parameters that are
-      // defined outside of the surrounding class template. That is T in the
-      // above example.
-      if (NestedPattern) {
+      ParmVarDecl *NewParam =
+          transformFunctionTypeParam(OldParam, Args, MaterializedTypedefs);
+      if (NestedPattern && NewParam)
         NewParam = transformFunctionTypeParam(NewParam, OuterInstantiationArgs,
                                               MaterializedTypedefs);
-        if (!NewParam)
-          return QualType();
-      }
-      // Then, transform all the references to template parameters that are
-      // defined at the class template and the constructor. In this example,
-      // they're U and V, respectively.
-      NewParam =
-          transformFunctionTypeParam(NewParam, Args, MaterializedTypedefs);
       if (!NewParam)
         return QualType();
       ParamTypes.push_back(NewParam->getType());

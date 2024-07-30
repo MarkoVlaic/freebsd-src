@@ -1,3 +1,4 @@
+
 _spath=${SRCTOP}/contrib/ofed/libibverbs
 .PATH: ${_spath}/examples ${_spath}/man
 

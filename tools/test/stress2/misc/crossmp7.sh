@@ -91,8 +91,7 @@ else
 	else
 		# The test: Parallel mount and unmounts
 		m=$1
-		start=`date +%s`
-		while [ $((`date +%s`- start)) -lt 300 ]; do
+		for i in `jot 1024`; do
 			zfs mount     stress2_tank/test$m
 			zfs umount -f stress2_tank/test$m
 		done 2>/dev/null

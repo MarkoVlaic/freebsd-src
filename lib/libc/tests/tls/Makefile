@@ -1,3 +1,4 @@
+
 .include <bsd.own.mk>
 
 .if !defined(NO_PIC)

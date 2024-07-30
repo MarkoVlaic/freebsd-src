@@ -36,8 +36,7 @@
 # Test scenario by Tor Egge
 
 root=/tmp
-start=`date +%s`
-while [ $((`date +%s` - start)) -lt 60 ]; do
+for i in `jot 10000`; do
 	rm -rf $root/a
 	mkdir -p $root/a/b/c/d/e/f/g
 	mkdir -p $root/a/b/c/d/e/f/z

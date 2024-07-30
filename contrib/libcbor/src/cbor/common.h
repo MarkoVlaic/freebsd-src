@@ -157,7 +157,7 @@ _CBOR_NODISCARD
 CBOR_EXPORT cbor_type cbor_typeof(
     const cbor_item_t *item); /* Will be inlined iff link-time opt is enabled */
 
-/* Standard CBOR Major item types */
+/* Standard item types as described by the RFC */
 
 /** Does the item have the appropriate major type?
  * @param item the item

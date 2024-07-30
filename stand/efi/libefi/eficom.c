@@ -390,10 +390,10 @@ static int
 comc_init(int arg __unused)
 {
 	if (comc_setup())
-		return (0);
+		return (CMD_OK);
 
 	eficom.c_flags &= ~(C_ACTIVEIN | C_ACTIVEOUT);
-	return (1);
+	return (CMD_ERROR);
 }
 
 static void

@@ -780,6 +780,11 @@ rl_attach(device_t dev)
 		goto fail;
 
 	ifp = sc->rl_ifp = if_alloc(IFT_ETHER);
+	if (ifp == NULL) {
+		device_printf(dev, "can not if_alloc()\n");
+		error = ENOSPC;
+		goto fail;
+	}
 
 #define	RL_PHYAD_INTERNAL	0
 

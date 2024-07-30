@@ -82,7 +82,7 @@ report_good_read2(time_t now, size_t bytes, struct period_head *ph, time_t dt)
 
 	pp = TAILQ_FIRST(ph);
 	if (pp == NULL || pp->t1 < now) {
-		pp = calloc(1, sizeof(*pp));
+		pp = calloc(sizeof *pp, 1L);
 		assert(pp != NULL);
 		pp->t0 = (now / dt) * dt;
 		pp->t1 = (now / dt + 1) * dt;

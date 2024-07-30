@@ -1,4 +1,4 @@
-echo T.csconcat: test constant string concatenation
+echo T.csconcat: test constant string concatentation
 
 awk=${awk-../a.out}
 

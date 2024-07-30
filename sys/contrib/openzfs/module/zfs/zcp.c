@@ -780,7 +780,8 @@ zcp_lua_counthook(lua_State *state, lua_Debug *ar)
 	 * Check if we were canceled while waiting for the
 	 * txg to sync or from our open context thread
 	 */
-	if (ri->zri_canceled || (!ri->zri_sync && issig())) {
+	if (ri->zri_canceled ||
+	    (!ri->zri_sync && issig(JUSTLOOKING) && issig(FORREAL))) {
 		ri->zri_canceled = B_TRUE;
 		(void) lua_pushstring(state, "Channel program was canceled.");
 		(void) lua_error(state);

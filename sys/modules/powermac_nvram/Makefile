@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/powermac_nvram
 
 KMOD=	powermac_nvram

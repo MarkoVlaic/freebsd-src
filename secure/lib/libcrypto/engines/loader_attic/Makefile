@@ -1,3 +1,4 @@
+
 SHLIB_NAME?=	loader_attic.so
 
 SRCS=	e_loader_attic.c pvkfmt.c

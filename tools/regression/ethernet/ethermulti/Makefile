@@ -1,3 +1,4 @@
+
 PROG=	ethermulti
 SRCS+=	ethermulti.c
 MAN=

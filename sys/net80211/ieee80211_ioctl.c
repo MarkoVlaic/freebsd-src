@@ -709,11 +709,7 @@ ieee80211_ioctl_getdevcaps(struct ieee80211com *ic,
 	if (dc == NULL)
 		return ENOMEM;
 	dc->dc_drivercaps = ic->ic_caps;
-	/*
-	 * Announce the set of both hardware and software supported
-	 * ciphers.
-	 */
-	dc->dc_cryptocaps = ic->ic_cryptocaps | ic->ic_sw_cryptocaps;
+	dc->dc_cryptocaps = ic->ic_cryptocaps;
 	dc->dc_htcaps = ic->ic_htcaps;
 	dc->dc_vhtcaps = ic->ic_vht_cap.vht_cap_info;
 	ci = &dc->dc_chaninfo;

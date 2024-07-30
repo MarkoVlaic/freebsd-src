@@ -1,3 +1,4 @@
+
 CONFS=	ddb.conf
 PACKAGE=runtime
 PROG=	ddb

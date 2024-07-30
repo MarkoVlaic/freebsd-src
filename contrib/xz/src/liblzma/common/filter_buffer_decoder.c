@@ -1,11 +1,12 @@
-// SPDX-License-Identifier: 0BSD
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 /// \file       filter_buffer_decoder.c
 /// \brief      Single-call raw decoding
 //
 //  Author:     Lasse Collin
+//
+//  This file has been put into the public domain.
+//  You can do whatever you want with this file.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -23,7 +24,7 @@ lzma_raw_buffer_decode(
 			|| out_pos == NULL || *out_pos > out_size)
 		return LZMA_PROG_ERROR;
 
-	// Initialize the decoder.
+	// Initialize the decoer.
 	lzma_next_coder next = LZMA_NEXT_CODER_INIT;
 	return_if_error(lzma_raw_decoder_init(&next, allocator, filters));
 

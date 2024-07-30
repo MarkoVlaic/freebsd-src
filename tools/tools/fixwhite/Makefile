@@ -1,3 +1,4 @@
+
 PROG=	fixwhite
 BINDIR=	/usr/bin
 

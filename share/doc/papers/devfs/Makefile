@@ -1,3 +1,4 @@
+
 VOLUME=		papers
 DOC=		devfs
 SRCS=		paper.me

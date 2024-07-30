@@ -1,3 +1,4 @@
+
 SYSDIR?=	${SRCTOP}/sys
 
 .PATH:		${SYSDIR}/cddl/contrib/opensolaris/uts/common/dtrace

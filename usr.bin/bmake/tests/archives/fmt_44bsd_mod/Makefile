@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 TESTSDIR=	${TESTSBASE}/usr.bin/bmake/archives/fmt_44bsd_mod

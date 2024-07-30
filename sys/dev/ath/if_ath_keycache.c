@@ -434,7 +434,8 @@ ath_key_alloc(struct ieee80211vap *vap, struct ieee80211_key *k,
 		/*
 		 * Only global keys should have key index assigned.
 		 */
-		if (!ieee80211_is_key_global(vap, k)) {
+		if (!(&vap->iv_nw_keys[0] <= k &&
+		      k < &vap->iv_nw_keys[IEEE80211_WEP_NKID])) {
 			/* should not happen */
 			DPRINTF(sc, ATH_DEBUG_KEYCACHE,
 				"%s: bogus group key\n", __func__);

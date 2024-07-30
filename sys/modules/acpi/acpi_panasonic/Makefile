@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/acpi_support
 
 KMOD=	acpi_panasonic

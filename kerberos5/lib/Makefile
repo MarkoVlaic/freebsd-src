@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 SUBDIR=	libasn1 libhdb \

@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/usr.sbin/ypserv ${SRCTOP}/libexec/ypxfr
 
 PACKAGE=yp

@@ -182,7 +182,6 @@ gve_free_qpls(struct gve_priv *priv)
 		for (i = 0; i < num_qpls; i++)
 			gve_free_qpl(priv, i);
 		free(priv->qpls, M_GVE_QPL);
-		priv->qpls = NULL;
 	}
 }
 

@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/cpufreq		\
 	${SRCTOP}/sys/${MACHINE_CPUARCH}/cpufreq
 

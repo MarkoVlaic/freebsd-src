@@ -34,12 +34,11 @@
 #include <paths.h>
 #include <stdio.h>
 #include <string.h>
-#include <ssp/ssp.h>
 
 #define	LEN_PATH_DEV	(sizeof(_PATH_DEV) - 1)
 
 char *
-__ssp_real(ctermid)(char *s)
+ctermid(char *s)
 {
 	static char def[sizeof(_PATH_DEV) + SPECNAMELEN];
 	struct stat sb;
@@ -63,7 +62,7 @@ __ssp_real(ctermid)(char *s)
 }
 
 char *
-__ssp_real(ctermid_r)(char *s)
+ctermid_r(char *s)
 {
 
 	return (s != NULL ? ctermid(s) : NULL);

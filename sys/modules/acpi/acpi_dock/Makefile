@@ -1,3 +1,4 @@
+
 .PATH:		${SRCTOP}/sys/dev/acpica
 KMOD=		acpi_dock
 SRCS=		acpi_dock.c opt_acpi.h device_if.h bus_if.h acpi_if.h

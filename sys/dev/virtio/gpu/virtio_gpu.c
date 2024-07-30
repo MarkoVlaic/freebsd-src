@@ -102,7 +102,6 @@ static vd_bitblt_text_t		vtgpu_fb_bitblt_text;
 static vd_bitblt_bmp_t		vtgpu_fb_bitblt_bitmap;
 static vd_drawrect_t		vtgpu_fb_drawrect;
 static vd_setpixel_t		vtgpu_fb_setpixel;
-static vd_bitblt_argb_t		vtgpu_fb_bitblt_argb;
 
 static struct vt_driver vtgpu_fb_driver = {
 	.vd_name = "virtio_gpu",
@@ -112,7 +111,6 @@ static struct vt_driver vtgpu_fb_driver = {
 	.vd_bitblt_text = vtgpu_fb_bitblt_text,
 	.vd_invalidate_text = vt_fb_invalidate_text,
 	.vd_bitblt_bmp = vtgpu_fb_bitblt_bitmap,
-	.vd_bitblt_argb = vtgpu_fb_bitblt_argb,
 	.vd_drawrect = vtgpu_fb_drawrect,
 	.vd_setpixel = vtgpu_fb_setpixel,
 	.vd_postswitch = vt_fb_postswitch,
@@ -180,16 +178,6 @@ vtgpu_fb_bitblt_bitmap(struct vt_device *vd, const struct vt_window *vw,
 
 	vtgpu_transfer_to_host_2d(sc, x, y, width, height);
 	vtgpu_resource_flush(sc, x, y, width, height);
-}
-
-static int
-vtgpu_fb_bitblt_argb(struct vt_device *vd, const struct vt_window *vw,
-    const uint8_t *argb,
-    unsigned int width, unsigned int height,
-    unsigned int x, unsigned int y)
-{
-
-	return (EOPNOTSUPP);
 }
 
 static void

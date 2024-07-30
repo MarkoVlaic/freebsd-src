@@ -1,3 +1,4 @@
+
 PACKAGE=	lib${LIB}
 LIB=		pfctl
 INTERNALLIB=	true

@@ -593,7 +593,6 @@ bhyve_parse_config_option(const char *option)
 	if (path == NULL)
 		err(4, "Failed to allocate memory");
 	set_config_value(path, value + 1);
-	free(path);
 	return (true);
 }
 

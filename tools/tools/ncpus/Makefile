@@ -1,3 +1,4 @@
+
 PROG=	ncpus
 MAN=
 SRCS=	ncpus.c acpi.c

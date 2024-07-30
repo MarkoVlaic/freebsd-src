@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/fs/tmpfs
 
 KMOD=	tmpfs

@@ -73,16 +73,14 @@
 #define	VM_PHYSSEG_MAX		64
 
 /*
- * Create three free page pools: VM_FREEPOOL_DEFAULT is the default pool from
- * which physical pages are allocated and VM_FREEPOOL_DIRECT is the pool from
- * which physical pages for page tables and small UMA objects are allocated.
- * VM_FREEPOOL_LAZYINIT is a special-purpose pool that is populated only during
- * boot and is used to implement deferred initialization of page structures.
+ * Create two free page pools: VM_FREEPOOL_DEFAULT is the default pool
+ * from which physical pages are allocated and VM_FREEPOOL_DIRECT is
+ * the pool from which physical pages for small UMA objects are
+ * allocated.
  */
-#define	VM_NFREEPOOL		3
-#define	VM_FREEPOOL_LAZYINIT	0
-#define	VM_FREEPOOL_DEFAULT	1
-#define	VM_FREEPOOL_DIRECT	2
+#define	VM_NFREEPOOL		2
+#define	VM_FREEPOOL_DEFAULT	0
+#define	VM_FREEPOOL_DIRECT	1
 
 /*
  * Create two free page lists: VM_FREELIST_DMA32 is for physical pages that have
@@ -114,33 +112,24 @@
 #endif
 
 /*
- * Enable superpage reservations: 2 levels.
+ * Enable superpage reservations: 1 level.
  */
 #ifndef	VM_NRESERVLEVEL
-#define	VM_NRESERVLEVEL		2
+#define	VM_NRESERVLEVEL		1
 #endif
 
 /*
- * Level 0 reservations consist of 16 pages when PAGE_SIZE is 4KB, and 128
- * pages when PAGE_SIZE is 16KB.  Level 1 reservations consist of 32 64KB
- * pages when PAGE_SIZE is 4KB, and 16 2M pages when PAGE_SIZE is 16KB.
+ * Level 0 reservations consist of 512 pages when PAGE_SIZE is 4KB, and
+ * 2048 pages when PAGE_SIZE is 16KB.
  */
+#ifndef	VM_LEVEL_0_ORDER
 #if PAGE_SIZE == PAGE_SIZE_4K
-#ifndef	VM_LEVEL_0_ORDER
-#define	VM_LEVEL_0_ORDER	4
-#endif
-#ifndef	VM_LEVEL_1_ORDER
-#define	VM_LEVEL_1_ORDER	5
-#endif
+#define	VM_LEVEL_0_ORDER	9
 #elif PAGE_SIZE == PAGE_SIZE_16K
-#ifndef	VM_LEVEL_0_ORDER
-#define	VM_LEVEL_0_ORDER	7
-#endif
-#ifndef	VM_LEVEL_1_ORDER
-#define	VM_LEVEL_1_ORDER	4
-#endif
+#define	VM_LEVEL_0_ORDER	11
 #else
 #error Unsupported page size
+#endif
 #endif
 
 /**
@@ -304,7 +293,7 @@
 #endif
 
 #if !defined(KASAN) && !defined(KMSAN)
-#define UMA_USE_DMAP
+#define	UMA_MD_SMALL_ALLOC
 #endif
 
 #ifndef LOCORE
@@ -312,6 +301,7 @@
 extern vm_paddr_t dmap_phys_base;
 extern vm_paddr_t dmap_phys_max;
 extern vm_offset_t dmap_max_addr;
+extern vm_offset_t vm_max_kernel_address;
 
 #endif
 
@@ -328,7 +318,6 @@ extern vm_offset_t dmap_max_addr;
  * Need a page dump array for minidump.
  */
 #define MINIDUMP_PAGE_TRACKING	1
-#define MINIDUMP_STARTUP_PAGE_TRACKING 1
 
 #endif /* !_MACHINE_VMPARAM_H_ */
 

@@ -1,3 +1,4 @@
+
 PROG=	localeck
 MAN=
 WARNS?=	4

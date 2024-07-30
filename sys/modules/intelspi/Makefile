@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/intel
 KMOD=	intelspi
 SRCS=	spi.c spi_acpi.c spi_pci.c

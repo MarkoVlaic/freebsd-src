@@ -1,5 +1,4 @@
 #! @PATH_PERL@
-# @configure_input@
 
 package ntp_wait;
 use 5.006_000;

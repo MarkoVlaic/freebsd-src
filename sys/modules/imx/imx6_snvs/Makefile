@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/arm/freescale/imx
 
 KMOD=	imx6_snvs

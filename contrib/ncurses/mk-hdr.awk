@@ -1,6 +1,6 @@
-# $Id: mk-hdr.awk,v 1.8 2021/06/17 21:20:30 tom Exp $
+# $Id: mk-hdr.awk,v 1.7 2020/08/31 23:48:44 tom Exp $
 ##############################################################################
-# Copyright 2020,2021 Thomas E. Dickey                                       #
+# Copyright 2020 Thomas E. Dickey                                            #
 # Copyright 2007-2010,2013 Free Software Foundation, Inc.                    #
 #                                                                            #
 # Permission is hereby granted, free of charge, to any person obtaining a    #

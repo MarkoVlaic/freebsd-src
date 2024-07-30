@@ -136,7 +136,9 @@
 #include <libzutil.h>
 #include <sys/crypto/icp.h>
 #include <sys/zfs_impl.h>
-#include <sys/backtrace.h>
+#if (__GLIBC__ && !__UCLIBC__)
+#include <execinfo.h> /* for backtrace() */
+#endif
 
 static int ztest_fd_data = -1;
 static int ztest_fd_rand = -1;
@@ -615,15 +617,22 @@ dump_debug_buffer(void)
 	 * We use write() instead of printf() so that this function
 	 * is safe to call from a signal handler.
 	 */
-	ret = write(STDERR_FILENO, "\n", 1);
-	zfs_dbgmsg_print(STDERR_FILENO, "ztest");
+	ret = write(STDOUT_FILENO, "\n", 1);
+	zfs_dbgmsg_print("ztest");
 }
+
+#define	BACKTRACE_SZ	100
 
 static void sig_handler(int signo)
 {
 	struct sigaction action;
+#if (__GLIBC__ && !__UCLIBC__) /* backtrace() is a GNU extension */
+	int nptrs;
+	void *buffer[BACKTRACE_SZ];
 
-	libspl_backtrace(STDERR_FILENO);
+	nptrs = backtrace(buffer, BACKTRACE_SZ);
+	backtrace_symbols_fd(buffer, nptrs, STDERR_FILENO);
+#endif
 	dump_debug_buffer();
 
 	/*
@@ -2520,7 +2529,7 @@ ztest_get_data(void *arg, uint64_t arg2, lr_write_t *lr, char *buf,
 		ASSERT3P(zio, !=, NULL);
 		size = doi.doi_data_block_size;
 		if (ISP2(size)) {
-			offset = P2ALIGN_TYPED(offset, size, uint64_t);
+			offset = P2ALIGN(offset, size);
 		} else {
 			ASSERT3U(offset, <, size);
 			offset = 0;
@@ -3969,8 +3978,7 @@ raidz_scratch_verify(void)
 	raidvd = vdev_lookup_top(spa, vre->vre_vdev_id);
 	offset = RRSS_GET_OFFSET(&spa->spa_uberblock);
 	state = RRSS_GET_STATE(&spa->spa_uberblock);
-	write_size = P2ALIGN_TYPED(VDEV_BOOT_SIZE, 1 << raidvd->vdev_ashift,
-	    uint64_t);
+	write_size = P2ALIGN(VDEV_BOOT_SIZE, 1 << raidvd->vdev_ashift);
 	logical_size = write_size * raidvd->vdev_children;
 
 	switch (state) {
@@ -5008,8 +5016,7 @@ ztest_dmu_object_next_chunk(ztest_ds_t *zd, uint64_t id)
 	 */
 	mutex_enter(&os->os_obj_lock);
 	object = ztest_random(os->os_obj_next_chunk);
-	os->os_obj_next_chunk = P2ALIGN_TYPED(object, dnodes_per_chunk,
-	    uint64_t);
+	os->os_obj_next_chunk = P2ALIGN(object, dnodes_per_chunk);
 	mutex_exit(&os->os_obj_lock);
 }
 
@@ -6631,8 +6638,7 @@ ztest_fault_inject(ztest_ds_t *zd, uint64_t id)
 		 * the end of the disk (vdev_psize) is aligned to
 		 * sizeof (vdev_label_t).
 		 */
-		uint64_t psize = P2ALIGN_TYPED(fsize, sizeof (vdev_label_t),
-		    uint64_t);
+		uint64_t psize = P2ALIGN(fsize, sizeof (vdev_label_t));
 		if ((leaf & 1) == 1 &&
 		    offset + sizeof (bad) > psize - VDEV_LABEL_END_SIZE)
 			continue;
@@ -6956,8 +6962,8 @@ ztest_fletcher_incr(ztest_ds_t *zd, uint64_t id)
 				size_t inc = 64 * ztest_random(size / 67);
 				/* sometimes add few bytes to test non-simd */
 				if (ztest_random(100) < 10)
-					inc += P2ALIGN_TYPED(ztest_random(64),
-					    sizeof (uint32_t), uint64_t);
+					inc += P2ALIGN(ztest_random(64),
+					    sizeof (uint32_t));
 
 				if (inc > (size - pos))
 					inc = size - pos;

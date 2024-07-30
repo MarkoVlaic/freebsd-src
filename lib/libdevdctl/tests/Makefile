@@ -1,3 +1,4 @@
+
 TESTSDIR= ${TESTSBASE}/lib/libdevdctl
 
 .PATH:	${.CURDIR:H}

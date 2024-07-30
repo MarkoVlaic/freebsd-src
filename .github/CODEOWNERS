@@ -58,7 +58,6 @@
 /lib/libsecureboot/	@stephane-rochoy-stormshield
 /lib/libveriexec/	@stephane-rochoy-stormshield
 /lib/libvmmapi	@bsdjhb @grehan-freebsd
-/libexec/nuageinit/	@bapt
 /libexec/rc/rc.d/rctl/	@trasz
 /sbin/ipf		@cschuber
 /sbin/mount_fusefs @asomers

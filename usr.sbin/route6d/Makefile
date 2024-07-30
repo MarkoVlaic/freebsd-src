@@ -1,3 +1,4 @@
+
 PROG=	route6d
 MAN=	route6d.8
 

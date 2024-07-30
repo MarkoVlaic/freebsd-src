@@ -263,7 +263,7 @@ ti_spi_attach(device_t dev)
 	ti_spi_printr(dev);
 #endif
 
-	device_add_child(dev, "spibus", DEVICE_UNIT_ANY);
+	device_add_child(dev, "spibus", -1);
 
 	return (bus_generic_attach(dev));
 }

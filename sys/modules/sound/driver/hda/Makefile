@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/sound/pci/hda
 
 KMOD=	snd_hda

@@ -1,3 +1,4 @@
+
 PACKAGE=	kerberos
 
 PROG=	kstash

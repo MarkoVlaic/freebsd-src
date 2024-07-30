@@ -368,6 +368,7 @@ main(int argc, char **argv)
 					optarg);
 			break;
 		case OPT_NO_DEREFERENCE:
+			rflag = true;
 			noderef = true;
 			break;
 		case OPT_VERSION:

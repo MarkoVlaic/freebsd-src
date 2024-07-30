@@ -1,4 +1,4 @@
-/*	$NetBSD: make.c,v 1.264 2024/06/02 15:31:26 rillig Exp $	*/
+/*	$NetBSD: make.c,v 1.262 2024/01/05 23:22:06 rillig Exp $	*/
 
 /*
  * Copyright (c) 1988, 1989, 1990, 1993
@@ -104,7 +104,7 @@
 #include "job.h"
 
 /*	"@(#)make.c	8.1 (Berkeley) 6/6/93"	*/
-MAKE_RCSID("$NetBSD: make.c,v 1.264 2024/06/02 15:31:26 rillig Exp $");
+MAKE_RCSID("$NetBSD: make.c,v 1.262 2024/01/05 23:22:06 rillig Exp $");
 
 /* Sequence # to detect recursion. */
 static unsigned int checked_seqno = 1;
@@ -127,8 +127,8 @@ debug_printf(const char *fmt, ...)
 	va_end(ap);
 }
 
-static char *
-GNodeType_ToString(GNodeType type)
+static const char *
+GNodeType_ToString(GNodeType type, void **freeIt)
 {
 	Buffer buf;
 
@@ -166,13 +166,11 @@ GNodeType_ToString(GNodeType type)
 	ADD(OP_DEPS_FOUND);
 	ADD(OP_MARK);
 #undef ADD
-	if (buf.len == 0)
-		Buf_AddStr(&buf, "none");
-	return Buf_DoneData(&buf);
+	return buf.len == 0 ? "none" : (*freeIt = Buf_DoneData(&buf));
 }
 
-static char *
-GNodeFlags_ToString(GNodeFlags flags)
+static const char *
+GNodeFlags_ToString(GNodeFlags flags, void **freeIt)
 {
 	Buffer buf;
 
@@ -186,22 +184,24 @@ GNodeFlags_ToString(GNodeFlags flags)
 	Buf_AddFlag(&buf, flags.doneAllsrc, "DONE_ALLSRC");
 	Buf_AddFlag(&buf, flags.cycle, "CYCLE");
 	Buf_AddFlag(&buf, flags.doneCycle, "DONECYCLE");
-	if (buf.len == 0)
-		Buf_AddStr(&buf, "none");
-	return Buf_DoneData(&buf);
+	return buf.len == 0 ? "none" : (*freeIt = Buf_DoneData(&buf));
 }
 
 void
 GNode_FprintDetails(FILE *f, const char *prefix, const GNode *gn,
 		    const char *suffix)
 {
-	char *type = GNodeType_ToString(gn->type);
-	char *flags = GNodeFlags_ToString(gn->flags);
+	void *type_freeIt = NULL;
+	void *flags_freeIt = NULL;
 
 	fprintf(f, "%s%s, type %s, flags %s%s",
-	    prefix, GNodeMade_Name(gn->made), type, flags, suffix);
-	free(type);
-	free(flags);
+	    prefix,
+	    GNodeMade_Name(gn->made),
+	    GNodeType_ToString(gn->type, &type_freeIt),
+	    GNodeFlags_ToString(gn->flags, &flags_freeIt),
+	    suffix);
+	free(type_freeIt);
+	free(flags_freeIt);
 }
 
 bool
@@ -443,7 +443,7 @@ Make_HandleUse(GNode *cgn, GNode *pgn)
 			gn->uname = gn->name;
 		else
 			free(gn->name);
-		gn->name = Var_Subst(gn->uname, pgn, VARE_EVAL);
+		gn->name = Var_Subst(gn->uname, pgn, VARE_WANTRES);
 		/* TODO: handle errors */
 		if (gn->uname != NULL && strcmp(gn->name, gn->uname) != 0) {
 			/* See if we have a target for this node. */

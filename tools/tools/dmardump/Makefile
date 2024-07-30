@@ -1,3 +1,4 @@
+
 PROG=	dmardump
 SRCS=	dmardump.c
 MAN=

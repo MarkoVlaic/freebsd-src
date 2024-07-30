@@ -1,3 +1,4 @@
+
 KMOD=	ng_macfilter
 SRCS= 	ng_macfilter.c
 

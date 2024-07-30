@@ -1,3 +1,4 @@
+
 PROG=	gsstest
 MAN=
 WARNS?=	2

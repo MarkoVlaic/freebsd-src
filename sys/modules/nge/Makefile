@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/nge
 
 KMOD=	if_nge

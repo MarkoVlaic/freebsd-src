@@ -167,8 +167,6 @@ stdout_head() {
 stdout_body() {
 	(
 		trap "" PIPE
-		# Give true(1) some time to exit.
-		sleep 1
 		echo a | uniq 2>stderr
 		echo $? >result
 	) | true

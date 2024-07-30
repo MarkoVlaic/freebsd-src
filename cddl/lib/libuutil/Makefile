@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/contrib/openzfs/lib/libuutil
 
 PACKAGE=	zfs

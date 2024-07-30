@@ -1135,15 +1135,9 @@ static bool isTrivialForMSVC(const CXXRecordDecl *RD, QualType Ty,
     return false;
   if (RD->hasNonTrivialCopyAssignment())
     return false;
-  for (const Decl *D : RD->decls()) {
-    if (auto *Ctor = dyn_cast<CXXConstructorDecl>(D)) {
-      if (Ctor->isUserProvided())
-        return false;
-    } else if (auto *Template = dyn_cast<FunctionTemplateDecl>(D)) {
-      if (isa<CXXConstructorDecl>(Template->getTemplatedDecl()))
-        return false;
-    }
-  }
+  for (const CXXConstructorDecl *Ctor : RD->ctors())
+    if (Ctor->isUserProvided())
+      return false;
   if (RD->hasNonTrivialDestructor())
     return false;
   return true;

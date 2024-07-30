@@ -1,3 +1,4 @@
+
 SUBDIR=	librescue \
 	rescue
 

@@ -1,3 +1,4 @@
+
 PROG=	rwhod
 MAN=	rwhod.8
 

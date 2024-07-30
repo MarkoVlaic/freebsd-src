@@ -29,7 +29,6 @@
 
 #include <sys/param.h>
 #include <sys/systm.h>
-#include <sys/dtrace_impl.h>
 #include <sys/kernel.h>
 #include <sys/stack.h>
 #include <sys/sysent.h>
@@ -38,7 +37,6 @@
 #include <machine/frame.h>
 #include <machine/md_var.h>
 #include <machine/psl.h>
-#include <machine/reg.h>
 #include <machine/stack.h>
 
 #include <vm/vm.h>

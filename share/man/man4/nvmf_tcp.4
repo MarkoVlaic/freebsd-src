@@ -3,7 +3,7 @@
 .\"
 .\" Copyright (c) 2024 Chelsio Communications, Inc.
 .\"
-.Dd July 25, 2024
+.Dd May 2, 2024
 .Dt NVMF_TCP 4
 .Os
 .Sh NAME
@@ -35,17 +35,10 @@ variables and
 .Xr loader 8
 tunables:
 .Bl -tag -width indent
-.It Va kern.nvmf.tcp.max_transmit_data
-The maximum data payload size of
+.It Va kern.nvmf.tcp.max_c2hdata
+The maximum data payload size of a
 .Va C2H_DATA
-and
-.Va H2C_DATA
-PDUs.
-A remote controller may enforce a lower limit on the size of
-.Va H2C_DATA
-PDUs via the
-.Va MAXH2CDATA
-parameter.
+PDU sent by the controller to a remote host.
 The default size is 256 kilobytes.
 .El
 .Sh SEE ALSO

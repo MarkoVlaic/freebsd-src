@@ -1,3 +1,4 @@
+
 TESTSDIR=	${TESTSBASE}/sys/aio
 
 ATF_TESTS_C+=	aio_test

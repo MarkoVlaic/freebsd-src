@@ -771,8 +771,7 @@ static int tlsv1_process_diffie_hellman(struct tlsv1_client *conn,
 			hlen = tls_key_x_server_params_hash(
 				conn->rl.tls_version, conn->client_random,
 				conn->server_random, server_params,
-				server_params_end - server_params, hash,
-				sizeof(hash));
+				server_params_end - server_params, hash);
 		}
 
 		if (hlen < 0)

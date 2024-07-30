@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/geom/stripe
 
 KMOD=	geom_stripe

@@ -2149,23 +2149,16 @@ cfiscsi_ioctl_port_create(struct ctl_req *req)
 	uint16_t tag;
 
 	target = dnvlist_get_string(req->args_nvl, "cfiscsi_target", NULL);
-	if (target == NULL) {
-		req->status = CTL_LUN_ERROR;
-		snprintf(req->error_str, sizeof(req->error_str),
-		    "Missing required argument: cfiscsi_target");
-		return;
-	}
-
+	alias = dnvlist_get_string(req->args_nvl, "cfiscsi_target_alias", NULL);
 	val = dnvlist_get_string(req->args_nvl, "cfiscsi_portal_group_tag",
 	    NULL);
-	if (val == NULL) {
+
+	if (target == NULL || val == NULL) {
 		req->status = CTL_LUN_ERROR;
 		snprintf(req->error_str, sizeof(req->error_str),
-		    "Missing required argument: cfiscsi_portal_group_tag");
+		    "Missing required argument");
 		return;
 	}
-
-	alias = dnvlist_get_string(req->args_nvl, "cfiscsi_target_alias", NULL);
 
 	tag = strtoul(val, NULL, 0);
 	ct = cfiscsi_target_find_or_create(&cfiscsi_softc, target, alias, tag);
@@ -2257,19 +2250,13 @@ cfiscsi_ioctl_port_remove(struct ctl_req *req)
 	uint16_t tag;
 
 	target = dnvlist_get_string(req->args_nvl, "cfiscsi_target", NULL);
-	if (target == NULL) {
-		req->status = CTL_LUN_ERROR;
-		snprintf(req->error_str, sizeof(req->error_str),
-		    "Missing required argument: cfiscsi_target");
-		return;
-	}
-
 	val = dnvlist_get_string(req->args_nvl, "cfiscsi_portal_group_tag",
 	    NULL);
-	if (val == NULL) {
+
+	if (target == NULL || val == NULL) {
 		req->status = CTL_LUN_ERROR;
 		snprintf(req->error_str, sizeof(req->error_str),
-		    "Missing required argument: cfiscsi_portal_group_tag");
+		    "Missing required argument");
 		return;
 	}
 

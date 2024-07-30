@@ -1,3 +1,4 @@
+
 PACKAGE=	ufs
 LIB=	ufs
 SHLIBDIR?= /lib

@@ -473,5 +473,5 @@ arb_poll(
 }
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_arbiter_bs;
 #endif /* REFCLOCK */

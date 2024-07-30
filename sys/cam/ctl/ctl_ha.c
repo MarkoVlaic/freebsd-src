@@ -164,17 +164,17 @@ ctl_ha_close(struct ha_softc *softc)
 		report = 1;
 	}
 	if (so) {
-		SOCK_RECVBUF_LOCK(so);
+		SOCKBUF_LOCK(&so->so_rcv);
 		soupcall_clear(so, SO_RCV);
 		while (softc->ha_receiving) {
 			wakeup(&softc->ha_receiving);
-			msleep(&softc->ha_receiving, SOCK_RECVBUF_MTX(so),
+			msleep(&softc->ha_receiving, SOCKBUF_MTX(&so->so_rcv),
 			    0, "ha_rx exit", 0);
 		}
-		SOCK_RECVBUF_UNLOCK(so);
-		SOCK_SENDBUF_LOCK(so);
+		SOCKBUF_UNLOCK(&so->so_rcv);
+		SOCKBUF_LOCK(&so->so_snd);
 		soupcall_clear(so, SO_SND);
-		SOCK_SENDBUF_UNLOCK(so);
+		SOCKBUF_UNLOCK(&so->so_snd);
 		softc->ha_so = NULL;
 		if (softc->ha_connect)
 			pause("reconnect", hz / 2);
@@ -218,7 +218,7 @@ ctl_ha_rx_thread(void *arg)
 			next = wire_hdr.length;
 		else
 			next = sizeof(wire_hdr);
-		SOCK_RECVBUF_LOCK(so);
+		SOCKBUF_LOCK(&so->so_rcv);
 		while (sbavail(&so->so_rcv) < next || softc->ha_disconnect) {
 			if (softc->ha_connected == 0 || softc->ha_disconnect ||
 			    so->so_error ||
@@ -226,10 +226,10 @@ ctl_ha_rx_thread(void *arg)
 				goto errout;
 			}
 			so->so_rcv.sb_lowat = next;
-			msleep(&softc->ha_receiving, SOCK_RECVBUF_MTX(so),
+			msleep(&softc->ha_receiving, SOCKBUF_MTX(&so->so_rcv),
 			    0, "-", 0);
 		}
-		SOCK_RECVBUF_UNLOCK(so);
+		SOCKBUF_UNLOCK(&so->so_rcv);
 
 		if (wire_hdr.length == 0) {
 			iov.iov_base = &wire_hdr;
@@ -246,7 +246,7 @@ ctl_ha_rx_thread(void *arg)
 			if (error != 0) {
 				printf("%s: header receive error %d\n",
 				    __func__, error);
-				SOCK_RECVBUF_LOCK(so);
+				SOCKBUF_LOCK(&so->so_rcv);
 				goto errout;
 			}
 		} else {
@@ -259,7 +259,7 @@ ctl_ha_rx_thread(void *arg)
 errout:
 	softc->ha_receiving = 0;
 	wakeup(&softc->ha_receiving);
-	SOCK_RECVBUF_UNLOCK(so);
+	SOCKBUF_UNLOCK(&so->so_rcv);
 	ctl_ha_conn_wake(softc);
 	kthread_exit();
 }
@@ -280,13 +280,13 @@ ctl_ha_send(struct ha_softc *softc)
 				break;
 			}
 		}
-		SOCK_SENDBUF_LOCK(so);
+		SOCKBUF_LOCK(&so->so_snd);
 		if (sbspace(&so->so_snd) < softc->ha_sending->m_pkthdr.len) {
 			so->so_snd.sb_lowat = softc->ha_sending->m_pkthdr.len;
-			SOCK_SENDBUF_UNLOCK(so);
+			SOCKBUF_UNLOCK(&so->so_snd);
 			break;
 		}
-		SOCK_SENDBUF_UNLOCK(so);
+		SOCKBUF_UNLOCK(&so->so_snd);
 		error = sosend(softc->ha_so, NULL, NULL, softc->ha_sending,
 		    NULL, MSG_DONTWAIT, curthread);
 		softc->ha_sending = NULL;
@@ -309,14 +309,14 @@ ctl_ha_sock_setup(struct ha_softc *softc)
 	if (error)
 		printf("%s: soreserve failed %d\n", __func__, error);
 
-	SOCK_RECVBUF_LOCK(so);
+	SOCKBUF_LOCK(&so->so_rcv);
 	so->so_rcv.sb_lowat = sizeof(struct ha_msg_wire);
 	soupcall_set(so, SO_RCV, ctl_ha_rupcall, softc);
-	SOCK_RECVBUF_UNLOCK(so);
-	SOCK_SENDBUF_LOCK(so);
+	SOCKBUF_UNLOCK(&so->so_rcv);
+	SOCKBUF_LOCK(&so->so_snd);
 	so->so_snd.sb_lowat = sizeof(struct ha_msg_wire);
 	soupcall_set(so, SO_SND, ctl_ha_supcall, softc);
-	SOCK_SENDBUF_UNLOCK(so);
+	SOCKBUF_UNLOCK(&so->so_snd);
 
 	bzero(&opt, sizeof(struct sockopt));
 	opt.sopt_dir = SOPT_SET;

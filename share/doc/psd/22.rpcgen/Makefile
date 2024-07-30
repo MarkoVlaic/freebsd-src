@@ -1,3 +1,4 @@
+
 VOLUME=		psd/22.rpcgen
 SRCS=		stubs rpcgen.ms
 MACROS=		-ms

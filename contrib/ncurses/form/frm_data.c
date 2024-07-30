@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020,2021 Thomas E. Dickey                                     *
+ * Copyright 2020 Thomas E. Dickey                                          *
  * Copyright 1998-2010,2013 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -33,7 +33,7 @@
 
 #include "form.priv.h"
 
-MODULE_ID("$Id: frm_data.c,v 1.21 2021/06/17 21:11:08 tom Exp $")
+MODULE_ID("$Id: frm_data.c,v 1.19 2020/12/11 23:20:37 tom Exp $")
 
 /*---------------------------------------------------------------------------
 |   Facility      :  libnform
@@ -150,11 +150,12 @@ data_ahead(const FORM *form)
 
       if (Single_Line_Field(field))
 	{
+	  int check_len;
+
 	  pos = form->begincol + field->cols;
 	  while (pos < field->dcols)
 	    {
-	      int check_len = field->dcols - pos;
-
+	      check_len = field->dcols - pos;
 	      if (check_len >= field->cols)
 		check_len = field->cols;
 	      cursor_moved = TRUE;

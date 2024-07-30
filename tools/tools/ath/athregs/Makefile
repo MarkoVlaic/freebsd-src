@@ -1,3 +1,4 @@
+
 PROG=	athregs
 
 CFLAGS+=	-I${.CURDIR}/../common/

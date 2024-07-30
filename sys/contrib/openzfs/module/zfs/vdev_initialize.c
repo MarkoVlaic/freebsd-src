@@ -682,8 +682,7 @@ vdev_initialize_stop_wait(spa_t *spa, list_t *vd_list)
 	(void) spa;
 	vdev_t *vd;
 
-	ASSERT(MUTEX_HELD(&spa_namespace_lock) ||
-	    spa->spa_export_thread == curthread);
+	ASSERT(MUTEX_HELD(&spa_namespace_lock));
 
 	while ((vd = list_remove_head(vd_list)) != NULL) {
 		mutex_enter(&vd->vdev_initialize_lock);
@@ -725,8 +724,7 @@ vdev_initialize_stop(vdev_t *vd, vdev_initializing_state_t tgt_state,
 	if (vd_list == NULL) {
 		vdev_initialize_stop_wait_impl(vd);
 	} else {
-		ASSERT(MUTEX_HELD(&spa_namespace_lock) ||
-		    vd->vdev_spa->spa_export_thread == curthread);
+		ASSERT(MUTEX_HELD(&spa_namespace_lock));
 		list_insert_tail(vd_list, vd);
 	}
 }
@@ -758,8 +756,7 @@ vdev_initialize_stop_all(vdev_t *vd, vdev_initializing_state_t tgt_state)
 	spa_t *spa = vd->vdev_spa;
 	list_t vd_list;
 
-	ASSERT(MUTEX_HELD(&spa_namespace_lock) ||
-	    spa->spa_export_thread == curthread);
+	ASSERT(MUTEX_HELD(&spa_namespace_lock));
 
 	list_create(&vd_list, sizeof (vdev_t),
 	    offsetof(vdev_t, vdev_initialize_node));

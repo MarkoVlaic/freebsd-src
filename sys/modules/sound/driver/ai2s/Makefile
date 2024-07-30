@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/sound/macio
 
 KMOD=	snd_ai2s

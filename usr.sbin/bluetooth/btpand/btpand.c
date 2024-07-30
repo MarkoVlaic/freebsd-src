@@ -143,13 +143,10 @@ main(int argc, char *argv[])
 
 		case 's': /* service */
 		case 'S': /* service (no SDP) */
-			for (ul = 0; ul < __arraycount(services); ul++) {
-				if (strcasecmp(optarg, services[ul].name) == 0)
-					break;
+			for (ul = 0; strcasecmp(optarg, services[ul].name); ul++) {
+				if (ul == __arraycount(services))
+					errx(EXIT_FAILURE, "%s: unknown service", optarg);
 			}
-
-			if (ul == __arraycount(services))
-				errx(EXIT_FAILURE, "%s: unknown service", optarg);
 
 			if (ch == 's')
 				service_name = services[ul].name;

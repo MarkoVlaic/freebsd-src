@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/mana
 
 KMOD	= if_mana

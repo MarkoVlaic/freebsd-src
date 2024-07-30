@@ -1,3 +1,4 @@
+
 PROG=	wg
 MAN=	wg.8
 

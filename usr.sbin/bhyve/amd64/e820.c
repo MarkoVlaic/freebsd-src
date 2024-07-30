@@ -483,8 +483,6 @@ e820_finalize(void)
 	    e820_fwcfg_item->size, e820_fwcfg_item->data);
 	if (error != 0) {
 		warnx("could not add qemu fwcfg etc/e820");
-		free(e820_fwcfg_item->data);
-		free(e820_fwcfg_item);
 		return (error);
 	}
 	free(e820_fwcfg_item);

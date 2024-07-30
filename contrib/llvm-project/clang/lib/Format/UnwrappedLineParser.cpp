@@ -489,23 +489,18 @@ void UnwrappedLineParser::calculateBraceTypes(bool ExpectClassBody) {
   };
   SmallVector<StackEntry, 8> LBraceStack;
   assert(Tok->is(tok::l_brace));
-
   do {
+    // Get next non-comment, non-preprocessor token.
     FormatToken *NextTok;
     do {
       NextTok = Tokens->getNextToken();
     } while (NextTok->is(tok::comment));
-
-    if (!Line->InMacroBody) {
-      // Skip PPDirective lines and comments.
-      while (NextTok->is(tok::hash)) {
-        do {
-          NextTok = Tokens->getNextToken();
-        } while (NextTok->NewlinesBefore == 0 && NextTok->isNot(tok::eof));
-
-        while (NextTok->is(tok::comment))
-          NextTok = Tokens->getNextToken();
-      }
+    while (NextTok->is(tok::hash) && !Line->InMacroBody) {
+      NextTok = Tokens->getNextToken();
+      do {
+        NextTok = Tokens->getNextToken();
+      } while (NextTok->is(tok::comment) ||
+               (NextTok->NewlinesBefore == 0 && NextTok->isNot(tok::eof)));
     }
 
     switch (Tok->Tok.getKind()) {
@@ -539,6 +534,16 @@ void UnwrappedLineParser::calculateBraceTypes(bool ExpectClassBody) {
         if (Style.Language == FormatStyle::LK_Proto) {
           ProbablyBracedList = NextTok->isOneOf(tok::comma, tok::r_square);
         } else {
+          // Skip NextTok over preprocessor lines, otherwise we may not
+          // properly diagnose the block as a braced intializer
+          // if the comma separator appears after the pp directive.
+          while (NextTok->is(tok::hash)) {
+            ScopedMacroState MacroState(*Line, Tokens, NextTok);
+            do {
+              NextTok = Tokens->getNextToken();
+            } while (NextTok->isNot(tok::eof));
+          }
+
           // Using OriginalColumn to distinguish between ObjC methods and
           // binary operators is a bit hacky.
           bool NextIsObjCMethod = NextTok->isOneOf(tok::plus, tok::minus) &&
@@ -597,16 +602,6 @@ void UnwrappedLineParser::calculateBraceTypes(bool ExpectClassBody) {
             NextTok = Tokens->getNextToken();
             ProbablyBracedList = NextTok->isNot(tok::l_square);
           }
-
-          // Cpp macro definition body that is a nonempty braced list or block:
-          if (Style.isCpp() && Line->InMacroBody && PrevTok != FormatTok &&
-              !FormatTok->Previous && NextTok->is(tok::eof) &&
-              // A statement can end with only `;` (simple statement), a block
-              // closing brace (compound statement), or `:` (label statement).
-              // If PrevTok is a block opening brace, Tok ends an empty block.
-              !PrevTok->isOneOf(tok::semi, BK_Block, tok::colon)) {
-            ProbablyBracedList = true;
-          }
         }
         if (ProbablyBracedList) {
           Tok->setBlockKind(BK_BracedInit);
@@ -636,7 +631,6 @@ void UnwrappedLineParser::calculateBraceTypes(bool ExpectClassBody) {
     default:
       break;
     }
-
     PrevTok = Tok;
     Tok = NextTok;
   } while (Tok->isNot(tok::eof) && !LBraceStack.empty());
@@ -2510,7 +2504,6 @@ bool UnwrappedLineParser::parseParens(TokenType AmpAmpTokenType) {
   assert(FormatTok->is(tok::l_paren) && "'(' expected.");
   auto *LeftParen = FormatTok;
   bool SeenEqual = false;
-  bool MightBeFoldExpr = false;
   const bool MightBeStmtExpr = Tokens->peekNextToken()->is(tok::l_brace);
   nextToken();
   do {
@@ -2522,7 +2515,7 @@ bool UnwrappedLineParser::parseParens(TokenType AmpAmpTokenType) {
         parseChildBlock();
       break;
     case tok::r_paren:
-      if (!MightBeStmtExpr && !MightBeFoldExpr && !Line->InMacroBody &&
+      if (!MightBeStmtExpr && !Line->InMacroBody &&
           Style.RemoveParentheses > FormatStyle::RPS_Leave) {
         const auto *Prev = LeftParen->Previous;
         const auto *Next = Tokens->peekNextToken();
@@ -2564,10 +2557,6 @@ bool UnwrappedLineParser::parseParens(TokenType AmpAmpTokenType) {
         nextToken();
         parseBracedList();
       }
-      break;
-    case tok::ellipsis:
-      MightBeFoldExpr = true;
-      nextToken();
       break;
     case tok::equal:
       SeenEqual = true;

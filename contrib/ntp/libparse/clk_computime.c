@@ -182,7 +182,7 @@ inp_computime(
 }
 
 #else /* not (REFCLOCK && CLOCK_PARSE && CLOCK_COMPUTIME) */
-NONEMPTY_TRANSLATION_UNIT
+int clk_computime_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE && CLOCK_COMPUTIME) */
 
 /*

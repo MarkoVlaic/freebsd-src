@@ -1,3 +1,4 @@
+
 PROG=	athspectral
 
 .include <../Makefile.inc>

@@ -877,9 +877,6 @@ public:
     if (LI->isAtomic())
       return false;
 
-    if (!DL.typeSizeEqualsStoreSize(Result.VTy->getElementType()))
-      return false;
-
     // Get the base polynomial
     computePolynomialFromPointer(*LI->getPointerOperand(), Offset, BasePtr, DL);
 

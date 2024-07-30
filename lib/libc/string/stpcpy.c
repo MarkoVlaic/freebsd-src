@@ -33,8 +33,6 @@
 
 #include <string.h>
 
-#undef stpcpy	/* _FORTIFY_SOURCE */
-
 char *
 stpcpy(char * __restrict to, const char * __restrict from)
 {

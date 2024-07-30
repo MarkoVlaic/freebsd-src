@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2018-2022,2023 Thomas E. Dickey                                *
+ * Copyright 2018,2020 Thomas E. Dickey                                     *
  * Copyright 1998-2013,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -45,7 +45,7 @@
 #include <hashed_db.h>
 #endif
 
-MODULE_ID("$Id: toe.c,v 1.89 2023/07/01 17:04:46 tom Exp $")
+MODULE_ID("$Id: toe.c,v 1.79 2020/02/02 23:34:34 tom Exp $")
 
 #define isDotname(name) (!strcmp(name, ".") || !strcmp(name, ".."))
 
@@ -64,7 +64,7 @@ static size_t len_termdata;	/* allocated size of ptr_termdata[] */
 
 #if NO_LEAKS
 #undef ExitProgram
-static GCC_NORETURN void ExitProgram(int code);
+static void ExitProgram(int code) GCC_NORETURN;
 static void
 ExitProgram(int code)
 {
@@ -73,7 +73,7 @@ ExitProgram(int code)
 }
 #endif
 
-static GCC_NORETURN void failed(const char *);
+static void failed(const char *) GCC_NORETURN;
 
 static void
 failed(const char *msg)
@@ -127,15 +127,12 @@ compare_termdata(const void *a, const void *b)
 static void
 show_termdata(int eargc, char **eargv)
 {
+    int j, k;
+    size_t n;
+
     if (use_termdata) {
-	size_t n;
-
 	if (eargc > 1) {
-	    int j;
-
 	    for (j = 0; j < eargc; ++j) {
-		int k;
-
 		for (k = 0; k <= j; ++k) {
 		    printf("--");
 		}
@@ -146,20 +143,14 @@ show_termdata(int eargc, char **eargv)
 	if (use_termdata > 1)
 	    qsort(ptr_termdata, use_termdata, sizeof(TERMDATA), compare_termdata);
 	for (n = 0; n < use_termdata; ++n) {
-	    int nk = -1;
 
 	    /*
 	     * If there is more than one database, show how they differ.
 	     */
 	    if (eargc > 1) {
 		unsigned long check = 0;
-		int k = 0;
+		k = 0;
 		for (;;) {
-		    char mark = ((check == 0
-				  || (check != ptr_termdata[n].checksum))
-				 ? '*'
-				 : '+');
-
 		    for (; k < ptr_termdata[n].db_index; ++k) {
 			printf("--");
 		    }
@@ -169,10 +160,11 @@ show_termdata(int eargc, char **eargv)
 		     * from the first entry's checksum, print "*". Otherwise
 		     * it looks enough like a duplicate to print "+".
 		     */
-		    printf("%c-", mark);
+		    printf("%c-", ((check == 0
+				    || (check != ptr_termdata[n].checksum))
+				   ? '*'
+				   : '+'));
 		    check = ptr_termdata[n].checksum;
-		    if (mark == '*' && nk < 0)
-			nk = (int) n;
 
 		    ++k;
 		    if ((n + 1) >= use_termdata
@@ -187,12 +179,10 @@ show_termdata(int eargc, char **eargv)
 		}
 		printf(":\t");
 	    }
-	    if (nk < 0)
-		nk = (int) n;
 
 	    (void) printf("%-10s\t%s\n",
 			  ptr_termdata[n].term_name,
-			  ptr_termdata[nk].description);
+			  ptr_termdata[n].description);
 	}
     }
 }
@@ -252,9 +242,7 @@ make_db_name(char *dst, const char *src, unsigned limit)
 	    && !strcmp(src + size - lens, suffix)) {
 	    _nc_STRCPY(dst, src, PATH_MAX);
 	} else {
-	    _nc_SPRINTF(dst, _nc_SLIMIT(PATH_MAX) "%.*s%s",
-			(int) (PATH_MAX - sizeof(suffix)),
-			src, suffix);
+	    _nc_SPRINTF(dst, _nc_SLIMIT(PATH_MAX) "%s%s", src, suffix);
 	}
 	result = TRUE;
     }
@@ -337,26 +325,6 @@ sorthook(int db_index, int db_limit, const char *term_name, TERMTYPE2 *tp)
 }
 
 #if NCURSES_USE_TERMCAP
-/*
- * Check if the buffer contents are printable ASCII, ensuring that we do not
- * accidentally pick up incompatible binary content from a hashed database.
- */
-static bool
-is_termcap(char *buffer)
-{
-    bool result = TRUE;
-    while (*buffer != '\0') {
-	int ch = UChar(*buffer++);
-	if (ch == '\t')
-	    continue;
-	if (ch < ' ' || ch > '~') {
-	    result = FALSE;
-	    break;
-	}
-    }
-    return result;
-}
-
 static void
 show_termcap(int db_index, int db_limit, char *buffer, DescHook hook)
 {
@@ -545,13 +513,11 @@ typelist(int eargc, char *eargv[],
 	    db_array[1] = 0;
 
 	    if (cgetfirst(&buffer, db_array) > 0) {
-		if (is_termcap(buffer)) {
+		show_termcap(i, eargc, buffer, hook);
+		free(buffer);
+		while (cgetnext(&buffer, db_array) > 0) {
 		    show_termcap(i, eargc, buffer, hook);
 		    free(buffer);
-		    while (cgetnext(&buffer, db_array) > 0) {
-			show_termcap(i, eargc, buffer, hook);
-			free(buffer);
-		    }
 		}
 		cgetclose();
 		continue;
@@ -566,13 +532,11 @@ typelist(int eargc, char *eargv[],
 	    if (verbosity)
 		(void) printf("#\n#%s:\n#\n", eargv[i]);
 
-	    if ((fp = safe_fopen(eargv[i], "r")) != 0) {
+	    if ((fp = fopen(eargv[i], "r")) != 0) {
 		while (fgets(buffer, sizeof(buffer), fp) != 0) {
-		    if (!is_termcap(buffer))
-			break;
 		    if (*buffer == '#')
 			continue;
-		    if (isspace(UChar(*buffer)))
+		    if (isspace(*buffer))
 			continue;
 		    show_termcap(i, eargc, buffer, hook);
 		}
@@ -606,6 +570,7 @@ main(int argc, char *argv[])
     bool invert_dependencies = FALSE;
     bool header = FALSE;
     char *report_file = 0;
+    unsigned i;
     int code;
     int this_opt, last_opt = '?';
     unsigned v_opt = 0;
@@ -658,7 +623,7 @@ main(int argc, char *argv[])
 	    usage();
 	}
     }
-    use_verbosity(v_opt);
+    set_trace_level(v_opt);
 
     if (report_file != 0) {
 	if (freopen(report_file, "r", stdin) == 0) {
@@ -693,13 +658,11 @@ main(int argc, char *argv[])
     /* maybe we want a reverse-dependency listing? */
     if (invert_dependencies) {
 	ENTRY *qp, *rp;
+	int matchcount;
 
 	for_entry_list(qp) {
-	    int matchcount = 0;
-
+	    matchcount = 0;
 	    for_entry_list(rp) {
-		unsigned i;
-
 		if (rp->nuses == 0)
 		    continue;
 
@@ -729,12 +692,12 @@ main(int argc, char *argv[])
 	DBDIRS state;
 	int offset;
 	int pass;
+	const char *path;
 	char **eargv = 0;
 
 	code = EXIT_FAILURE;
 	for (pass = 0; pass < 2; ++pass) {
 	    size_t count = 0;
-	    const char *path;
 
 	    _nc_first_db(&state, &offset);
 	    while ((path = _nc_next_db(&state, &offset)) != 0) {

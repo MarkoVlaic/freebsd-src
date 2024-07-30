@@ -977,5 +977,5 @@ true_sample720(void)
 #endif
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_true_bs;
 #endif /* REFCLOCK */

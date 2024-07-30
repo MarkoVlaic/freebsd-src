@@ -870,18 +870,15 @@ arc_receive(
 	struct recvbuf *rbufp
 	)
 {
-	static int quality_average = 0;
-	static int quality_sum = 0;
-	static int quality_polls = 0;
 	register struct arcunit *up;
 	struct refclockproc *pp;
 	struct peer *peer;
 	char c;
-	int i, wday, month, flags, status;
+	int i, n, wday, month, flags, status;
 	int arc_last_offset;
-    #ifdef DEBUG
-	int n;
-    #endif
+	static int quality_average = 0;
+	static int quality_sum = 0;
+	static int quality_polls = 0;
 
 	/*
 	 * Initialize pointers and read the timecode and timestamp
@@ -1185,8 +1182,8 @@ arc_receive(
 	status = pp->a_lastcode[15];
 #ifdef DEBUG
 	if(debug) { printf("arc: status 0x%.2x flags 0x%.2x\n", flags, status); }
-	n = 9;
 #endif
+	n = 9;
 
 	/*
 	  Validate received values at least enough to prevent internal

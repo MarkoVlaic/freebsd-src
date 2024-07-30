@@ -1,4 +1,4 @@
-# $NetBSD: cond-op-and.mk,v 1.10 2024/07/06 21:21:10 rillig Exp $
+# $NetBSD: cond-op-and.mk,v 1.9 2023/12/17 09:44:00 rillig Exp $
 #
 # Tests for the && operator in .if conditions.
 
@@ -25,7 +25,8 @@
 .endif
 
 # When an outer condition makes the inner '&&' condition irrelevant, neither
-# of its operands is evaluated.
+# of its operands must be evaluated.
+#
 .if 1 || (${UNDEF} && ${UNDEF})
 .endif
 
@@ -56,43 +57,27 @@ DEF=	defined
 # The && operator may be abbreviated as &.  This is not widely known though
 # and is also not documented in the manual page.
 
-# expect+1: Unknown operator '&'
 .if 0 & 0
 .  error
-.else
-.  error
 .endif
-# expect+1: Unknown operator '&'
 .if 1 & 0
 .  error
-.else
-.  error
 .endif
-# expect+1: Unknown operator '&'
 .if 0 & 1
 .  error
-.else
-.  error
 .endif
-# expect+1: Unknown operator '&'
 .if !(1 & 1)
-.  error
-.else
 .  error
 .endif
 
-# There is no operator '&&&'.  The first two '&&' form an operator, the third
-# '&' forms the next (incomplete) token.
-# expect+1: Unknown operator '&'
+# There is no operator &&&.
+# expect+1: Malformed conditional (0 &&& 0)
 .if 0 &&& 0
-.  error
-.else
 .  error
 .endif
 
 # The '&&' operator must be preceded by whitespace, otherwise it becomes part
-# of the preceding bare word.  The condition starts with a digit and is thus
-# parsed as '"1&&" != "" && 1'.
+# of the preceding bare word.  The condition is parsed as '"1&&" != "" && 1'.
 .if 1&& && 1
 .else
 .  error

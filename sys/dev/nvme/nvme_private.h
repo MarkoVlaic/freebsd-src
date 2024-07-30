@@ -32,7 +32,6 @@
 #include <sys/param.h>
 #include <sys/bio.h>
 #include <sys/bus.h>
-#include <sys/counter.h>
 #include <sys/kernel.h>
 #include <sys/lock.h>
 #include <sys/malloc.h>
@@ -303,7 +302,6 @@ struct nvme_controller {
 
 	bool				is_failed;
 	bool				is_dying;
-	bool				isr_warned;
 	STAILQ_HEAD(, nvme_request)	fail_req;
 
 	/* Host Memory Buffer */
@@ -319,9 +317,6 @@ struct nvme_controller {
 	bus_dmamap_t			hmb_desc_map;
 	struct nvme_hmb_desc		*hmb_desc_vaddr;
 	uint64_t			hmb_desc_paddr;
-
-	/* Statistics */
-	counter_u64_t			alignment_splits;
 };
 
 #define nvme_mmio_offsetof(reg)						       \
@@ -418,6 +413,9 @@ void	nvme_qpair_submit_request(struct nvme_qpair *qpair,
 				  struct nvme_request *req);
 void	nvme_qpair_reset(struct nvme_qpair *qpair);
 void	nvme_qpair_fail(struct nvme_qpair *qpair);
+void	nvme_qpair_manual_complete_request(struct nvme_qpair *qpair,
+					   struct nvme_request *req,
+                                           uint32_t sct, uint32_t sc);
 
 void	nvme_admin_qpair_enable(struct nvme_qpair *qpair);
 void	nvme_admin_qpair_disable(struct nvme_qpair *qpair);

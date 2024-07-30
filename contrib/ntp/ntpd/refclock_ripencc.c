@@ -5250,6 +5250,6 @@ TranslateTSIPReportToText(
 #endif /* TRIMBLE_OUTPUT_FUNC */
 
 #else  /* defined(REFCLOCK) && defined(CLOCK_RIPENCC) */
-NONEMPTY_TRANSLATION_UNIT
+int refclock_ripencc_bs;
 #endif /* defined(REFCLOCK) && defined(CLOCK_RIPENCC) */
 

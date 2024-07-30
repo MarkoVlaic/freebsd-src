@@ -47,17 +47,6 @@ enum {
 	PFNL_CMD_KILLSTATES = 9,
 	PFNL_CMD_SET_STATUSIF = 10,
 	PFNL_CMD_GET_STATUS = 11,
-	PFNL_CMD_CLEAR_STATUS = 12,
-	PFNL_CMD_NATLOOK = 13,
-	PFNL_CMD_SET_DEBUG = 14,
-	PFNL_CMD_SET_TIMEOUT = 15,
-	PFNL_CMD_GET_TIMEOUT = 16,
-	PFNL_CMD_SET_LIMIT = 17,
-	PFNL_CMD_GET_LIMIT = 18,
-	PFNL_CMD_BEGIN_ADDRS = 19,
-	PFNL_CMD_ADD_ADDR = 20,
-	PFNL_CMD_GET_ADDRS = 21,
-	PFNL_CMD_GET_ADDR = 22,
 	__PFNL_CMD_MAX,
 };
 #define PFNL_CMD_MAX (__PFNL_CMD_MAX -1)
@@ -324,58 +313,6 @@ enum pf_get_status_types_t {
 	PF_GS_CHKSUM		= 14, /* byte array */
 	PF_GS_PCOUNTERS		= 15, /* u64 array */
 	PF_GS_BCOUNTERS		= 16, /* u64 array */
-};
-
-enum pf_natlook_types_t {
-	PF_NL_UNSPEC,
-	PF_NL_AF		= 1, /* u8 */
-	PF_NL_DIRECTION		= 2, /* u8 */
-	PF_NL_PROTO		= 3, /* u8 */
-	PF_NL_SRC_ADDR		= 4, /* in6_addr */
-	PF_NL_DST_ADDR		= 5, /* in6_addr */
-	PF_NL_SRC_PORT		= 6, /* u16 */
-	PF_NL_DST_PORT		= 7, /* u16 */
-};
-
-enum pf_set_debug_types_t {
-	PF_SD_UNSPEC,
-	PF_SD_LEVEL		= 1, /* u32 */
-};
-
-enum pf_timeout_types_t {
-	PF_TO_UNSPEC,
-	PF_TO_TIMEOUT		= 1, /* u32 */
-	PF_TO_SECONDS		= 2, /* u32 */
-};
-
-enum pf_limit_types_t {
-	PF_LI_UNSPEC,
-	PF_LI_INDEX		= 1, /* u32 */
-	PF_LI_LIMIT		= 2, /* u32 */
-};
-
-enum pf_begin_addrs_types_t {
-	PF_BA_UNSPEC,
-	PF_BA_TICKET		= 1, /* u32 */
-};
-
-enum pf_pool_addr_types_t {
-	PF_PA_UNSPEC,
-	PF_PA_ADDR		= 1, /* nested, pf_addr_wrap */
-	PF_PA_IFNAME		= 2, /* string */
-};
-
-enum pf_add_addr_types_t {
-	PF_AA_UNSPEC,
-	PF_AA_ACTION		= 1, /* u32 */
-	PF_AA_TICKET		= 2, /* u32 */
-	PF_AA_NR		= 3, /* u32 */
-	PF_AA_R_NUM		= 4, /* u32 */
-	PF_AA_R_ACTION		= 5, /* u8 */
-	PF_AA_R_LAST		= 6, /* u8 */
-	PF_AA_AF		= 7, /* u8 */
-	PF_AA_ANCHOR		= 8, /* string */
-	PF_AA_ADDR		= 9, /* nested, pf_pooladdr */
 };
 
 #ifdef _KERNEL

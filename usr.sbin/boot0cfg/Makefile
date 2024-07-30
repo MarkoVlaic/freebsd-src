@@ -1,3 +1,4 @@
+
 PROG=	boot0cfg
 MAN=	boot0cfg.8
 

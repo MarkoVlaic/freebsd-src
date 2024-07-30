@@ -34,10 +34,9 @@
 
 #include <errno.h>
 #include <unistd.h>
-#include <ssp/ssp.h>
 
 int
-__ssp_real(gethostname)(char *name, size_t namelen)
+gethostname(char *name, size_t namelen)
 {
 	int mib[2];
 

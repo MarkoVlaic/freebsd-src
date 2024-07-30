@@ -83,7 +83,7 @@ struct tpmcrb_sc {
 	size_t		rsp_buf_size;
 };
 
-int tpmcrb_transmit(device_t dev, size_t size);
+int tpmcrb_transmit(struct tpm_sc *sc, size_t size);
 
 static int tpmcrb_acpi_probe(device_t dev);
 static int tpmcrb_attach(device_t dev);
@@ -185,15 +185,15 @@ tpmcrb_attach(device_t dev)
 	 * stored in a single 8 byte one.
 	 */
 #ifdef __amd64__
-	crb_sc->rsp_off = TPM_READ_8(sc->dev, TPM_CRB_CTRL_RSP_ADDR);
+	crb_sc->rsp_off = RD8(sc, TPM_CRB_CTRL_RSP_ADDR);
 #else
-	crb_sc->rsp_off = TPM_READ_4(sc->dev, TPM_CRB_CTRL_RSP_ADDR);
-	crb_sc->rsp_off |= ((uint64_t) TPM_READ_4(sc->dev, TPM_CRB_CTRL_RSP_HADDR) << 32);
+	crb_sc->rsp_off = RD4(sc, TPM_CRB_CTRL_RSP_ADDR);
+	crb_sc->rsp_off |= ((uint64_t) RD4(sc, TPM_CRB_CTRL_RSP_HADDR) << 32);
 #endif
-	crb_sc->cmd_off = TPM_READ_4(sc->dev, TPM_CRB_CTRL_CMD_LADDR);
-	crb_sc->cmd_off |= ((uint64_t) TPM_READ_4(sc->dev, TPM_CRB_CTRL_CMD_HADDR) << 32);
-	crb_sc->cmd_buf_size = TPM_READ_4(sc->dev, TPM_CRB_CTRL_CMD_SIZE);
-	crb_sc->rsp_buf_size = TPM_READ_4(sc->dev, TPM_CRB_CTRL_RSP_SIZE);
+	crb_sc->cmd_off = RD4(sc, TPM_CRB_CTRL_CMD_LADDR);
+	crb_sc->cmd_off |= ((uint64_t) RD4(sc, TPM_CRB_CTRL_CMD_HADDR) << 32);
+	crb_sc->cmd_buf_size = RD4(sc, TPM_CRB_CTRL_CMD_SIZE);
+	crb_sc->rsp_buf_size = RD4(sc, TPM_CRB_CTRL_RSP_SIZE);
 
 	tpmcrb_relinquish_locality(sc);
 
@@ -217,6 +217,8 @@ tpmcrb_attach(device_t dev)
 			return (ENXIO);
 		}
 	}
+
+	sc->transmit = tpmcrb_transmit;
 
 	result = tpm20_init(sc);
 	if (result != 0)
@@ -246,11 +248,11 @@ tpm_wait_for_u32(struct tpm_sc *sc, bus_size_t off, uint32_t mask, uint32_t val,
 {
 
 	/* Check for condition */
-	if ((TPM_READ_4(sc->dev, off) & mask) == val)
+	if ((RD4(sc, off) & mask) == val)
 		return (true);
 
 	while (timeout > 0) {
-		if ((TPM_READ_4(sc->dev, off) & mask) == val)
+		if ((RD4(sc, off) & mask) == val)
 			return (true);
 
 		pause("TPM in polling mode", 1);
@@ -289,7 +291,7 @@ tpmcrb_cancel_cmd(struct tpm_sc *sc)
 {
 	uint32_t mask = ~0;
 
-	TPM_WRITE_4(sc->dev, TPM_CRB_CTRL_CANCEL, TPM_CRB_CTRL_CANCEL_CMD);
+	WR4(sc, TPM_CRB_CTRL_CANCEL, TPM_CRB_CTRL_CANCEL_CMD);
 	if (!tpm_wait_for_u32(sc, TPM_CRB_CTRL_START,
 		    mask, ~mask, TPM_TIMEOUT_B)) {
 		device_printf(sc->dev,
@@ -297,50 +299,48 @@ tpmcrb_cancel_cmd(struct tpm_sc *sc)
 		return (false);
 	}
 
-	TPM_WRITE_4(sc->dev, TPM_CRB_CTRL_CANCEL, TPM_CRB_CTRL_CANCEL_CLEAR);
+	WR4(sc, TPM_CRB_CTRL_CANCEL, TPM_CRB_CTRL_CANCEL_CLEAR);
 	return (true);
 }
 
 int
-tpmcrb_transmit(device_t dev, size_t length)
+tpmcrb_transmit(struct tpm_sc *sc, size_t length)
 {
 	struct tpmcrb_sc *crb_sc;
-	struct tpm_sc *sc;
 	uint32_t mask, curr_cmd;
 	int timeout, bytes_available;
 
-	crb_sc = device_get_softc(dev);
-	sc = &crb_sc->base;
+	crb_sc = (struct tpmcrb_sc *)sc;
 
 	sx_assert(&sc->dev_lock, SA_XLOCKED);
 
 	if (length > crb_sc->cmd_buf_size) {
-		device_printf(dev,
+		device_printf(sc->dev,
 		    "Requested transfer is bigger than buffer size\n");
 		return (E2BIG);
 	}
 
-	if (TPM_READ_4(dev, TPM_CRB_CTRL_STS) & TPM_CRB_CTRL_STS_ERR_BIT) {
-		device_printf(dev,
+	if (RD4(sc, TPM_CRB_CTRL_STS) & TPM_CRB_CTRL_STS_ERR_BIT) {
+		device_printf(sc->dev,
 		    "Device has Error bit set\n");
 		return (EIO);
 	}
 	if (!tpmcrb_request_locality(sc, 0)) {
-		device_printf(dev,
+		device_printf(sc->dev,
 		    "Failed to obtain locality\n");
 		return (EIO);
 	}
 	/* Clear cancellation bit */
-	TPM_WRITE_4(dev, TPM_CRB_CTRL_CANCEL, TPM_CRB_CTRL_CANCEL_CLEAR);
+	WR4(sc, TPM_CRB_CTRL_CANCEL, TPM_CRB_CTRL_CANCEL_CLEAR);
 
 	/* Switch device to idle state if necessary */
-	if (!(TPM_READ_4(dev, TPM_CRB_CTRL_STS) & TPM_CRB_CTRL_STS_IDLE_BIT)) {
+	if (!(RD4(sc, TPM_CRB_CTRL_STS) & TPM_CRB_CTRL_STS_IDLE_BIT)) {
 		OR4(sc, TPM_CRB_CTRL_REQ, TPM_CRB_CTRL_REQ_GO_IDLE);
 
 		mask = TPM_CRB_CTRL_STS_IDLE_BIT;
 		if (!tpm_wait_for_u32(sc, TPM_CRB_CTRL_STS,
 			    mask, mask, TPM_TIMEOUT_C)) {
-			device_printf(dev,
+			device_printf(sc->dev,
 			    "Failed to transition to idle state\n");
 			return (EIO);
 		}
@@ -351,7 +351,7 @@ tpmcrb_transmit(device_t dev, size_t length)
 	mask = TPM_CRB_CTRL_REQ_GO_READY;
 	if (!tpm_wait_for_u32(sc, TPM_CRB_CTRL_STS,
 		    mask, !mask, TPM_TIMEOUT_C)) {
-		device_printf(dev,
+		device_printf(sc->dev,
 		    "Failed to transition to ready state\n");
 		return (EIO);
 	}
@@ -366,14 +366,16 @@ tpmcrb_transmit(device_t dev, size_t length)
 	/* Send command and tell device to process it. */
 	bus_write_region_stream_1(sc->mem_res, crb_sc->cmd_off,
 	    sc->buf, length);
-	TPM_WRITE_BARRIER(dev, crb_sc->cmd_off, length);
+	bus_barrier(sc->mem_res, crb_sc->cmd_off,
+	    length, BUS_SPACE_BARRIER_WRITE);
 
-	TPM_WRITE_4(dev, TPM_CRB_CTRL_START, TPM_CRB_CTRL_START_CMD);
-	TPM_WRITE_BARRIER(dev, TPM_CRB_CTRL_START, 4);
+	WR4(sc, TPM_CRB_CTRL_START, TPM_CRB_CTRL_START_CMD);
+	bus_barrier(sc->mem_res, TPM_CRB_CTRL_START,
+	    4, BUS_SPACE_BARRIER_WRITE);
 
 	mask = ~0;
 	if (!tpm_wait_for_u32(sc, TPM_CRB_CTRL_START, mask, ~mask, timeout)) {
-		device_printf(dev,
+		device_printf(sc->dev,
 		    "Timeout while waiting for device to process cmd\n");
 		if (!tpmcrb_cancel_cmd(sc))
 			return (EIO);
@@ -385,7 +387,7 @@ tpmcrb_transmit(device_t dev, size_t length)
 	bytes_available = be32toh(*(uint32_t *) (&sc->buf[2]));
 
 	if (bytes_available > TPM_BUFSIZE || bytes_available < TPM_HEADER_SIZE) {
-		device_printf(dev,
+		device_printf(sc->dev,
 		    "Incorrect response size: %d\n",
 		    bytes_available);
 		return (EIO);
@@ -398,7 +400,6 @@ tpmcrb_transmit(device_t dev, size_t length)
 
 	tpmcrb_relinquish_locality(sc);
 	sc->pending_data_length = bytes_available;
-	sc->total_length = bytes_available;
 
 	return (0);
 }
@@ -410,11 +411,11 @@ static device_method_t	tpmcrb_methods[] = {
 	DEVMETHOD(device_detach,	tpmcrb_detach),
 	DEVMETHOD(device_shutdown,	tpm20_shutdown),
 	DEVMETHOD(device_suspend,	tpm20_suspend),
-	DEVMETHOD(tpm_transmit,		tpmcrb_transmit),
 	{0, 0}
 };
 
-DEFINE_CLASS_1(tpmcrb, tpmcrb_driver, tpmcrb_methods, sizeof(struct tpmcrb_sc),
-    tpm_bus_driver);
+static driver_t	tpmcrb_driver = {
+	"tpmcrb", tpmcrb_methods, sizeof(struct tpmcrb_sc),
+};
 
 DRIVER_MODULE(tpmcrb, acpi, tpmcrb_driver, 0, 0);

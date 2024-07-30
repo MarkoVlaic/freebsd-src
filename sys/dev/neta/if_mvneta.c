@@ -612,6 +612,11 @@ mvneta_attach(device_t self)
 
 	/* Allocate network interface */
 	ifp = sc->ifp = if_alloc(IFT_ETHER);
+	if (ifp == NULL) {
+		device_printf(self, "if_alloc() failed\n");
+		mvneta_detach(self);
+		return (ENOMEM);
+	}
 	if_initname(ifp, device_get_name(self), device_get_unit(self));
 
 	/*
@@ -801,7 +806,7 @@ mvneta_attach(device_t self)
 		if (mvneta_has_switch(self)) {
 			if (bootverbose)
 				device_printf(self, "This device is attached to a switch\n");
-			child = device_add_child(sc->dev, "mdio", DEVICE_UNIT_ANY);
+			child = device_add_child(sc->dev, "mdio", -1);
 			if (child == NULL) {
 				ether_ifdetach(sc->ifp);
 				mvneta_detach(self);

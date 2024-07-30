@@ -1,3 +1,4 @@
+
 PROG=	localedef
 SRCS=	charmap.c \
 	collate.c \

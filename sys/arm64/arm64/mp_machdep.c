@@ -106,8 +106,7 @@ static void ipi_stop(void *);
 static u_int fdt_cpuid;
 #endif
 
-void mpentry_psci(unsigned long cpuid);
-void mpentry_spintable(void);
+void mpentry(unsigned long cpuid);
 void init_secondary(uint64_t);
 
 /* Synchronize AP startup. */
@@ -115,7 +114,6 @@ static struct mtx ap_boot_mtx;
 
 /* Used to initialize the PCPU ahead of calling init_secondary(). */
 void *bootpcpu;
-uint64_t ap_cpuid;
 
 /* Stacks for AP initialization, discarded once idle threads are started. */
 void *bootstack;
@@ -422,24 +420,17 @@ enable_cpu_spin(uint64_t cpu, vm_paddr_t entry, vm_paddr_t release_paddr)
 {
 	vm_paddr_t *release_addr;
 
-	ap_cpuid = cpu & CPU_AFF_MASK;
-
-	release_addr = pmap_mapdev_attr(release_paddr, sizeof(*release_addr),
-	    VM_MEMATTR_DEFAULT);
+	release_addr = pmap_mapdev(release_paddr, sizeof(*release_addr));
 	if (release_addr == NULL)
 		return (ENOMEM);
 
 	*release_addr = entry;
-	cpu_dcache_wbinv_range(release_addr, sizeof(*release_addr));
 	pmap_unmapdev(release_addr, sizeof(*release_addr));
 
 	__asm __volatile(
+	    "dsb sy	\n"
 	    "sev	\n"
 	    ::: "memory");
-
-	/* Wait for the target CPU to start */
-	while (atomic_load_64(&ap_cpuid) != 0)
-		__asm __volatile("wfe");
 
 	return (0);
 }
@@ -484,6 +475,7 @@ start_cpu(u_int cpuid, uint64_t target_cpu, int domain, vm_paddr_t release_addr)
 	bootstack = (char *)bootstacks[cpuid] + MP_BOOTSTACK_SIZE;
 
 	printf("Starting CPU %u (%lx)\n", cpuid, target_cpu);
+	pa = pmap_extract(kernel_pmap, (vm_offset_t)mpentry);
 
 	/*
 	 * A limited set of hardware we support can only do spintables and
@@ -491,13 +483,10 @@ start_cpu(u_int cpuid, uint64_t target_cpu, int domain, vm_paddr_t release_addr)
 	 * PSCI branch here.
 	 */
 	MPASS(release_addr == 0 || !psci_present);
-	if (release_addr != 0) {
-		pa = pmap_extract(kernel_pmap, (vm_offset_t)mpentry_spintable);
+	if (release_addr != 0)
 		err = enable_cpu_spin(target_cpu, pa, release_addr);
-	} else {
-		pa = pmap_extract(kernel_pmap, (vm_offset_t)mpentry_psci);
+	else
 		err = enable_cpu_psci(target_cpu, pa, cpuid);
-	}
 
 	if (err != 0) {
 		pcpu_destroy(pcpup);

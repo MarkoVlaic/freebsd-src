@@ -1,3 +1,4 @@
+
 SHLIB_NAME?=	fips.so
 
 CFLAGS+=	-DFIPS_MODULE

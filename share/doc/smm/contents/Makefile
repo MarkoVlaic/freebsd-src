@@ -1,3 +1,4 @@
+
 VOLUME=	smm
 DOC=	contents
 SRCS=	contents.ms

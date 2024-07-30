@@ -1,3 +1,4 @@
+
 TESTS=	float
 CFLAGS+=-lm
 

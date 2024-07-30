@@ -1,3 +1,4 @@
+
 .SUFFIXES: .x
 
 RPCCOM=	RPCGEN_CPP=${CPP:Q} rpcgen -C

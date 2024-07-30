@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/dc
 
 KMOD=	if_dc

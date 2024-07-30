@@ -1,3 +1,4 @@
+
 PACKAGE=	ipf
 PROG=		ipf
 SRCS=		${GENHDRS} ipf.c ipfcomp.c ipf_y.c ipf_l.c bpf_filter.c

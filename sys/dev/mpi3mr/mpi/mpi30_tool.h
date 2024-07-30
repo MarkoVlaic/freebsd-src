@@ -1,7 +1,7 @@
 /*
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2016-2024, Broadcom Inc. All rights reserved.
+ * Copyright (c) 2016-2023, Broadcom Inc. All rights reserved.
  * Support: <fbsd-storage-driver.pdl@broadcom.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,7 @@
  * Broadcom Inc. (Broadcom) MPI3MR Adapter FreeBSD
  *
  */
+
 #ifndef MPI30_TOOL_H
 #define MPI30_TOOL_H     1
 
@@ -365,7 +366,6 @@ typedef struct _MPI3_DIAG_BUFFER_POST_REQUEST
 #define MPI3_DIAG_BUFFER_TYPE_FW                            (0x02)
 #define MPI3_DIAG_BUFFER_TYPE_DRIVER                        (0x10)
 #define MPI3_DIAG_BUFFER_TYPE_FDL                           (0x20)
-#define MPI3_DIAG_BUFFER_TYPE_TTY                           (0x30)
 #define MPI3_DIAG_BUFFER_MIN_PRODUCT_SPECIFIC               (0xF0)
 #define MPI3_DIAG_BUFFER_MAX_PRODUCT_SPECIFIC               (0xFF)
 
@@ -388,7 +388,7 @@ typedef struct _MPI3_DRIVER_BUFFER_HEADER
 } MPI3_DRIVER_BUFFER_HEADER, MPI3_POINTER PTR_MPI3_DRIVER_BUFFER_HEADER,
   Mpi3DriverBufferHeader_t, MPI3_POINTER pMpi3DriverBufferHeader_t;
 
-/**** Defines for the Signature field ****/
+/**** Defines for the Type field ****/
 #define MPI3_DRIVER_DIAG_BUFFER_HEADER_SIGNATURE_CIRCULAR                (0x43495243)
 
 /**** Defines for the Flags field ****/

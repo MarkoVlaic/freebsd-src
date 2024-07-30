@@ -44,6 +44,7 @@
 .Fl a
 .Nm
 .Fl d Ar hostname
+.Op Cm pub
 .Nm
 .Fl d
 .Op Fl i Ar interface
@@ -94,8 +95,15 @@ A super-user may delete an entry for the host called
 with the
 .Fl d
 flag.
+If the
+.Cm pub
+keyword is specified, only the
+.Dq published
+.Tn ARP
+entry
+for this host will be deleted.
 .Pp
-The
+Alternatively, the
 .Fl d
 flag may be combined with the
 .Fl a

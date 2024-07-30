@@ -1,3 +1,4 @@
+
 PROG=	nologin
 MAN=	nologin.5 nologin.8
 

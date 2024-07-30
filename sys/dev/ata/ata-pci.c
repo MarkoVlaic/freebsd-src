@@ -60,6 +60,7 @@ int
 ata_pci_probe(device_t dev)
 {
     struct ata_pci_controller *ctlr = device_get_softc(dev);
+    char buffer[64];
 
     /* is this a storage class device ? */
     if (pci_get_class(dev) != PCIC_STORAGE)
@@ -69,7 +70,8 @@ ata_pci_probe(device_t dev)
     if (pci_get_subclass(dev) != PCIS_STORAGE_IDE)
 	return (ENXIO);
     
-    device_set_descf(dev, "%s ATA controller", ata_pcivendor2str(dev));
+    sprintf(buffer, "%s ATA controller", ata_pcivendor2str(dev));
+    device_set_desc_copy(dev, buffer);
     ctlr->chipinit = ata_generic_chipinit;
 
     /* we are a low priority handler */
@@ -829,10 +831,12 @@ void
 ata_set_desc(device_t dev)
 {
     struct ata_pci_controller *ctlr = device_get_softc(dev);
+    char buffer[128];
 
-    device_set_descf(dev, "%s %s %s controller",
+    sprintf(buffer, "%s %s %s controller",
             ata_pcivendor2str(dev), ctlr->chip->text, 
             ata_mode2str(ctlr->chip->max_dma));
+    device_set_desc_copy(dev, buffer);
 }
 
 const struct ata_chip_id *

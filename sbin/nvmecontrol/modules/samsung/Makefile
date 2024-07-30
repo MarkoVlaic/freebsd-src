@@ -1,3 +1,4 @@
+
 LIB=	samsung
 SRCS=	samsung.c
 

@@ -29,8 +29,6 @@
  *
  */
 
-#include <sys/elf_common.h>
-
 #include <machine/asm.h>
 #include <machine/setjmp.h>
 #include <machine/param.h>
@@ -389,5 +387,3 @@ ENTRY(pagezero_cache)
 	ret
 
 END(pagezero_cache)
-
-GNU_PROPERTY_AARCH64_FEATURE_1_NOTE(GNU_PROPERTY_AARCH64_FEATURE_1_VAL)

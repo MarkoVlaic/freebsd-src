@@ -82,8 +82,7 @@ if [ $# -eq 0 ]; then
 else
 	if [ $1 = mmap ]; then
 		touch $RUNDIR/active.$2
-		start=`date +%s`
-		while [ $((`date +%s`- start)) -lt 300 ]; do
+		for i in `jot 500`; do
 			cd ${mntpoint}$2
 			/tmp/vunref > /dev/null 2>&1
 			cd /

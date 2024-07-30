@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-# unionfs(4) test
+# unionfs(8) test
 # Variation of unionfs7.sh, but with tmpfs
 
 # "mkdir: rmdir(d17) Directory not empty" seen.

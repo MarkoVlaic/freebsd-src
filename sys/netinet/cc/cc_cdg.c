@@ -57,7 +57,6 @@
 #include <sys/malloc.h>
 #include <sys/module.h>
 #include <sys/queue.h>
-#include <sys/prng.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
 #include <sys/sysctl.h>
@@ -508,8 +507,7 @@ cdg_cong_signal(struct cc_var *ccv, ccsignal_t signal_type)
 static inline int
 prob_backoff(long qtrend)
 {
-	int backoff, idx;
-	uint32_t p;
+	int backoff, idx, p;
 
 	backoff = (qtrend > ((MAXGRAD * V_cdg_exp_backoff_scale) << D_P_E));
 
@@ -521,8 +519,8 @@ prob_backoff(long qtrend)
 			idx = qtrend;
 
 		/* Backoff probability proportional to rate of queue growth. */
-		p = (UINT32_MAX / (1 << EXP_PREC)) * probexp[idx];
-		backoff = (prng32() < p);
+		p = (INT_MAX / (1 << EXP_PREC)) * probexp[idx];
+		backoff = (random() < p);
 	}
 
 	return (backoff);

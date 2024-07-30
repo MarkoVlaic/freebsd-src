@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/usr.bin/cksum
 
 PROG=	ckdist

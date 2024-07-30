@@ -40,9 +40,6 @@ extern void test_Digest_MDC2(void);
 extern void test_Digest_RIPEMD160(void);
 extern void test_Digest_SHA1(void);
 extern void test_Digest_SHAKE128(void);
-extern void test_Digest_DSA(void);
-extern void test_Digest_DSA_SHA(void);
-extern void test_Digest_SHA(void);
 
 
 //=======Suite Setup=====
@@ -78,9 +75,6 @@ int main(int argc, char *argv[])
   RUN_TEST(test_Digest_RIPEMD160, 275);
   RUN_TEST(test_Digest_SHA1, 314);
   RUN_TEST(test_Digest_SHAKE128, 353);
-  RUN_TEST(test_Digest_DSA, 390);
-  RUN_TEST(test_Digest_DSA_SHA, 429);
-  RUN_TEST(test_Digest_SHA, 468);
 
   return (UnityEnd());
 }

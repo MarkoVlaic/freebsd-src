@@ -1,3 +1,4 @@
+
 SCRIPTS=	save-entropy.sh
 MAN=		save-entropy.8
 

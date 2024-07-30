@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023 Yubico AB. All rights reserved.
+ * Copyright (c) 2018 Yubico AB. All rights reserved.
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
  * SPDX-License-Identifier: BSD-2-Clause
@@ -37,8 +37,7 @@ prepare_cred(FILE *in_f, int type, int flags)
 		errx(1, "input error");
 
 	if (flags & FLAG_DEBUG) {
-		fprintf(stderr, "client data%s:\n",
-			flags & FLAG_CD ? "" : " hash");
+		fprintf(stderr, "client data hash:\n");
 		xxd(cdh.ptr, cdh.len);
 		fprintf(stderr, "relying party id: %s\n", rpid);
 		fprintf(stderr, "user name: %s\n", uname);
@@ -49,13 +48,9 @@ prepare_cred(FILE *in_f, int type, int flags)
 	if ((cred = fido_cred_new()) == NULL)
 		errx(1, "fido_cred_new");
 
-
-	if (flags & FLAG_CD)
-		r = fido_cred_set_clientdata(cred, cdh.ptr, cdh.len);
-	else
-		r = fido_cred_set_clientdata_hash(cred, cdh.ptr, cdh.len);
-
-	if (r != FIDO_OK || (r = fido_cred_set_type(cred, type)) != FIDO_OK ||
+	if ((r = fido_cred_set_type(cred, type)) != FIDO_OK ||
+	    (r = fido_cred_set_clientdata_hash(cred, cdh.ptr,
+	    cdh.len)) != FIDO_OK ||
 	    (r = fido_cred_set_rp(cred, rpid, NULL)) != FIDO_OK ||
 	    (r = fido_cred_set_user(cred, uid.ptr, uid.len, uname, NULL,
 	    NULL)) != FIDO_OK)
@@ -154,7 +149,7 @@ cred_make(int argc, char **argv)
 	int ch;
 	int r;
 
-	while ((ch = getopt(argc, argv, "bc:dhi:o:qruvw")) != -1) {
+	while ((ch = getopt(argc, argv, "bc:dhi:o:qruv")) != -1) {
 		switch (ch) {
 		case 'b':
 			flags |= FLAG_LARGEBLOB;
@@ -186,9 +181,6 @@ cred_make(int argc, char **argv)
 			break;
 		case 'v':
 			flags |= FLAG_UV;
-			break;
-		case 'w':
-			flags |= FLAG_CD;
 			break;
 		default:
 			usage();

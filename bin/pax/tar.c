@@ -367,9 +367,9 @@ tar_rd(ARCHD *arcn, char *buf)
 	 */
 	if (tar_id(buf, BLKMULT) < 0)
 		return(-1);
-	memset(arcn, 0, sizeof *arcn);
 	arcn->org_name = arcn->name;
 	arcn->sb.st_nlink = 1;
+	arcn->pat = NULL;
 
 	/*
 	 * copy out the name and values in the stat buffer
@@ -396,6 +396,8 @@ tar_rd(ARCHD *arcn, char *buf)
 	 * to encode this as a directory
 	 */
 	pt = &(arcn->name[arcn->nlen - 1]);
+	arcn->pad = 0;
+	arcn->skip = 0;
 	switch(hd->linkflag) {
 	case SYMTYPE:
 		/*
@@ -432,6 +434,8 @@ tar_rd(ARCHD *arcn, char *buf)
 		arcn->type = PAX_DIR;
 		arcn->sb.st_mode |= S_IFDIR;
 		arcn->sb.st_nlink = 2;
+		arcn->ln_name[0] = '\0';
+		arcn->ln_nlen = 0;
 		break;
 	case AREGTYPE:
 	case REGTYPE:
@@ -439,6 +443,8 @@ tar_rd(ARCHD *arcn, char *buf)
 		/*
 		 * If we have a trailing / this is a directory and NOT a file.
 		 */
+		arcn->ln_name[0] = '\0';
+		arcn->ln_nlen = 0;
 		if (*pt == '/') {
 			/*
 			 * it is a directory, set the mode for -v printing
@@ -715,9 +721,10 @@ ustar_rd(ARCHD *arcn, char *buf)
 	 */
 	if (ustar_id(buf, BLKMULT) < 0)
 		return(-1);
-	memset(arcn, 0, sizeof *arcn);
 	arcn->org_name = arcn->name;
 	arcn->sb.st_nlink = 1;
+	arcn->pat = NULL;
+	arcn->nlen = 0;
 	hd = (HD_USTAR *)buf;
 
 	/*
@@ -763,6 +770,15 @@ ustar_rd(ARCHD *arcn, char *buf)
 	hd->uname[sizeof(hd->uname) - 1] = '\0';
 	if (uid_name(hd->uname, &(arcn->sb.st_uid)) < 0)
 		arcn->sb.st_uid = (uid_t)asc_ul(hd->uid, sizeof(hd->uid), OCT);
+
+	/*
+	 * set the defaults, these may be changed depending on the file type
+	 */
+	arcn->ln_name[0] = '\0';
+	arcn->ln_nlen = 0;
+	arcn->pad = 0;
+	arcn->skip = 0;
+	arcn->sb.st_rdev = (dev_t)0;
 
 	/*
 	 * set the mode and PAX type according to the typeflag in the header

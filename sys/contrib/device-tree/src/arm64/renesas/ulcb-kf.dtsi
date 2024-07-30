@@ -234,7 +234,6 @@
 		gpio-controller;
 		#gpio-cells = <2>;
 		interrupt-controller;
-		#interrupt-cells = <2>;
 		interrupt-parent = <&gpio6>;
 		interrupts = <8 IRQ_TYPE_EDGE_FALLING>;
 
@@ -295,7 +294,6 @@
 		gpio-controller;
 		#gpio-cells = <2>;
 		interrupt-controller;
-		#interrupt-cells = <2>;
 		interrupt-parent = <&gpio6>;
 		interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
 	};
@@ -316,7 +314,6 @@
 		gpio-controller;
 		#gpio-cells = <2>;
 		interrupt-controller;
-		#interrupt-cells = <2>;
 		interrupt-parent = <&gpio7>;
 		interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
 	};
@@ -327,7 +324,6 @@
 		gpio-controller;
 		#gpio-cells = <2>;
 		interrupt-controller;
-		#interrupt-cells = <2>;
 		interrupt-parent = <&gpio5>;
 		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
 	};

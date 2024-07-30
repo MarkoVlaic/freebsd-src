@@ -1,3 +1,4 @@
+
 PROG=	callbootd
 MAN=
 SRCS=	callbootd.c ${GENSRCS}

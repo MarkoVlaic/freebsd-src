@@ -369,49 +369,36 @@ int quoted(const uschar **pp)	/* pick up next thing after a \\ */
 
 /* BUG: should advance by utf-8 char even if makes no sense */
 
-	switch ((c = *p++)) {
-	case 't':
+	if ((c = *p++) == 't') {
 		c = '\t';
-		break;
-	case 'n':
+	} else if (c == 'n') {
 		c = '\n';
-		break;
-	case 'f':
+	} else if (c == 'f') {
 		c = '\f';
-		break;
-	case 'r':
+	} else if (c == 'r') {
 		c = '\r';
-		break;
-	case 'b':
+	} else if (c == 'b') {
 		c = '\b';
-		break;
-	case 'v':
+	} else if (c == 'v') {
 		c = '\v';
-		break;
-	case 'a':
+	} else if (c == 'a') {
 		c = '\a';
-		break;
-	case '\\':
+	} else if (c == '\\') {
 		c = '\\';
-		break;
-	case 'x': /* 2 hex digits follow */
-		c = hexstr(&p, 2); /* this adds a null if number is invalid */
-		break;
-	case 'u': /* unicode char number up to 8 hex digits */
+	} else if (c == 'x') {	/* 2 hex digits follow */
+		c = hexstr(&p, 2);	/* this adds a null if number is invalid */
+	} else if (c == 'u') {	/* unicode char number up to 8 hex digits */
 		c = hexstr(&p, 8);
-		break;
-	default:
-		if (isoctdigit(c)) { /* \d \dd \ddd */
-			int n = c - '0';
-			if (isoctdigit(*p)) {
+	} else if (isoctdigit(c)) {	/* \d \dd \ddd */
+		int n = c - '0';
+		if (isoctdigit(*p)) {
+			n = 8 * n + *p++ - '0';
+			if (isoctdigit(*p))
 				n = 8 * n + *p++ - '0';
-				if (isoctdigit(*p))
-					n = 8 * n + *p++ - '0';
-			}
-			c = n;
 		}
-	}
-
+		c = n;
+	} /* else */
+		/* c = c; */
 	*pp = p;
 	return c;
 }
@@ -658,14 +645,14 @@ static int set_gototab(fa *f, int state, int ch, int val) /* hide gototab implem
 		f->gototab[state].entries[0].state = val;
 		f->gototab[state].inuse++;
 		return val;
-	} else if ((unsigned)ch > f->gototab[state].entries[f->gototab[state].inuse-1].ch) {
+	} else if (ch > f->gototab[state].entries[f->gototab[state].inuse-1].ch) {
 		// not seen yet, insert and return
 		gtt *tab = & f->gototab[state];
 		if (tab->inuse + 1 >= tab->allocated)
 			resize_gototab(f, state);
 
-		f->gototab[state].entries[f->gototab[state].inuse].ch = ch;
-		f->gototab[state].entries[f->gototab[state].inuse].state = val;
+		f->gototab[state].entries[f->gototab[state].inuse-1].ch = ch;
+		f->gototab[state].entries[f->gototab[state].inuse-1].state = val;
 		f->gototab[state].inuse++;
 		return val;
 	} else {
@@ -690,9 +677,9 @@ static int set_gototab(fa *f, int state, int ch, int val) /* hide gototab implem
 	gtt *tab = & f->gototab[state];
 	if (tab->inuse + 1 >= tab->allocated)
 		resize_gototab(f, state);
+	++tab->inuse;
 	f->gototab[state].entries[tab->inuse].ch = ch;
 	f->gototab[state].entries[tab->inuse].state = val;
-	++tab->inuse;
 
 	qsort(f->gototab[state].entries,
 		f->gototab[state].inuse, sizeof(gtte), entry_cmp);
@@ -843,6 +830,8 @@ int nematch(fa *f, const char *p0)	/* non-empty match, for sub */
 }
 
 
+#define MAX_UTF_BYTES	4	// UTF-8 is up to 4 bytes long
+
 /*
  * NAME
  *     fnematch
@@ -879,28 +868,16 @@ bool fnematch(fa *pfa, FILE *f, char **pbuf, int *pbufsize, int quantum)
 
 	do {
 		/*
-		 * Call u8_rune with at least awk_mb_cur_max ahead in
+		 * Call u8_rune with at least MAX_UTF_BYTES ahead in
 		 * the buffer until EOF interferes.
 		 */
-		if (k - j < (int)awk_mb_cur_max) {
-			if (k + awk_mb_cur_max > buf + bufsize) {
-				char *obuf = buf;
+		if (k - j < MAX_UTF_BYTES) {
+			if (k + MAX_UTF_BYTES > buf + bufsize) {
 				adjbuf((char **) &buf, &bufsize,
-				    bufsize + awk_mb_cur_max,
+				    bufsize + MAX_UTF_BYTES,
 				    quantum, 0, "fnematch");
-
-				/* buf resized, maybe moved. update pointers */
-				*pbufsize = bufsize;
-				if (obuf != buf) {
-					i = buf + (i - obuf);
-					j = buf + (j - obuf);
-					k = buf + (k - obuf);
-					*pbuf = buf;
-					if (patlen)
-						patbeg = buf + (patbeg - obuf);
-				}
 			}
-			for (n = awk_mb_cur_max ; n > 0; n--) {
+			for (n = MAX_UTF_BYTES ; n > 0; n--) {
 				*k++ = (c = getc(f)) != EOF ? c : 0;
 				if (c == EOF) {
 					if (ferror(f))
@@ -936,6 +913,10 @@ bool fnematch(fa *pfa, FILE *f, char **pbuf, int *pbufsize, int quantum)
 		j = i;
 		s = 2;
 	} while (1);
+
+	/* adjbuf() may have relocated a resized buffer. Inform the world. */
+	*pbuf = buf;
+	*pbufsize = bufsize;
 
 	if (patlen) {
 		/*

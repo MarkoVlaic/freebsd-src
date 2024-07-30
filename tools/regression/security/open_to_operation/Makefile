@@ -1,3 +1,4 @@
+
 PROG=	open_to_operation
 MAN=
 WARNS?=	3

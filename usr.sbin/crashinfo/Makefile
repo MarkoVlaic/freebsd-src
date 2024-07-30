@@ -1,3 +1,4 @@
+
 SCRIPTS= crashinfo.sh
 MAN=	crashinfo.8
 

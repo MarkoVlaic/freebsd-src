@@ -1,3 +1,4 @@
+
 PACKAGE=	runtime
 PROG=	kldxref
 MAN=	kldxref.8

@@ -267,10 +267,17 @@ session_key(
 		hdlen = 10 * sizeof(u_int32);
 		break;
 	}
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
+#   if defined(OPENSSL) && defined(EVP_MD_CTX_FLAG_NON_FIPS_ALLOW)
+	/* [Bug 3457] set flags and don't kill them again */
+	EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+	EVP_DigestInit_ex(ctx, EVP_get_digestbynid(crypto_nid), NULL);
+#   else
 	EVP_DigestInit(ctx, EVP_get_digestbynid(crypto_nid));
+#   endif
 	EVP_DigestUpdate(ctx, (u_char *)header, hdlen);
 	EVP_DigestFinal(ctx, dgst, &len);
+	EVP_MD_CTX_free(ctx);
 	memcpy(&keyid, dgst, 4);
 	keyid = ntohl(keyid);
 	if (lifetime != 0) {
@@ -301,7 +308,7 @@ session_key(
 int
 make_keylist(
 	struct peer *peer,	/* peer structure pointer */
-	endpt *dstadr		/* interface */
+	struct interface *dstadr /* interface */
 	)
 {
 	EVP_MD_CTX *ctx;	/* signature context */
@@ -382,7 +389,7 @@ make_keylist(
 	if (tstamp != 0) {
 		if (vp->sig == NULL)
 			vp->sig = emalloc(sign_siglen);
-		ctx = digest_ctx;
+		ctx = EVP_MD_CTX_new();
 		EVP_SignInit(ctx, sign_digest);
 		EVP_SignUpdate(ctx, (u_char *)vp, 12);
 		EVP_SignUpdate(ctx, vp->ptr, sizeof(struct autokey));
@@ -391,6 +398,7 @@ make_keylist(
 			vp->siglen = htonl(len);
 			peer->flags |= FLAG_ASSOC;
 		}
+		EVP_MD_CTX_free(ctx);
 	}
 	DPRINTF(1, ("make_keys: %d %08x %08x ts %u fs %u poll %d\n",
 		    peer->keynumber, keyid, cookie, ntohl(vp->tstamp),
@@ -826,7 +834,7 @@ crypto_recv(
 			 * errors.
 			 */
 			if (vallen == (u_int)EVP_PKEY_size(host_pkey)) {
-				RSA *rsa = EVP_PKEY_get1_RSA(host_pkey);
+				RSA *rsa = EVP_PKEY_get0_RSA(host_pkey);
 				u_int32 *cookiebuf = malloc(RSA_size(rsa));
 				if (!cookiebuf) {
 					rval = XEVNT_CKY;
@@ -845,7 +853,6 @@ crypto_recv(
 					cookie = ntohl(*cookiebuf);
 					free(cookiebuf);
 				}
-				RSA_free(rsa);
 			} else {
 				rval = XEVNT_CKY;
 				break;
@@ -1541,15 +1548,16 @@ crypto_verify(
 	 * signature. If the identity exchange is verified, light the
 	 * proventic bit. What a relief.
 	 */
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 	EVP_VerifyInit(ctx, peer->digest);
-	EVP_VerifyUpdate(ctx, (u_char *)&ep->tstamp, vallen + 
-			 sizeof(ep->tstamp) + sizeof(ep->fstamp) +
-			 sizeof(ep->vallen));
+	/* XXX: the "+ 12" needs to be at least documented... */
+	EVP_VerifyUpdate(ctx, (u_char *)&ep->tstamp, vallen + 12);
 	if (EVP_VerifyFinal(ctx, (u_char *)&ep->pkt[i], siglen,
 	    pkey) <= 0) {
+		EVP_MD_CTX_free(ctx);
 		return (XEVNT_SIG);
 	}
+	EVP_MD_CTX_free(ctx);
 
 	if (peer->crypto & CRYPTO_FLAG_VRFY)
 		peer->crypto |= CRYPTO_FLAG_PROV;
@@ -1575,7 +1583,6 @@ crypto_encrypt(
 	)
 {
 	EVP_PKEY *pkey;		/* public key */
-	RSA* rsa;		/* public key */
 	EVP_MD_CTX *ctx;	/* signature context */
 	tstamp_t tstamp;	/* NTP timestamp */
 	u_int32	temp32;
@@ -1603,9 +1610,8 @@ crypto_encrypt(
 	vp->ptr = emalloc(vallen);
 	puch = vp->ptr;
 	temp32 = htonl(*cookie);
-	rsa = EVP_PKEY_get1_RSA(pkey);
-	if (RSA_public_encrypt(4, (u_char *)&temp32, puch, rsa,
-	    RSA_PKCS1_OAEP_PADDING) <= 0) {
+	if (RSA_public_encrypt(4, (u_char *)&temp32, puch,
+	    EVP_PKEY_get0_RSA(pkey), RSA_PKCS1_OAEP_PADDING) <= 0) {
 		msyslog(LOG_ERR, "crypto_encrypt: %s",
 		    ERR_error_string(ERR_get_error(), NULL));
 		free(vp->ptr);
@@ -1613,14 +1619,11 @@ crypto_encrypt(
 		return (XEVNT_CKY);
 	}
 	EVP_PKEY_free(pkey);
-	pkey = NULL;
-	RSA_free(rsa);
-	rsa = NULL;
 	if (tstamp == 0)
 		return (XEVNT_OK);
 
 	vp->sig = emalloc(sign_siglen);
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 	EVP_SignInit(ctx, sign_digest);
 	EVP_SignUpdate(ctx, (u_char *)&vp->tstamp, 12);
 	EVP_SignUpdate(ctx, vp->ptr, vallen);
@@ -1628,6 +1631,7 @@ crypto_encrypt(
 		INSIST(vallen <= sign_siglen);
 		vp->siglen = htonl(vallen);
 	}
+	EVP_MD_CTX_free(ctx);
 	return (XEVNT_OK);
 }
 
@@ -1845,7 +1849,7 @@ crypto_update(void)
 	if (hostval.tstamp == 0)
 		return;
 
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 
 	/*
 	 * Sign public key and timestamps. The filestamp is derived from
@@ -1941,6 +1945,7 @@ crypto_update(void)
 	    ntohl(hostval.tstamp)); 
 	record_crypto_stats(NULL, statstr);
 	DPRINTF(1, ("crypto_update: %s\n", statstr));
+	EVP_MD_CTX_free(ctx);
 }
 
 /*
@@ -1998,7 +2003,7 @@ value_free(
  * Returns NTP seconds if in synch, 0 otherwise
  */
 tstamp_t
-crypto_time(void)
+crypto_time()
 {
 	l_fp	tstamp;		/* NTP time */
 
@@ -2070,7 +2075,7 @@ asn_to_calendar	(
 
 
 /*
- * bighash() - compute a BIGNUM MD5 hash of a BIGNUM number.
+ * bigdig() - compute a BIGNUM MD5 hash of a BIGNUM number.
  *
  * Returns void (no errors)
  */
@@ -2088,10 +2093,17 @@ bighash(
 	len = BN_num_bytes(bn);
 	ptr = emalloc(len);
 	BN_bn2bin(bn, ptr);
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
+#   if defined(OPENSSL) && defined(EVP_MD_CTX_FLAG_NON_FIPS_ALLOW)
+	/* [Bug 3457] set flags and don't kill them again */
+	EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+	EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
+#   else
 	EVP_DigestInit(ctx, EVP_md5());
+#   endif
 	EVP_DigestUpdate(ctx, ptr, len);
 	EVP_DigestFinal(ctx, dgst, &len);
+	EVP_MD_CTX_free(ctx);
 	BN_bin2bn(dgst, len, bk);
 	free(ptr);
 }
@@ -2157,12 +2169,12 @@ crypto_alice(
 	struct value *vp	/* value pointer */
 	)
 {
-	const DSA	*dsa;		/* IFF parameters */
-	BN_CTX		*bctx;		/* BIGNUM context */
-	EVP_MD_CTX	*ctx;	/* signature context */
-	tstamp_t	tstamp;
-	u_int		len;
-	const BIGNUM	*q;
+	DSA	*dsa;		/* IFF parameters */
+	BN_CTX	*bctx;		/* BIGNUM context */
+	EVP_MD_CTX *ctx;	/* signature context */
+	tstamp_t tstamp;
+	u_int	len;
+	const BIGNUM *q;
 
 	/*
 	 * The identity parameters must have correct format and content.
@@ -2204,7 +2216,7 @@ crypto_alice(
 		return (XEVNT_OK);
 
 	vp->sig = emalloc(sign_siglen);
-	ctx = digest_ctx; 
+	ctx = EVP_MD_CTX_new();
 	EVP_SignInit(ctx, sign_digest);
 	EVP_SignUpdate(ctx, (u_char *)&vp->tstamp, 12);
 	EVP_SignUpdate(ctx, vp->ptr, len);
@@ -2212,6 +2224,7 @@ crypto_alice(
 		INSIST(len <= sign_siglen);
 		vp->siglen = htonl(len);
 	}
+	EVP_MD_CTX_free(ctx);
 	return (XEVNT_OK);
 }
 
@@ -2230,8 +2243,7 @@ crypto_bob(
 	struct value *vp	/* value pointer */
 	)
 {
-	int	retv;		/* return value */
-	const DSA *dsa;		/* IFF parameters */
+	DSA	*dsa;		/* IFF parameters */
 	DSA_SIG	*sdsa;		/* DSA signature context fake */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	EVP_MD_CTX *ctx;	/* signature context */
@@ -2250,10 +2262,6 @@ crypto_bob(
 		msyslog(LOG_NOTICE, "crypto_bob: scheme unavailable");
 		return (XEVNT_ID);
 	}
-
-	/* Initialize pointers that may need freeing in cleanup. */
-	sdsa = NULL;
-
 	dsa = EVP_PKEY_get0_DSA(iffkey_info->pkey);
 	DSA_get0_pqg(dsa, &p, &q, &g);
 	DSA_get0_key(dsa, NULL, &priv_key);
@@ -2298,16 +2306,16 @@ crypto_bob(
 	if (len == 0) {
 		msyslog(LOG_ERR, "crypto_bob: %s",
 		    ERR_error_string(ERR_get_error(), NULL));
-		retv = XEVNT_ERR;
-		goto cleanup;
+		DSA_SIG_free(sdsa);
+		return (XEVNT_ERR);
 	}
 	if (len > MAX_VALLEN) {
 		msyslog(LOG_ERR, "crypto_bob: signature is too big: %u",
 		    len);
-		retv = XEVNT_ERR;
-		goto cleanup;
+		DSA_SIG_free(sdsa);
+		return (XEVNT_LEN);
 	}
-	ZERO(*vp);
+	memset(vp, 0, sizeof(struct value));
 	tstamp = crypto_time();
 	vp->tstamp = htonl(tstamp);
 	vp->fstamp = htonl(iffkey_info->fstamp);
@@ -2315,14 +2323,13 @@ crypto_bob(
 	ptr = emalloc(len);
 	vp->ptr = ptr;
 	i2d_DSA_SIG(sdsa, &ptr);
-	if (0 == tstamp) {
-		retv = XEVNT_OK;
-		goto cleanup;
-	}
+	DSA_SIG_free(sdsa);
+	if (tstamp == 0)
+		return (XEVNT_OK);
 
 	/* XXX: more validation to make sure the sign fits... */
 	vp->sig = emalloc(sign_siglen);
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 	EVP_SignInit(ctx, sign_digest);
 	EVP_SignUpdate(ctx, (u_char *)&vp->tstamp, 12);
 	EVP_SignUpdate(ctx, vp->ptr, len);
@@ -2330,11 +2337,8 @@ crypto_bob(
 		INSIST(len <= sign_siglen);
 		vp->siglen = htonl(len);
 	}
-	retv = XEVNT_OK;
-
-    cleanup:
-	DSA_SIG_free(sdsa);
-	return retv;
+	EVP_MD_CTX_free(ctx);
+	return (XEVNT_OK);
 }
 
 
@@ -2353,7 +2357,7 @@ crypto_iff(
 	struct peer *peer	/* peer structure pointer */
 	)
 {
-	const DSA *dsa;		/* IFF parameters */
+	DSA	*dsa;		/* IFF parameters */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	DSA_SIG	*sdsa;		/* DSA parameters */
 	BIGNUM	*bn, *bk;
@@ -2497,7 +2501,7 @@ crypto_alice2(
 	struct value *vp	/* value pointer */
 	)
 {
-	const RSA *rsa;	/* GQ parameters */
+	RSA	*rsa;		/* GQ parameters */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	EVP_MD_CTX *ctx;	/* signature context */
 	tstamp_t tstamp;
@@ -2542,7 +2546,7 @@ crypto_alice2(
 		return (XEVNT_OK);
 
 	vp->sig = emalloc(sign_siglen);
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 	EVP_SignInit(ctx, sign_digest);
 	EVP_SignUpdate(ctx, (u_char *)&vp->tstamp, 12);
 	EVP_SignUpdate(ctx, vp->ptr, len);
@@ -2550,6 +2554,7 @@ crypto_alice2(
 		INSIST(len <= sign_siglen);
 		vp->siglen = htonl(len);
 	}
+	EVP_MD_CTX_free(ctx);
 	return (XEVNT_OK);
 }
 
@@ -2568,7 +2573,7 @@ crypto_bob2(
 	struct value *vp	/* value pointer */
 	)
 {
-	const RSA *rsa;		/* GQ parameters */
+	RSA	*rsa;		/* GQ parameters */
 	DSA_SIG	*sdsa;		/* DSA parameters */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	EVP_MD_CTX *ctx;	/* signature context */
@@ -2646,7 +2651,7 @@ crypto_bob2(
 		return (XEVNT_OK);
 
 	vp->sig = emalloc(sign_siglen);
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 	EVP_SignInit(ctx, sign_digest);
 	EVP_SignUpdate(ctx, (u_char *)&vp->tstamp, 12);
 	EVP_SignUpdate(ctx, vp->ptr, len);
@@ -2654,6 +2659,7 @@ crypto_bob2(
 		INSIST(len <= sign_siglen);
 		vp->siglen = htonl(len);
 	}
+	EVP_MD_CTX_free(ctx);
 	return (XEVNT_OK);
 }
 
@@ -2674,7 +2680,7 @@ crypto_gq(
 	struct peer *peer	/* peer structure pointer */
 	)
 {
-	const RSA *rsa;		/* GQ parameters */
+	RSA	*rsa;		/* GQ parameters */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	DSA_SIG	*sdsa;		/* RSA signature context fake */
 	BIGNUM	*y, *v;
@@ -2839,7 +2845,7 @@ crypto_alice3(
 	struct value *vp	/* value pointer */
 	)
 {
-	const DSA *dsa;		/* MV parameters */
+	DSA	*dsa;		/* MV parameters */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	EVP_MD_CTX *ctx;	/* signature context */
 	tstamp_t tstamp;
@@ -2884,7 +2890,7 @@ crypto_alice3(
 		return (XEVNT_OK);
 
 	vp->sig = emalloc(sign_siglen);
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 	EVP_SignInit(ctx, sign_digest);
 	EVP_SignUpdate(ctx, (u_char *)&vp->tstamp, 12);
 	EVP_SignUpdate(ctx, vp->ptr, len);
@@ -2892,6 +2898,7 @@ crypto_alice3(
 		INSIST(len <= sign_siglen);
 		vp->siglen = htonl(len);
 	}
+	EVP_MD_CTX_free(ctx);
 	return (XEVNT_OK);
 }
 
@@ -2909,7 +2916,7 @@ crypto_bob3(
 	struct value *vp	/* value pointer */
 	)
 {
-	const DSA *dsa;		/* MV parameters */
+	DSA	*dsa;		/* MV parameters */
 	DSA	*sdsa;		/* DSA signature context fake */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	EVP_MD_CTX *ctx;	/* signature context */
@@ -2996,7 +3003,7 @@ crypto_bob3(
 		return (XEVNT_OK);
 
 	vp->sig = emalloc(sign_siglen);
-	ctx = digest_ctx;
+	ctx = EVP_MD_CTX_new();
 	EVP_SignInit(ctx, sign_digest);
 	EVP_SignUpdate(ctx, (u_char *)&vp->tstamp, 12);
 	EVP_SignUpdate(ctx, vp->ptr, len);
@@ -3004,6 +3011,7 @@ crypto_bob3(
 		INSIST(len <= sign_siglen);
 		vp->siglen = htonl(len);
 	}
+	EVP_MD_CTX_free(ctx);
 	return (XEVNT_OK);
 }
 
@@ -3024,7 +3032,7 @@ crypto_mv(
 	struct peer *peer	/* peer structure pointer */
 	)
 {
-	const DSA *dsa;		/* MV parameters */
+	DSA	*dsa;		/* MV parameters */
 	DSA	*sdsa;		/* DSA parameters */
 	BN_CTX	*bctx;		/* BIGNUM context */
 	BIGNUM	*k, *u, *v;
@@ -3245,7 +3253,7 @@ cert_sign(
 	vp->siglen = 0;
 	if (tstamp != 0) {
 		vp->sig = emalloc(sign_siglen);
-		ctx = digest_ctx;
+		ctx = EVP_MD_CTX_new();
 		EVP_SignInit(ctx, sign_digest);
 		EVP_SignUpdate(ctx, (u_char *)vp, 12);
 		EVP_SignUpdate(ctx, vp->ptr, len);
@@ -3253,6 +3261,7 @@ cert_sign(
 			INSIST(len <= sign_siglen);
 			vp->siglen = htonl(len);
 		}
+		EVP_MD_CTX_free(ctx);
 	}
 #ifdef DEBUG
 	if (debug > 1)
@@ -3900,6 +3909,7 @@ crypto_setup(void)
 		    "crypto_setup: spurious crypto command");
 		return;
 	}
+	ssl_check_version();
 
 	/*
 	 * Load required random seed file and seed the random number
@@ -4158,5 +4168,5 @@ exten_payload_size(
 	return (u_int)data_size;
 }
 # else	/* !AUTOKEY follows */
-NONEMPTY_TRANSLATION_UNIT
+int ntp_crypto_bs_pubkey;
 # endif	/* !AUTOKEY */

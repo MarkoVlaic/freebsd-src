@@ -1,3 +1,4 @@
+
 PROG=	find-sb
 MAN=
 

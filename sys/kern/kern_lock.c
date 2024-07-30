@@ -115,7 +115,7 @@ CTASSERT(LK_UNLOCKED == (LK_UNLOCKED &
 	}								\
 } while (0)
 
-static __always_inline bool
+static bool __always_inline
 LK_CAN_SHARE(uintptr_t x, int flags, bool fp)
 {
 
@@ -137,6 +137,9 @@ LK_CAN_SHARE(uintptr_t x, int flags, bool fp)
 	(((x) & LK_NOWITNESS) == 0 && !LK_TRYOP(x))
 #define	LK_TRYWIT(x)							\
 	(LK_TRYOP(x) ? LOP_TRYLOCK : 0)
+
+#define	lockmgr_disowned(lk)						\
+	(((lk)->lk_lock & ~(LK_FLAGMASK & ~LK_SHARE)) == LK_KERNPROC)
 
 #define	lockmgr_xlocked_v(v)						\
 	(((v) & ~(LK_FLAGMASK & ~LK_SHARE)) == (uintptr_t)curthread)
@@ -180,10 +183,9 @@ struct lockmgr_wait {
 	int itimo;
 };
 
-static __always_inline bool lockmgr_slock_try(struct lock *lk, uintptr_t *xp,
+static bool __always_inline lockmgr_slock_try(struct lock *lk, uintptr_t *xp,
     int flags, bool fp);
-static __always_inline bool lockmgr_sunlock_try(struct lock *lk,
-    uintptr_t *xp);
+static bool __always_inline lockmgr_sunlock_try(struct lock *lk, uintptr_t *xp);
 
 static void
 lockmgr_exit(u_int flags, struct lock_object *ilk, int wakeup_swapper)
@@ -241,7 +243,7 @@ static void
 lockmgr_note_exclusive_release(struct lock *lk, const char *file, int line)
 {
 
-	if (!lockmgr_disowned(lk)) {
+	if (LK_HOLDER(lockmgr_read_value(lk)) != LK_KERNPROC) {
 		WITNESS_UNLOCK(&lk->lock_object, LOP_EXCLUSIVE, file, line);
 		TD_LOCKS_DEC(curthread);
 	}
@@ -512,7 +514,7 @@ lockdestroy(struct lock *lk)
 	lock_destroy(&lk->lock_object);
 }
 
-static __always_inline bool
+static bool __always_inline
 lockmgr_slock_try(struct lock *lk, uintptr_t *xp, int flags, bool fp)
 {
 
@@ -532,7 +534,7 @@ lockmgr_slock_try(struct lock *lk, uintptr_t *xp, int flags, bool fp)
 	return (false);
 }
 
-static __always_inline bool
+static bool __always_inline
 lockmgr_sunlock_try(struct lock *lk, uintptr_t *xp)
 {
 
@@ -1133,7 +1135,7 @@ lockmgr_xunlock_hard(struct lock *lk, uintptr_t x, u_int flags, struct lock_obje
 	 * any waiter.
 	 * Fix-up the tid var if the lock has been disowned.
 	 */
-	if (lockmgr_disowned_v(x))
+	if (LK_HOLDER(x) == LK_KERNPROC)
 		tid = LK_KERNPROC;
 
 	/*

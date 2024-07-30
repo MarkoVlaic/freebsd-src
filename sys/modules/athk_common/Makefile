@@ -1,3 +1,4 @@
+
 DEVDIR=	${SRCTOP}/sys/contrib/dev/athk
 
 .PATH: ${DEVDIR}

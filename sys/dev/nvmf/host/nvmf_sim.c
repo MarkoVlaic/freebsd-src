@@ -40,13 +40,7 @@ nvmf_ccb_done(union ccb *ccb)
 		return;
 
 	if (nvmf_cqe_aborted(&ccb->nvmeio.cpl)) {
-		struct cam_sim *sim = xpt_path_sim(ccb->ccb_h.path);
-		struct nvmf_softc *sc = cam_sim_softc(sim);
-
-		if (nvmf_fail_disconnect || sc->sim_shutdown)
-			ccb->ccb_h.status = CAM_DEV_NOT_THERE;
-		else
-			ccb->ccb_h.status = CAM_REQUEUE_REQ;
+		ccb->ccb_h.status = CAM_REQUEUE_REQ;
 		xpt_done(ccb);
 	} else if (ccb->nvmeio.cpl.status != 0) {
 		ccb->ccb_h.status = CAM_NVME_STATUS_ERROR;
@@ -112,10 +106,7 @@ nvmf_sim_io(struct nvmf_softc *sc, union ccb *ccb)
 	mtx_lock(&sc->sim_mtx);
 	if (sc->sim_disconnected) {
 		mtx_unlock(&sc->sim_mtx);
-		if (nvmf_fail_disconnect || sc->sim_shutdown)
-			nvmeio->ccb_h.status = CAM_DEV_NOT_THERE;
-		else
-			nvmeio->ccb_h.status = CAM_REQUEUE_REQ;
+		nvmeio->ccb_h.status = CAM_REQUEUE_REQ;
 		xpt_done(ccb);
 		return;
 	}
@@ -192,7 +183,7 @@ nvmf_sim_action(struct cam_sim *sim, union ccb *ccb)
 		cpi->xport_specific.nvmf.nsid =
 		    xpt_path_lun_id(ccb->ccb_h.path);
 		cpi->xport_specific.nvmf.trtype = sc->trtype;
-		strlcpy(cpi->xport_specific.nvmf.dev_name,
+		strncpy(cpi->xport_specific.nvmf.dev_name,
 		    device_get_nameunit(sc->dev),
 		    sizeof(cpi->xport_specific.nvmf.dev_name));
 		cpi->maxio = sc->max_xfer_size;
@@ -324,15 +315,6 @@ nvmf_reconnect_sim(struct nvmf_softc *sc)
 {
 	mtx_lock(&sc->sim_mtx);
 	sc->sim_disconnected = false;
-	mtx_unlock(&sc->sim_mtx);
-	xpt_release_simq(sc->sim, 1);
-}
-
-void
-nvmf_shutdown_sim(struct nvmf_softc *sc)
-{
-	mtx_lock(&sc->sim_mtx);
-	sc->sim_shutdown = true;
 	mtx_unlock(&sc->sim_mtx);
 	xpt_release_simq(sc->sim, 1);
 }

@@ -1,3 +1,4 @@
+
 SUBDIR= include
 
 FILESDIR=	${LIBEXECDIR}/bsdconfig/110.mouse

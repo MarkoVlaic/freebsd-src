@@ -1,3 +1,4 @@
+
 VOLUME=		psd/16.lex
 SRCS=		lex.ms
 MACROS=		-ms

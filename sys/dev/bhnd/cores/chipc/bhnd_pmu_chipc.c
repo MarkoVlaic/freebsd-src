@@ -62,6 +62,7 @@ bhnd_pmu_chipc_probe(device_t dev)
 	struct chipc_caps	*ccaps;
 	struct chipc_softc	*chipc_sc;
 	device_t		 chipc;
+	char			 desc[34];
 	int			 error;
 	uint32_t		 pcaps;
 	uint8_t			 rev;
@@ -86,7 +87,8 @@ bhnd_pmu_chipc_probe(device_t dev)
 
 	/* Set description */
 	rev = BHND_PMU_GET_BITS(pcaps, BHND_PMU_CAP_REV);
-	device_set_descf(dev, "Broadcom ChipCommon PMU, rev %hhu", rev);
+	snprintf(desc, sizeof(desc), "Broadcom ChipCommon PMU, rev %hhu", rev);
+	device_set_desc_copy(dev, desc);
 
 	return (BUS_PROBE_NOWILDCARD);
 }

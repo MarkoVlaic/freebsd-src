@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/cfi
 
 KMOD=   cfi

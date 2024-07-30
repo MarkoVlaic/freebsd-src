@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2021-2024 Alfonso Sabato Siciliano
+ * Copyright (c) 2021-2023 Alfonso Sabato Siciliano
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,8 +48,8 @@ drawsquare(struct bsddialog_conf *conf, WINDOW *win, unsigned int value,
 	draw_borders(conf, win, LOWERED);
 	if (focus) {
 		wattron(win, t.dialog.arrowcolor);
-		mvwhline(win, 0, 1, UARROW(conf), 2);
-		mvwhline(win, 2, 1, DARROW(conf), 2);
+		mvwhline(win, 0, 1, conf->ascii_lines ? '^' : ACS_UARROW, 2);
+		mvwhline(win, 2, 1, conf->ascii_lines ? 'v' : ACS_DARROW, 2);
 		wattroff(win, t.dialog.arrowcolor);
 	}
 
@@ -142,9 +142,8 @@ bsddialog_timebox(struct bsddialog_conf *conf, const char* text, int rows,
 				loop = false;
 			}
 			break;
-		case '\t': /* TAB */
-		case KEY_CTRL('n'):
 		case KEY_RIGHT:
+		case '\t': /* TAB */
 			if (focusbuttons) {
 				d.bs.curr++;
 				focusbuttons = d.bs.curr < (int)d.bs.nbuttons ?
@@ -163,7 +162,6 @@ bsddialog_timebox(struct bsddialog_conf *conf, const char* text, int rows,
 			}
 			DRAW_BUTTONS(d);
 			break;
-		case KEY_CTRL('p'):
 		case KEY_LEFT:
 			if (focusbuttons) {
 				d.bs.curr--;
@@ -181,11 +179,6 @@ bsddialog_timebox(struct bsddialog_conf *conf, const char* text, int rows,
 			}
 			DRAW_BUTTONS(d);
 			break;
-		case '-':
-			if (focusbuttons == false)
-				c[sel].value = c[sel].value > 0 ?
-				    c[sel].value - 1 : c[sel].max;
-			break;
 		case KEY_UP:
 			if (focusbuttons) {
 				sel = 0;
@@ -197,7 +190,6 @@ bsddialog_timebox(struct bsddialog_conf *conf, const char* text, int rows,
 				    c[sel].value - 1 : c[sel].max;
 			}
 			break;
-		case '+':
 		case KEY_DOWN:
 			if (focusbuttons)
 				break;
@@ -213,7 +205,6 @@ bsddialog_timebox(struct bsddialog_conf *conf, const char* text, int rows,
 			if (timebox_redraw(&d, c) != 0)
 				return (BSDDIALOG_ERROR);
 			break;
-		case KEY_CTRL('l'):
 		case KEY_RESIZE:
 			if (timebox_redraw(&d, c) != 0)
 				return (BSDDIALOG_ERROR);

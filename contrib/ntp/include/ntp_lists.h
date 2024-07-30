@@ -181,7 +181,7 @@ do {								\
 
 #define UNLINK_EXPR_SLIST(punlinked, listhead, expr, nextlink,	\
 			  entrytype)				\
-if (NULL != (listhead)) {					\
+do {								\
 	entrytype **ppentry;					\
 								\
 	ppentry = &(listhead);					\
@@ -202,8 +202,6 @@ if (NULL != (listhead)) {					\
 	} else {						\
 		(punlinked) = NULL;				\
 	}							\
-} else do {							\
-	(punlinked) = NULL;					\
 } while (FALSE)
 
 #define UNLINK_SLIST(punlinked, listhead, ptounlink, nextlink,	\

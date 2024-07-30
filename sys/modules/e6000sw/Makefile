@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/etherswitch/e6000sw
 
 KMOD=   e6000sw

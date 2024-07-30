@@ -1279,6 +1279,11 @@ sk_attach(device_t dev)
 	sk_dma_jumbo_alloc(sc_if);
 
 	ifp = sc_if->sk_ifp = if_alloc(IFT_ETHER);
+	if (ifp == NULL) {
+		device_printf(sc_if->sk_if_dev, "can not if_alloc()\n");
+		error = ENOSPC;
+		goto fail;
+	}
 	if_setsoftc(ifp, sc_if);
 	if_initname(ifp, device_get_name(dev), device_get_unit(dev));
 	if_setflags(ifp, IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST);
@@ -1679,7 +1684,7 @@ skc_attach(device_t dev)
 		device_printf(dev, "SRAM size = 0x%06x\n", sc->sk_ramsize);
 	}
 
-	sc->sk_devs[SK_PORT_A] = device_add_child(dev, "sk", DEVICE_UNIT_ANY);
+	sc->sk_devs[SK_PORT_A] = device_add_child(dev, "sk", -1);
 	if (sc->sk_devs[SK_PORT_A] == NULL) {
 		device_printf(dev, "failed to add child for PORT_A\n");
 		error = ENXIO;
@@ -1696,7 +1701,7 @@ skc_attach(device_t dev)
 	device_set_ivars(sc->sk_devs[SK_PORT_A], port);
 
 	if (!(sk_win_read_1(sc, SK_CONFIG) & SK_CONFIG_SINGLEMAC)) {
-		sc->sk_devs[SK_PORT_B] = device_add_child(dev, "sk", DEVICE_UNIT_ANY);
+		sc->sk_devs[SK_PORT_B] = device_add_child(dev, "sk", -1);
 		if (sc->sk_devs[SK_PORT_B] == NULL) {
 			device_printf(dev, "failed to add child for PORT_B\n");
 			error = ENXIO;

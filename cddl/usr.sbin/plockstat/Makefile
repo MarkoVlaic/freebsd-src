@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 .PATH: ${SRCTOP}/cddl/contrib/opensolaris/cmd/plockstat

@@ -1,5 +1,4 @@
 #! @PATH_PERL@ -w
-# @configure_input
 
 # Copyright (C) 2015, 2017 Network Time Foundation
 # Author: Harlan Stenn

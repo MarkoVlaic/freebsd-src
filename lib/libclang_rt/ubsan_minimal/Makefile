@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 LIB=		clang_rt.ubsan_minimal-${CRTARCH}

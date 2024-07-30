@@ -58,11 +58,8 @@ static struct sbuf *buf;
 static int
 xendebug_drain(void *arg, const char *str, int len)
 {
-	/*
-	 * Use xen_emergency_print() instead of xc_printf() to avoid the
-	 * overhead of parsing a format string when it's not needed.
-	 */
-	xen_emergency_print(str, len);
+
+	HYPERVISOR_console_write(__DECONST(char *, str), len);
 	return (len);
 }
 
@@ -78,9 +75,10 @@ xendebug_filter(void *arg __unused)
 	stack_save(&st);
 
 	mtx_lock_spin(&lock);
+	sbuf_clear(buf);
 	xc_printf("Printing stack trace vCPU%u\n", XEN_VCPUID());
 	stack_sbuf_print_ddb(buf, &st);
-	sbuf_drain(buf);
+	sbuf_finish(buf);
 	mtx_unlock_spin(&lock);
 #endif
 

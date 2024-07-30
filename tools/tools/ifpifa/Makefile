@@ -1,3 +1,4 @@
+
 PROG=	ifpifa
 MAN=
 BINDIR?=/usr/local/bin

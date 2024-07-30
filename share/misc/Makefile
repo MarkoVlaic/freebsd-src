@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 .PATH:	${.CURDIR}/../../sys/dev/usb

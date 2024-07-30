@@ -1,15 +1,12 @@
 /*
  * Grand digital clock for curses compatible terminals
  * Usage: grdc [-st] [n]   -- run for n seconds (default infinity)
- *        grdc -c n        -- countdown n seconds
- * Flags: -c: Countdown timer mode
- *        -s: scroll
+ * Flags: -s: scroll
  *        -t: output time in 12-hour format
  *
  *
  * modified 10-18-89 for curses (jrl)
  * 10-18-89 added signal handling
- * 02-18-02 added countdown timer mode
  *
  * modified 03-25-03 for 12 hour option
  *     - Samy Al Bahra <samy@kerneled.com>
@@ -29,7 +26,6 @@
 
 static struct timespec now;
 static struct tm *tm;
-static struct timespec end;
 
 static short disp[11] = {
 	075557, 011111, 071747, 071717, 055711,
@@ -63,19 +59,18 @@ main(int argc, char *argv[])
 	int i, j, s, k;
 	int n;
 	int ch;
-	bool scrol = false, t12 = false, timer = false;
-	int hour, minute, second;
+	int scrol;
+	int t12;
 
-	while ((ch = getopt(argc, argv, "cst")) != -1)
+	t12 = scrol = 0;
+
+	while ((ch = getopt(argc, argv, "ts")) != -1)
 	switch (ch) {
-	case 'c':
-		timer = true;
-		break;
 	case 's':
-		scrol = true;
+		scrol = 1;
 		break;
 	case 't':
-		t12 = true;
+		t12 = 1;
 		break;
 	case '?':
 	default:
@@ -85,7 +80,7 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if ((argc > 1) || (argc == 0 && timer)) {
+	if (argc > 1) {
 		usage();
 		/* NOTREACHED */
 	}
@@ -100,9 +95,6 @@ main(int argc, char *argv[])
 	} else
 		n = 0;
 
-	if (timer && n == 0)
-		return(0);
-
 	initscr();
 
 	signal(SIGINT,sighndl);
@@ -115,7 +107,7 @@ main(int argc, char *argv[])
 
 	hascolor = has_colors();
 
-	if (hascolor) {
+	if(hascolor) {
 		start_color();
 		init_pair(1, COLOR_BLACK, COLOR_RED);
 		init_pair(2, COLOR_RED, COLOR_BLACK);
@@ -126,7 +118,7 @@ main(int argc, char *argv[])
 	clear();
 	refresh();
 
-	if (hascolor) {
+	if(hascolor) {
 		attrset(COLOR_PAIR(3));
 
 		mvaddch(YBASE - 2,  XBASE - 3, ACS_ULCORNER);
@@ -147,42 +139,28 @@ main(int argc, char *argv[])
 	}
 	clock_gettime(CLOCK_REALTIME_FAST, &now);
 	prev_sec = now.tv_sec;
-	if (timer) {
-		end = now;
-		end.tv_sec += n;
-	}
 	do {
 		mask = 0;
-		if (!timer) {
-			tm = localtime(&now.tv_sec);
-			if (t12) {
-				if (tm->tm_hour < 12) {
-					if (tm->tm_hour == 0)
-						tm->tm_hour = 12;
-					mvaddstr(YBASE + 5, XBASE + 52, "AM");
-				} else {
-					if (tm->tm_hour > 12)
-						tm->tm_hour -= 12;
-					mvaddstr(YBASE + 5, XBASE + 52, "PM");
-				}
+		tm = localtime(&now.tv_sec);
+		set(tm->tm_sec%10, 0);
+		set(tm->tm_sec/10, 4);
+		set(tm->tm_min%10, 10);
+		set(tm->tm_min/10, 14);
+
+		if (t12) {
+			if (tm->tm_hour < 12) {
+				if (tm->tm_hour == 0)
+					tm->tm_hour = 12;
+				mvaddstr(YBASE + 5, XBASE + 52, "AM");
+			} else {
+				if (tm->tm_hour > 12)
+					tm->tm_hour -= 12;
+				mvaddstr(YBASE + 5, XBASE + 52, "PM");
 			}
-			hour = tm->tm_hour;
-			minute = tm->tm_min;
-			second = tm->tm_sec;
-		} else {
-			n = end.tv_sec - now.tv_sec;
-			if (n <= 0)
-				break;
-			hour = (n / 3600) % 100;
-			minute = (n / 60) % 60;
-			second = n % 60;
 		}
-		set(second % 10, 0);
-		set(second / 10, 4);
-		set(minute % 10, 10);
-		set(minute / 10, 14);
-		set(hour % 10, 20);
-		set(hour / 10, 24);
+
+		set(tm->tm_hour%10, 20);
+		set(tm->tm_hour/10, 24);
 		set(10, 7);
 		set(10, 17);
 		for(k=0; k<6; k++) {
@@ -288,7 +266,6 @@ static void
 usage(void)
 {
 
-	(void)fprintf(stderr, "usage: grdc [-st] [n]\n"
-	    "      grdc -c n\n");
+	(void)fprintf(stderr, "usage: grdc [-st] [n]\n");
 	exit(1);
 }

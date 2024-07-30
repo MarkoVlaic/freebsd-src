@@ -1,3 +1,5 @@
+$FreeBSD$
+
 .circleci
 .cirrus.yml
 .github

@@ -1,3 +1,4 @@
+
 PROG=	intel-ucode-split
 MAN=
 

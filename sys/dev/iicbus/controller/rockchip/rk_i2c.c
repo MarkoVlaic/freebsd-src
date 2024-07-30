@@ -281,26 +281,13 @@ rk_i2c_send_stop(struct rk_i2c_softc *sc)
 {
 	uint32_t reg;
 
-	if (!(sc->msg->flags & IIC_M_NOSTOP)) {
-		RK_I2C_WRITE(sc, RK_I2C_IEN, RK_I2C_IEN_STOPIEN);
+	RK_I2C_WRITE(sc, RK_I2C_IEN, RK_I2C_IEN_STOPIEN);
 
-		sc->state = STATE_STOP;
+	sc->state = STATE_STOP;
 
-		reg = RK_I2C_READ(sc, RK_I2C_CON);
-		reg |= RK_I2C_CON_STOP;
-		RK_I2C_WRITE(sc, RK_I2C_CON, reg);
-	} else {
-		/*
-		 * Do not actually set stop bit, set up conditions to
-		 * emulate repeated start by clearing all state.
-		 */
-		sc->state = STATE_IDLE;
-		sc->transfer_done = 1;
-
-		reg = RK_I2C_READ(sc, RK_I2C_CON);
-		reg &= ~RK_I2C_CON_CTRL_MASK;
-		RK_I2C_WRITE(sc, RK_I2C_CON, reg);
-	}
+	reg = RK_I2C_READ(sc, RK_I2C_CON);
+	reg |= RK_I2C_CON_STOP;
+	RK_I2C_WRITE(sc, RK_I2C_CON, reg);
 }
 
 static void
@@ -363,9 +350,9 @@ rk_i2c_intr_locked(struct rk_i2c_softc *sc)
 	case STATE_READ:
 		rk_i2c_drain_rx(sc);
 
-		if (sc->cnt == sc->msg->len) {
+		if (sc->cnt == sc->msg->len)
 			rk_i2c_send_stop(sc);
-		} else {
+		else {
 			sc->mode = RK_I2C_CON_MODE_RX;
 			reg = RK_I2C_READ(sc, RK_I2C_CON) & \
 			    ~RK_I2C_CON_CTRL_MASK;
@@ -382,6 +369,7 @@ rk_i2c_intr_locked(struct rk_i2c_softc *sc)
 			RK_I2C_WRITE(sc, RK_I2C_CON, reg);
 			RK_I2C_WRITE(sc, RK_I2C_MRXCNT, transfer_len);
 		}
+
 		break;
 	case STATE_WRITE:
 		if (sc->cnt < sc->msg->len) {
@@ -390,10 +378,12 @@ rk_i2c_intr_locked(struct rk_i2c_softc *sc)
 			    RK_I2C_IEN_NAKRCVIEN);
 			transfer_len = rk_i2c_fill_tx(sc);
 			RK_I2C_WRITE(sc, RK_I2C_MTXCNT, transfer_len);
-		} else {
+			break;
+		} else if (!(sc->msg->flags & IIC_M_NOSTOP)) {
 			rk_i2c_send_stop(sc);
+			break;
 		}
-		break;
+		/* passthru */
 	case STATE_STOP:
 		/* Disable stop bit */
 		reg = RK_I2C_READ(sc, RK_I2C_CON);
@@ -525,7 +515,7 @@ rk_i2c_transfer(device_t dev, struct iic_msg *msgs, uint32_t nmsgs)
 
 		if (nmsgs - i >= 2 && msgs[i].len < 4 &&
 		    msgs[i].flags == (IIC_M_WR  | IIC_M_NOSTOP) &&
-		    (msgs[i + 1].flags & IIC_M_RD) == IIC_M_RD &&
+		    msgs[i + 1].flags == IIC_M_RD &&
 		    (msgs[i].slave & ~LSB) == (msgs[i + 1].slave & ~LSB)) {
 			sc->mode = RK_I2C_CON_MODE_RRX;
 
@@ -658,7 +648,7 @@ rk_i2c_attach(device_t dev)
 		}
 	}
 
-	sc->iicbus = device_add_child(dev, "iicbus", DEVICE_UNIT_ANY);
+	sc->iicbus = device_add_child(dev, "iicbus", -1);
 	if (sc->iicbus == NULL) {
 		device_printf(dev, "cannot add iicbus child device\n");
 		error = ENXIO;

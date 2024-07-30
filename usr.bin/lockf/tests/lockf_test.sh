@@ -47,9 +47,7 @@ basic_body()
 	lpid=$!
 
 	# Make sure that the lock exists...
-	while ! test -e "testlock"; do
-		sleep 0.1
-	done
+	atf_check test -e "testlock"
 
 	# Attempt both verbose and silent re-lock
 	atf_check -s exit:${EX_TEMPFAIL} -e not-empty \

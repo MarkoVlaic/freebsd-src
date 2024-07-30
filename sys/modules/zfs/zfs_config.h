@@ -87,9 +87,6 @@
 #define HAVE_AVX512VL 1
 #endif
 
-/* backtrace() is available */
-/* #undef HAVE_BACKTRACE */
-
 /* bdevname() is available */
 /* #undef HAVE_BDEVNAME */
 
@@ -113,9 +110,6 @@
 
 /* bdev_max_secure_erase_sectors() is available */
 /* #undef HAVE_BDEV_MAX_SECURE_ERASE_SECTORS */
-
-/* bdev_nr_bytes() is available */
-/* #undef HAVE_BDEV_NR_BYTES */
 
 /* bdev_open_by_path() exists */
 /* #undef HAVE_BDEV_OPEN_BY_PATH */
@@ -604,9 +598,6 @@
 /* Define if compiler supports -Winfinite-recursion */
 /* #undef HAVE_KERNEL_INFINITE_RECURSION */
 
-/* kernel defines intptr_t */
-/* #undef HAVE_KERNEL_INTPTR_T */
-
 /* kernel has kernel_neon_* functions */
 /* #undef HAVE_KERNEL_NEON */
 
@@ -636,9 +627,6 @@
 
 /* kernel_write() take loff_t pointer */
 /* #undef HAVE_KERNEL_WRITE_PPOS */
-
-/* kernel has kmap_local_page */
-/* #undef HAVE_KMAP_LOCAL_PAGE */
 
 /* kmem_cache_create_usercopy() exists */
 /* #undef HAVE_KMEM_CACHE_CREATE_USERCOPY */
@@ -1200,7 +1188,7 @@
 /* #undef ZFS_IS_GPL_COMPATIBLE */
 
 /* Define the project alias string. */
-#define ZFS_META_ALIAS "zfs-2.2.99-559-FreeBSD_g1147a2797"
+#define ZFS_META_ALIAS "zfs-2.2.99-474-FreeBSD_g8f1b7a6fa"
 
 /* Define the project author. */
 #define ZFS_META_AUTHOR "OpenZFS"
@@ -1209,7 +1197,7 @@
 /* #undef ZFS_META_DATA */
 
 /* Define the maximum compatible kernel version. */
-#define ZFS_META_KVER_MAX "6.9"
+#define ZFS_META_KVER_MAX "6.8"
 
 /* Define the minimum compatible kernel version. */
 #define ZFS_META_KVER_MIN "3.10"
@@ -1230,7 +1218,7 @@
 #define ZFS_META_NAME "zfs"
 
 /* Define the project release. */
-#define ZFS_META_RELEASE "559-FreeBSD_g1147a2797"
+#define ZFS_META_RELEASE "474-FreeBSD_g8f1b7a6fa"
 
 /* Define the project version. */
 #define ZFS_META_VERSION "2.2.99"

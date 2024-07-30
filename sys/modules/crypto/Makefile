@@ -1,3 +1,4 @@
+
 LIBSODIUM=${SRCTOP}/sys/contrib/libsodium/src/libsodium
 
 .PATH:	${SRCTOP}/sys/opencrypto

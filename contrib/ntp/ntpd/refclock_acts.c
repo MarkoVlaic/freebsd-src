@@ -897,5 +897,5 @@ acts_timecode(
 	pp->lastref = pp->lastrec;
 }
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_acts_bs;
 #endif /* REFCLOCK */

@@ -30,6 +30,9 @@
 #include <linux/sched/signal.h>
 #endif
 
-extern int issig(void);
+#define	FORREAL		0	/* Usual side-effects */
+#define	JUSTLOOKING	1	/* Don't stop the process */
+
+extern int issig(int why);
 
 #endif /* SPL_SIGNAL_H */

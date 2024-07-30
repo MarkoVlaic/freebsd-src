@@ -1,3 +1,4 @@
+
 PROG=   getfmac
 MAN=	getfmac.8
 

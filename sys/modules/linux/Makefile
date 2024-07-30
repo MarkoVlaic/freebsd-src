@@ -1,3 +1,4 @@
+
 .if ${MACHINE_CPUARCH} == "amd64"
 SFX= 32
 CFLAGS+=-DCOMPAT_FREEBSD32 -DCOMPAT_LINUX32
@@ -33,11 +34,9 @@ SRCS=	linux${SFX}_dummy_machdep.c \
 	linux_uid16.c \
 	linux_vdso.c \
 	linux_xattr.c \
-	opt_inet.h \
 	opt_inet6.h \
 	opt_ktrace.h \
 	opt_posix.h \
-	opt_usb.h \
 	bus_if.h \
 	device_if.h \
 	vnode_if.h

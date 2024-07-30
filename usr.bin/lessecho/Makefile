@@ -1,3 +1,4 @@
+
 PROG=	lessecho
 SRCS=	lessecho.c version.c
 CLEANFILES= lessecho.1

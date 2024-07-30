@@ -1,3 +1,4 @@
+
 NOGCCERROR=	# defined
 
 PACKAGE=	ipf

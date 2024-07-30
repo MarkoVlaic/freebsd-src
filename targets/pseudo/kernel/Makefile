@@ -1,3 +1,4 @@
+
 # Build the kernel ${KERNCONF}
 KERNCONF?= ${KERNEL:UGENERIC}
 

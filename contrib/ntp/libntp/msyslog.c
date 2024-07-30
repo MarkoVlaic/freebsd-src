@@ -348,13 +348,14 @@ msyslog(
 	...
 	)
 {
+	char	buf[1024];
 	va_list	ap;
 
 	va_start(ap, fmt);
-	mvsyslog(level, fmt, ap);
+	mvsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
+	addto_syslog(level, buf);
 }
-
 
 void
 mvsyslog(
@@ -364,7 +365,6 @@ mvsyslog(
 	)
 {
 	char	buf[1024];
-
 	mvsnprintf(buf, sizeof(buf), fmt, ap);
 	addto_syslog(level, buf);
 }

@@ -1,3 +1,4 @@
+
 CONFS=	apmd.conf
 PROG=	apmd
 MAN=	apmd.8

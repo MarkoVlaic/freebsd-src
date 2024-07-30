@@ -32,6 +32,10 @@
 
 #include <machine/acle-compat.h>
 
+#if __ARM_ARCH >= 6
+#define FENV_ARMv6
+#endif
+
 /* When SOFTFP_ABI is defined we are using the softfp ABI. */
 #if defined(__VFP_FP__) && !defined(__ARM_PCS_VFP)
 #define SOFTFP_ABI
@@ -48,7 +52,7 @@ const fenv_t __fe_dfl_env = 0;
 
 
 /* If this is a non-mangled softfp version special processing is required */
-#if defined(FENV_MANGLE) || !defined(SOFTFP_ABI)
+#if defined(FENV_MANGLE) || !defined(SOFTFP_ABI) || !defined(FENV_ARMv6)
 
 /*
  * The following macros map between the softfloat emulator's flags and

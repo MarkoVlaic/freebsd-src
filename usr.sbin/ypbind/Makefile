@@ -1,3 +1,4 @@
+
 PACKAGE=	yp
 PROG=	ypbind
 MAN=	ypbind.8

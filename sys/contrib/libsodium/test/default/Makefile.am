@@ -1,3 +1,4 @@
+
 EXTRA_DIST = \
 	cmptest.h \
 	wintest.bat \

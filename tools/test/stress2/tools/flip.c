@@ -85,7 +85,8 @@ main(int argc, char *argv[])
 	struct stat st;
 	off_t pos;
 	size_t size;
-	int c, fd, i, times;
+	int fd, i, times;
+	char c;
 
 	times = 1;
 	size = 0;
@@ -125,20 +126,18 @@ main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < times; i++) {
-		char ch;
-
 		pos = arc4random() % size;
 		if (lseek(fd, pos, SEEK_SET) == -1)
 			err(1, "lseek()");
-		if (read(fd, &ch, 1) != 1)
+		if (read(fd, &c, 1) != 1)
 			err(1, "read()");
 		if (arc4random() % 100 < 98)
-			flip(&ch, 1);
+			flip(&c, 1);
 		else
-			trash(&ch);
+			trash(&c);
 		if (lseek(fd, pos, SEEK_SET) == -1)
 			err(1, "lseek()");
-		if (write(fd, &ch, 1) != 1)
+		if (write(fd, &c, 1) != 1)
 			err(1, "write()");
 	}
 

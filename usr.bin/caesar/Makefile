@@ -1,3 +1,4 @@
+
 PACKAGE=	games
 
 PROG=	caesar

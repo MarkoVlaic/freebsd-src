@@ -1,3 +1,4 @@
+
 PACKAGE=	kerberos-lib
 
 LIB=	hx509

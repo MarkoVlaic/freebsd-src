@@ -102,7 +102,10 @@ vmm_priv_check(struct ucred *ucred)
 static int
 vcpu_lock_one(struct vcpu *vcpu)
 {
-	return (vcpu_set_state(vcpu, VCPU_FROZEN, true));
+	int error;
+
+	error = vcpu_set_state(vcpu, VCPU_FROZEN, true);
+	return (error);
 }
 
 static void
@@ -249,10 +252,8 @@ vmmdev_rw(struct cdev *cdev, struct uio *uio, int flags)
 	return (error);
 }
 
-CTASSERT(sizeof(((struct vm_memseg *)0)->name) >= VM_MAX_SUFFIXLEN + 1);
-
 static int
-get_memseg(struct vmmdev_softc *sc, struct vm_memseg *mseg, size_t len)
+get_memseg(struct vmmdev_softc *sc, struct vm_memseg *mseg)
 {
 	struct devmem_softc *dsc;
 	int error;
@@ -269,16 +270,17 @@ get_memseg(struct vmmdev_softc *sc, struct vm_memseg *mseg, size_t len)
 		}
 		KASSERT(dsc != NULL, ("%s: devmem segment %d not found",
 		    __func__, mseg->segid));
-		error = copystr(dsc->name, mseg->name, len, NULL);
+		error = copystr(dsc->name, mseg->name, sizeof(mseg->name),
+		    NULL);
 	} else {
-		bzero(mseg->name, len);
+		bzero(mseg->name, sizeof(mseg->name));
 	}
 
 	return (error);
 }
 
 static int
-alloc_memseg(struct vmmdev_softc *sc, struct vm_memseg *mseg, size_t len)
+alloc_memseg(struct vmmdev_softc *sc, struct vm_memseg *mseg)
 {
 	char *name;
 	int error;
@@ -294,8 +296,8 @@ alloc_memseg(struct vmmdev_softc *sc, struct vm_memseg *mseg, size_t len)
 	 */
 	if (VM_MEMSEG_NAME(mseg)) {
 		sysmem = false;
-		name = malloc(len, M_VMMDEV, M_WAITOK);
-		error = copystr(mseg->name, name, len, NULL);
+		name = malloc(sizeof(mseg->name), M_VMMDEV, M_WAITOK);
+		error = copystr(mseg->name, name, sizeof(mseg->name), NULL);
 		if (error)
 			goto done;
 	}
@@ -543,12 +545,10 @@ vmmdev_ioctl(struct cdev *cdev, u_long cmd, caddr_t data, int fflag,
 		error = vm_munmap_memseg(sc->vm, mu->gpa, mu->len);
 		break;
 	case VM_ALLOC_MEMSEG:
-		error = alloc_memseg(sc, (struct vm_memseg *)data,
-		    sizeof(((struct vm_memseg *)0)->name));
+		error = alloc_memseg(sc, (struct vm_memseg *)data);
 		break;
 	case VM_GET_MEMSEG:
-		error = get_memseg(sc, (struct vm_memseg *)data,
-		    sizeof(((struct vm_memseg *)0)->name));
+		error = get_memseg(sc, (struct vm_memseg *)data);
 		break;
 	case VM_GET_REGISTER:
 		vmreg = (struct vm_register *)data;
@@ -994,8 +994,7 @@ devmem_mmap_single(struct cdev *cdev, vm_ooffset_t *offset, vm_size_t len,
 	if (seglen >= last)
 		vm_object_reference(*objp);
 	else
-		error = EINVAL;
-
+		error = 0;
 	vm_unlock_memsegs(dsc->sc->vm);
 	return (error);
 }

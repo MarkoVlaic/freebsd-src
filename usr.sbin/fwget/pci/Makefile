@@ -1,7 +1,6 @@
 PACKAGE=	fwget
 
 SCRIPTS=pci \
-	pci_network_intel \
 	pci_network_mediatek \
 	pci_network_qca \
 	pci_network_realtek \

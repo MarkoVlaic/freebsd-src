@@ -1,3 +1,4 @@
+
 .PATH: ${.CURDIR}/../../include
 
 LIB=		egacy

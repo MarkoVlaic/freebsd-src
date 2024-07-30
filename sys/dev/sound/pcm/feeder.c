@@ -32,7 +32,6 @@
 #endif
 
 #include <dev/sound/pcm/sound.h>
-#include <dev/sound/pcm/vchan.h>
 
 #include "feeder_if.h"
 

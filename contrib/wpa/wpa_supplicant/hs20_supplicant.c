@@ -26,7 +26,6 @@
 #include "interworking.h"
 #include "hs20_supplicant.h"
 #include "base64.h"
-#include "notify.h"
 
 
 #define OSU_MAX_ITEMS 10
@@ -68,13 +67,15 @@ struct osu_provider {
 void hs20_configure_frame_filters(struct wpa_supplicant *wpa_s)
 {
 	struct wpa_bss *bss = wpa_s->current_bss;
+	u8 *bssid = wpa_s->bssid;
 	const u8 *ie;
 	const u8 *ext_capa;
 	u32 filter = 0;
 
 	if (!bss || !is_hs20_network(wpa_s, wpa_s->current_ssid, bss)) {
-		/* Not configuring frame filtering - BSS is not a Hotspot 2.0
-		 * network */
+		wpa_printf(MSG_DEBUG,
+			   "Not configuring frame filtering - BSS " MACSTR
+			   " is not a Hotspot 2.0 network", MAC2STR(bssid));
 		return;
 	}
 
@@ -325,7 +326,7 @@ static struct icon_entry * hs20_find_icon(struct wpa_supplicant *wpa_s,
 	struct icon_entry *icon;
 
 	dl_list_for_each(icon, &wpa_s->icon_head, struct icon_entry, list) {
-		if (ether_addr_equal(icon->bssid, bssid) &&
+		if (os_memcmp(icon->bssid, bssid, ETH_ALEN) == 0 &&
 		    os_strcmp(icon->file_name, file_name) == 0 && icon->image)
 			return icon;
 	}
@@ -401,7 +402,7 @@ int hs20_del_icon(struct wpa_supplicant *wpa_s, const u8 *bssid,
 
 	dl_list_for_each_safe(icon, tmp, &wpa_s->icon_head, struct icon_entry,
 			      list) {
-		if ((!bssid || ether_addr_equal(icon->bssid, bssid)) &&
+		if ((!bssid || os_memcmp(icon->bssid, bssid, ETH_ALEN) == 0) &&
 		    (!file_name ||
 		     os_strcmp(icon->file_name, file_name) == 0)) {
 			dl_list_del(&icon->list);
@@ -447,7 +448,7 @@ static void hs20_remove_duplicate_icons(struct wpa_supplicant *wpa_s,
 			      list) {
 		if (icon == new_icon)
 			continue;
-		if (ether_addr_equal(icon->bssid, new_icon->bssid) &&
+		if (os_memcmp(icon->bssid, new_icon->bssid, ETH_ALEN) == 0 &&
 		    os_strcmp(icon->file_name, new_icon->file_name) == 0) {
 			dl_list_del(&icon->list);
 			hs20_free_icon_entry(icon);
@@ -468,7 +469,7 @@ static int hs20_process_icon_binary_file(struct wpa_supplicant *wpa_s,
 
 	dl_list_for_each(icon, &wpa_s->icon_head, struct icon_entry, list) {
 		if (icon->dialog_token == dialog_token && !icon->image &&
-		    ether_addr_equal(icon->bssid, sa)) {
+		    os_memcmp(icon->bssid, sa, ETH_ALEN) == 0) {
 			icon->image = os_memdup(pos, slen);
 			if (!icon->image)
 				return -1;
@@ -1337,7 +1338,7 @@ void hs20_rx_t_c_acceptance(struct wpa_supplicant *wpa_s, const char *url)
 		return;
 	}
 
-	wpas_notify_hs20_t_c_acceptance(wpa_s, url);
+	wpa_msg(wpa_s, MSG_INFO, HS20_T_C_ACCEPTANCE "%s", url);
 }
 
 

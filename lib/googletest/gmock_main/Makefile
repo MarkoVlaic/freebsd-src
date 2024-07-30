@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 .PATH:	${GOOGLEMOCK_SRCROOT}/include ${GOOGLEMOCK_SRCROOT}/src

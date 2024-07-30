@@ -157,14 +157,14 @@ LOCK_DELAY_SYSINIT(rw_lock_delay_init);
 #define	__rw_assert(c, what, file, line)
 #endif
 
-static void
+void
 assert_rw(const struct lock_object *lock, int what)
 {
 
 	rw_assert((const struct rwlock *)lock, what);
 }
 
-static void
+void
 lock_rw(struct lock_object *lock, uintptr_t how)
 {
 	struct rwlock *rw;
@@ -176,7 +176,7 @@ lock_rw(struct lock_object *lock, uintptr_t how)
 		rw_wlock(rw);
 }
 
-static uintptr_t
+uintptr_t
 unlock_rw(struct lock_object *lock)
 {
 	struct rwlock *rw;
@@ -193,7 +193,7 @@ unlock_rw(struct lock_object *lock)
 }
 
 #ifdef KDTRACE_HOOKS
-static int
+int
 owner_rw(const struct lock_object *lock, struct thread **owner)
 {
 	const struct rwlock *rw = (const struct rwlock *)lock;
@@ -384,7 +384,7 @@ _rw_wunlock_cookie(volatile uintptr_t *c, const char *file, int line)
  * is unlocked and has no writer waiters or spinners.  Failing otherwise
  * prioritizes writers before readers.
  */
-static __always_inline bool
+static bool __always_inline
 __rw_can_read(struct thread *td, uintptr_t v, bool fp)
 {
 
@@ -396,7 +396,7 @@ __rw_can_read(struct thread *td, uintptr_t v, bool fp)
 	return (false);
 }
 
-static __always_inline bool
+static bool __always_inline
 __rw_rlock_try(struct rwlock *rw, struct thread *td, uintptr_t *vp, bool fp
     LOCK_FILE_LINE_ARG_DEF)
 {
@@ -742,7 +742,7 @@ __rw_try_rlock(volatile uintptr_t *c, const char *file, int line)
 	return (__rw_try_rlock_int(rw LOCK_FILE_LINE_ARG));
 }
 
-static __always_inline bool
+static bool __always_inline
 __rw_runlock_try(struct rwlock *rw, struct thread *td, uintptr_t *vp)
 {
 
@@ -770,12 +770,11 @@ __rw_runlock_hard(struct rwlock *rw, struct thread *td, uintptr_t v
     LOCK_FILE_LINE_ARG_DEF)
 {
 	struct turnstile *ts;
-	uintptr_t setv, passedv, queue;
+	uintptr_t setv, queue;
 
 	if (SCHEDULER_STOPPED())
 		return;
 
-	passedv = v;
 	if (__rw_runlock_try(rw, td, &v))
 		goto out_lockstat;
 
@@ -828,10 +827,7 @@ __rw_runlock_hard(struct rwlock *rw, struct thread *td, uintptr_t v
 		 * release the lock.
 		 */
 		ts = turnstile_lookup(&rw->lock_object);
-		if (__predict_false(ts == NULL)) {
-			panic("got NULL turnstile on rwlock %p passedv %zx v %zx",
-			    rw, passedv, v);
-		}
+		MPASS(ts != NULL);
 		turnstile_broadcast(ts, queue);
 		turnstile_unpend(ts);
 		td->td_rw_rlocks--;
@@ -1210,7 +1206,7 @@ __rw_wunlock_hard(volatile uintptr_t *c, uintptr_t v LOCK_FILE_LINE_ARG_DEF)
 {
 	struct rwlock *rw;
 	struct turnstile *ts;
-	uintptr_t tid, setv, passedv;
+	uintptr_t tid, setv;
 	int queue;
 
 	tid = (uintptr_t)curthread;
@@ -1258,7 +1254,6 @@ __rw_wunlock_hard(volatile uintptr_t *c, uintptr_t v LOCK_FILE_LINE_ARG_DEF)
 	 * of waiters or doing some complicated lock handoff gymnastics.
 	 */
 	setv = RW_UNLOCKED;
-	passedv = v;
 	v = RW_READ_VALUE(rw);
 	queue = TS_SHARED_QUEUE;
 	if (v & RW_LOCK_WRITE_WAITERS) {
@@ -1273,10 +1268,7 @@ __rw_wunlock_hard(volatile uintptr_t *c, uintptr_t v LOCK_FILE_LINE_ARG_DEF)
 		    queue == TS_SHARED_QUEUE ? "read" : "write");
 
 	ts = turnstile_lookup(&rw->lock_object);
-	if (__predict_false(ts == NULL)) {
-		panic("got NULL turnstile on rwlock %p passedv %zx v %zx", rw,
-		    passedv, v);
-	}
+	MPASS(ts != NULL);
 	turnstile_broadcast(ts, queue);
 	turnstile_unpend(ts);
 	turnstile_chain_unlock(&rw->lock_object);
@@ -1532,7 +1524,7 @@ __rw_assert(const volatile uintptr_t *c, int what, const char *file, int line)
 #endif /* INVARIANT_SUPPORT */
 
 #ifdef DDB
-static void
+void
 db_show_rwlock(const struct lock_object *lock)
 {
 	const struct rwlock *rw;

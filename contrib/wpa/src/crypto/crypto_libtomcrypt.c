@@ -766,8 +766,3 @@ fail:
 }
 
 #endif /* CONFIG_MODEXP */
-
-
-void crypto_unload(void)
-{
-}

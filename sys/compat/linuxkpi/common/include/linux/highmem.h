@@ -43,7 +43,6 @@
 #include <vm/vm_page.h>
 #include <vm/pmap.h>
 
-#include <linux/mm.h>
 #include <linux/page.h>
 
 #define	PageHighMem(p)		(0)
@@ -92,12 +91,6 @@ kmap_atomic(struct page *page)
 {
 
 	return (kmap_atomic_prot(page, VM_PROT_ALL));
-}
-
-static inline void *
-kmap_local_page(struct page *page)
-{
-	return (kmap(page));
 }
 
 static inline void *

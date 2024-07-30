@@ -163,7 +163,7 @@ inp_rcc8000(
 }
 
 #else  /* not (REFCLOCK && CLOCK_PARSE && CLOCK_RCC8000) */
-NONEMPTY_TRANSLATION_UNIT
+int clk_rcc8000_bs;
 #endif  /* not (REFCLOCK && CLOCK_PARSE && CLOCK_RCC8000) */
 
 /*

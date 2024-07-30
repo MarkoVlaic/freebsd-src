@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 SDEVRANDOM=	${SRCTOP}/sys/dev/random

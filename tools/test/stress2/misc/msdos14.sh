@@ -27,7 +27,7 @@
 # SUCH DAMAGE.
 #
 
-# Rename(2) test with msdosfs(4)
+# Rename(2) test with msdosfs(5)
 # Test scenario by kib@
 
 . ../default.cfg

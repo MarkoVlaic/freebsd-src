@@ -109,7 +109,6 @@ static const struct {
 	{ HDA_INTEL_CMLKLP,  "Intel Comet Lake-LP",	0, 0 },
 	{ HDA_INTEL_CMLKH,   "Intel Comet Lake-H",	0, 0 },
 	{ HDA_INTEL_TGLK,    "Intel Tiger Lake",	0, 0 },
-	{ HDA_INTEL_TGLKH,   "Intel Tiger Lake-H",	0, 0 },
 	{ HDA_INTEL_GMLK,    "Intel Gemini Lake",	0, 0 },
 	{ HDA_INTEL_ALLK,    "Intel Alder Lake",	0, 0 },
 	{ HDA_INTEL_ALLKM,   "Intel Alder Lake-M",	0, 0 },
@@ -194,7 +193,6 @@ static const struct {
 	{ HDA_ATI_RV940,     "ATI RV940",	0, 0 },
 	{ HDA_ATI_RV970,     "ATI RV970",	0, 0 },
 	{ HDA_ATI_R1000,     "ATI R1000",	0, 0 },
-	{ HDA_ATI_OLAND,     "ATI Oland",	0, 0 },
 	{ HDA_ATI_KABINI,    "ATI Kabini",	0, 0 },
 	{ HDA_ATI_TRINITY,   "ATI Trinity",	0, 0 },
 	{ HDA_AMD_X370,      "AMD X370",	0, 0 },
@@ -1617,7 +1615,7 @@ hdac_attach2(void *arg)
 			    HDA_PARAM_REVISION_ID_REVISION_ID(revisionid);
 			sc->codecs[i].stepping_id =
 			    HDA_PARAM_REVISION_ID_STEPPING_ID(revisionid);
-			child = device_add_child(sc->dev, "hdacc", DEVICE_UNIT_ANY);
+			child = device_add_child(sc->dev, "hdacc", -1);
 			if (child == NULL) {
 				device_printf(sc->dev,
 				    "Failed to add CODEC device\n");

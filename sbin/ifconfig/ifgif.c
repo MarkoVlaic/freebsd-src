@@ -48,9 +48,7 @@
 
 #include "ifconfig.h"
 
-static const char *GIFBITS[] = {
-	[1] = "IGNORE_SOURCE",
-};
+#define	GIFBITS	"\020\2IGNORE_SOURCE"
 
 static void
 gif_status(if_ctx *ctx)
@@ -62,8 +60,7 @@ gif_status(if_ctx *ctx)
 		return;
 	if (opts == 0)
 		return;
-	printf("\toptions=%x", opts);
-	print_bits("options", &opts, 1, GIFBITS, nitems(GIFBITS));
+	printb("\toptions", opts, GIFBITS);
 	putchar('\n');
 }
 

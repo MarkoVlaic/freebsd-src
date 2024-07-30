@@ -1,3 +1,4 @@
+
 BINDIR?=	/usr/bin
 
 PROG=	prtblknos

@@ -1,3 +1,4 @@
+
 DEVATH11KDIR=	${SRCTOP}/sys/contrib/dev/athk/ath11k
 
 .PATH: ${DEVATH11KDIR}

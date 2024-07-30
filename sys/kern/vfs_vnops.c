@@ -1259,15 +1259,12 @@ vn_io_fault_doio(struct vn_io_fault_args *args, struct uio *uio,
 		    uio, args->cred, args->flags, td);
 		break;
 	case VN_IO_FAULT_VOP:
-		switch (uio->uio_rw) {
-		case UIO_READ:
+		if (uio->uio_rw == UIO_READ) {
 			error = VOP_READ(args->args.vop_args.vp, uio,
 			    args->flags, args->cred);
-			break;
-		case UIO_WRITE:
+		} else if (uio->uio_rw == UIO_WRITE) {
 			error = VOP_WRITE(args->args.vop_args.vp, uio,
 			    args->flags, args->cred);
-			break;
 		}
 		break;
 	default:

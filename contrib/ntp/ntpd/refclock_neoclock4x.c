@@ -1057,7 +1057,7 @@ neol_check_firmware(int unit,
 #endif
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_neoclock4x_bs;
 #endif /* REFCLOCK */
 
 /*

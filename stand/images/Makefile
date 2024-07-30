@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 FILES+=	freebsd-brand-rev.png freebsd-brand.png freebsd-logo-rev.png

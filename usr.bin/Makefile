@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 SUBDIR=	alias \
@@ -86,7 +87,6 @@ SUBDIR=	alias \
 	lzmainfo \
 	m4 \
 	mandoc \
-	mdo \
 	mesg \
 	ministat \
 	mkdep \

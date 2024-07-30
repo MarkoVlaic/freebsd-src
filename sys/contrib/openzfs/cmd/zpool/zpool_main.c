@@ -80,8 +80,6 @@
 
 libzfs_handle_t *g_zfs;
 
-static int mount_tp_nthr = 512;  /* tpool threads for multi-threaded mounting */
-
 static int zpool_do_create(int, char **);
 static int zpool_do_destroy(int, char **);
 
@@ -2032,18 +2030,9 @@ zpool_do_destroy(int argc, char **argv)
 }
 
 typedef struct export_cbdata {
-	tpool_t *tpool;
-	pthread_mutex_t mnttab_lock;
 	boolean_t force;
 	boolean_t hardforce;
-	int retval;
 } export_cbdata_t;
-
-
-typedef struct {
-	char *aea_poolname;
-	export_cbdata_t	*aea_cbdata;
-} async_export_args_t;
 
 /*
  * Export one pool
@@ -2053,20 +2042,11 @@ zpool_export_one(zpool_handle_t *zhp, void *data)
 {
 	export_cbdata_t *cb = data;
 
-	/*
-	 * zpool_disable_datasets() is not thread-safe for mnttab access.
-	 * So we serialize access here for 'zpool export -a' parallel case.
-	 */
-	if (cb->tpool != NULL)
-		pthread_mutex_lock(&cb->mnttab_lock);
-
-	int retval = zpool_disable_datasets(zhp, cb->force);
-
-	if (cb->tpool != NULL)
-		pthread_mutex_unlock(&cb->mnttab_lock);
-
-	if (retval)
+	if (zpool_disable_datasets(zhp, cb->force) != 0)
 		return (1);
+
+	/* The history must be logged as part of the export */
+	log_history = B_FALSE;
 
 	if (cb->hardforce) {
 		if (zpool_export_force(zhp, history_str) != 0)
@@ -2076,48 +2056,6 @@ zpool_export_one(zpool_handle_t *zhp, void *data)
 	}
 
 	return (0);
-}
-
-/*
- * Asynchronous export request
- */
-static void
-zpool_export_task(void *arg)
-{
-	async_export_args_t *aea = arg;
-
-	zpool_handle_t *zhp = zpool_open(g_zfs, aea->aea_poolname);
-	if (zhp != NULL) {
-		int ret = zpool_export_one(zhp, aea->aea_cbdata);
-		if (ret != 0)
-			aea->aea_cbdata->retval = ret;
-		zpool_close(zhp);
-	} else {
-		aea->aea_cbdata->retval = 1;
-	}
-
-	free(aea->aea_poolname);
-	free(aea);
-}
-
-/*
- * Process an export request in parallel
- */
-static int
-zpool_export_one_async(zpool_handle_t *zhp, void *data)
-{
-	tpool_t *tpool = ((export_cbdata_t *)data)->tpool;
-	async_export_args_t *aea = safe_malloc(sizeof (async_export_args_t));
-
-	/* save pool name since zhp will go out of scope */
-	aea->aea_poolname = strdup(zpool_get_name(zhp));
-	aea->aea_cbdata = data;
-
-	/* ship off actual export to another thread */
-	if (tpool_dispatch(tpool, zpool_export_task, (void *)aea) != 0)
-		return (errno);	/* unlikely */
-	else
-		return (0);
 }
 
 /*
@@ -2160,13 +2098,8 @@ zpool_do_export(int argc, char **argv)
 
 	cb.force = force;
 	cb.hardforce = hardforce;
-	cb.tpool = NULL;
-	cb.retval = 0;
 	argc -= optind;
 	argv += optind;
-
-	/* The history will be logged as part of the export itself */
-	log_history = B_FALSE;
 
 	if (do_all) {
 		if (argc != 0) {
@@ -2174,19 +2107,8 @@ zpool_do_export(int argc, char **argv)
 			usage(B_FALSE);
 		}
 
-		cb.tpool = tpool_create(1, 5 * sysconf(_SC_NPROCESSORS_ONLN),
-		    0, NULL);
-		pthread_mutex_init(&cb.mnttab_lock, NULL);
-
-		/* Asynchronously call zpool_export_one using thread pool */
-		ret = for_each_pool(argc, argv, B_TRUE, NULL, ZFS_TYPE_POOL,
-		    B_FALSE, zpool_export_one_async, &cb);
-
-		tpool_wait(cb.tpool);
-		tpool_destroy(cb.tpool);
-		(void) pthread_mutex_destroy(&cb.mnttab_lock);
-
-		return (ret | cb.retval);
+		return (for_each_pool(argc, argv, B_TRUE, NULL,
+		    ZFS_TYPE_POOL, B_FALSE, zpool_export_one, &cb));
 	}
 
 	/* check arguments */
@@ -3016,7 +2938,6 @@ show_import(nvlist_t *config, boolean_t report_error)
 	const char *health;
 	uint_t vsc;
 	const char *comment;
-	const char *indent;
 	status_cbdata_t cb = { 0 };
 
 	verify(nvlist_lookup_string(config, ZPOOL_CONFIG_POOL_NAME,
@@ -3041,84 +2962,82 @@ show_import(nvlist_t *config, boolean_t report_error)
 	if (reason != ZPOOL_STATUS_OK && !report_error)
 		return (reason);
 
-	if (nvlist_lookup_string(config, ZPOOL_CONFIG_COMMENT, &comment) == 0) {
-		indent = " ";
-	} else {
-		comment = NULL;
-		indent = "";
-	}
-
-	(void) printf(gettext("%s  pool: %s\n"), indent, name);
-	(void) printf(gettext("%s    id: %llu\n"), indent, (u_longlong_t)guid);
-	(void) printf(gettext("%s state: %s"), indent, health);
+	(void) printf(gettext("   pool: %s\n"), name);
+	(void) printf(gettext("     id: %llu\n"), (u_longlong_t)guid);
+	(void) printf(gettext("  state: %s"), health);
 	if (pool_state == POOL_STATE_DESTROYED)
 		(void) printf(gettext(" (DESTROYED)"));
 	(void) printf("\n");
 
-	if (reason != ZPOOL_STATUS_OK) {
-		(void) printf("%s", indent);
-		printf_color(ANSI_BOLD, gettext("status: "));
-	}
 	switch (reason) {
 	case ZPOOL_STATUS_MISSING_DEV_R:
 	case ZPOOL_STATUS_MISSING_DEV_NR:
 	case ZPOOL_STATUS_BAD_GUID_SUM:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("One or more devices are "
 		    "missing from the system.\n"));
 		break;
 
 	case ZPOOL_STATUS_CORRUPT_LABEL_R:
 	case ZPOOL_STATUS_CORRUPT_LABEL_NR:
-		printf_color(ANSI_YELLOW, gettext("One or more devices "
-		    "contains corrupted data.\n"));
+		printf_color(ANSI_BOLD, gettext("status: "));
+		printf_color(ANSI_YELLOW, gettext("One or more devices contains"
+		    " corrupted data.\n"));
 		break;
 
 	case ZPOOL_STATUS_CORRUPT_DATA:
-		printf_color(ANSI_YELLOW, gettext("The pool data is "
-		    "corrupted.\n"));
+		(void) printf(
+		    gettext(" status: The pool data is corrupted.\n"));
 		break;
 
 	case ZPOOL_STATUS_OFFLINE_DEV:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("One or more devices "
 		    "are offlined.\n"));
 		break;
 
 	case ZPOOL_STATUS_CORRUPT_POOL:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool metadata is "
 		    "corrupted.\n"));
 		break;
 
 	case ZPOOL_STATUS_VERSION_OLDER:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool is formatted using "
 		    "a legacy on-disk version.\n"));
 		break;
 
 	case ZPOOL_STATUS_VERSION_NEWER:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool is formatted using "
 		    "an incompatible version.\n"));
 		break;
 
 	case ZPOOL_STATUS_FEAT_DISABLED:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("Some supported "
-		    "features are not enabled on the pool.\n"
-		    "\t%s(Note that they may be intentionally disabled if the\n"
-		    "\t%s'compatibility' property is set.)\n"), indent, indent);
+		    "features are not enabled on the pool.\n\t"
+		    "(Note that they may be intentionally disabled "
+		    "if the\n\t'compatibility' property is set.)\n"));
 		break;
 
 	case ZPOOL_STATUS_COMPATIBILITY_ERR:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("Error reading or parsing "
 		    "the file(s) indicated by the 'compatibility'\n"
-		    "\t%sproperty.\n"), indent);
+		    "property.\n"));
 		break;
 
 	case ZPOOL_STATUS_INCOMPATIBLE_FEAT:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("One or more features "
 		    "are enabled on the pool despite not being\n"
-		    "\t%srequested by the 'compatibility' property.\n"),
-		    indent);
+		    "requested by the 'compatibility' property.\n"));
 		break;
 
 	case ZPOOL_STATUS_UNSUP_FEAT_READ:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool uses the following "
 		    "feature(s) not supported on this system:\n"));
 		color_start(ANSI_YELLOW);
@@ -3127,60 +3046,66 @@ show_import(nvlist_t *config, boolean_t report_error)
 		break;
 
 	case ZPOOL_STATUS_UNSUP_FEAT_WRITE:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool can only be "
-		    "accessed in read-only mode on this system. It\n"
-		    "\t%scannot be accessed in read-write mode because it uses "
-		    "the following\n"
-		    "\t%sfeature(s) not supported on this system:\n"),
-		    indent, indent);
+		    "accessed in read-only mode on this system. It\n\tcannot be"
+		    " accessed in read-write mode because it uses the "
+		    "following\n\tfeature(s) not supported on this system:\n"));
 		color_start(ANSI_YELLOW);
 		zpool_print_unsup_feat(config);
 		color_end();
 		break;
 
 	case ZPOOL_STATUS_HOSTID_ACTIVE:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool is currently "
 		    "imported by another system.\n"));
 		break;
 
 	case ZPOOL_STATUS_HOSTID_REQUIRED:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool has the "
-		    "multihost property on.  It cannot\n"
-		    "\t%sbe safely imported when the system hostid is not "
-		    "set.\n"), indent);
+		    "multihost property on.  It cannot\n\tbe safely imported "
+		    "when the system hostid is not set.\n"));
 		break;
 
 	case ZPOOL_STATUS_HOSTID_MISMATCH:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("The pool was last accessed "
 		    "by another system.\n"));
 		break;
 
 	case ZPOOL_STATUS_FAULTED_DEV_R:
 	case ZPOOL_STATUS_FAULTED_DEV_NR:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("One or more devices are "
 		    "faulted.\n"));
 		break;
 
 	case ZPOOL_STATUS_BAD_LOG:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("An intent log record cannot "
 		    "be read.\n"));
 		break;
 
 	case ZPOOL_STATUS_RESILVERING:
 	case ZPOOL_STATUS_REBUILDING:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("One or more devices were "
 		    "being resilvered.\n"));
 		break;
 
 	case ZPOOL_STATUS_ERRATA:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("Errata #%d detected.\n"),
 		    errata);
 		break;
 
 	case ZPOOL_STATUS_NON_NATIVE_ASHIFT:
+		printf_color(ANSI_BOLD, gettext("status: "));
 		printf_color(ANSI_YELLOW, gettext("One or more devices are "
 		    "configured to use a non-native block size.\n"
-		    "\t%sExpect reduced performance.\n"), indent);
+		    "\tExpect reduced performance.\n"));
 		break;
 
 	default:
@@ -3193,121 +3118,114 @@ show_import(nvlist_t *config, boolean_t report_error)
 	/*
 	 * Print out an action according to the overall state of the pool.
 	 */
-	if (vs->vs_state != VDEV_STATE_HEALTHY ||
-	    reason != ZPOOL_STATUS_ERRATA || errata != ZPOOL_ERRATA_NONE) {
-		(void) printf("%s", indent);
-		(void) printf(gettext("action: "));
-	}
 	if (vs->vs_state == VDEV_STATE_HEALTHY) {
 		if (reason == ZPOOL_STATUS_VERSION_OLDER ||
 		    reason == ZPOOL_STATUS_FEAT_DISABLED) {
-			(void) printf(gettext("The pool can be imported using "
-			    "its name or numeric identifier, though\n"
-			    "\t%ssome features will not be available without "
-			    "an explicit 'zpool upgrade'.\n"), indent);
+			(void) printf(gettext(" action: The pool can be "
+			    "imported using its name or numeric identifier, "
+			    "though\n\tsome features will not be available "
+			    "without an explicit 'zpool upgrade'.\n"));
 		} else if (reason == ZPOOL_STATUS_COMPATIBILITY_ERR) {
-			(void) printf(gettext("The pool can be imported using "
-			    "its name or numeric\n"
-			    "\t%sidentifier, though the file(s) indicated by "
-			    "its 'compatibility'\n"
-			    "\t%sproperty cannot be parsed at this time.\n"),
-			    indent, indent);
+			(void) printf(gettext(" action: The pool can be "
+			    "imported using its name or numeric\n\tidentifier, "
+			    "though the file(s) indicated by its "
+			    "'compatibility'\n\tproperty cannot be parsed at "
+			    "this time.\n"));
 		} else if (reason == ZPOOL_STATUS_HOSTID_MISMATCH) {
-			(void) printf(gettext("The pool can be imported using "
-			    "its name or numeric identifier and\n"
-			    "\t%sthe '-f' flag.\n"), indent);
+			(void) printf(gettext(" action: The pool can be "
+			    "imported using its name or numeric "
+			    "identifier and\n\tthe '-f' flag.\n"));
 		} else if (reason == ZPOOL_STATUS_ERRATA) {
 			switch (errata) {
+			case ZPOOL_ERRATA_NONE:
+				break;
+
 			case ZPOOL_ERRATA_ZOL_2094_SCRUB:
-				(void) printf(gettext("The pool can be "
-				    "imported using its name or numeric "
-				    "identifier,\n"
-				    "\t%showever there is a compatibility "
-				    "issue which should be corrected\n"
-				    "\t%sby running 'zpool scrub'\n"),
-				    indent, indent);
+				(void) printf(gettext(" action: The pool can "
+				    "be imported using its name or numeric "
+				    "identifier,\n\thowever there is a compat"
+				    "ibility issue which should be corrected"
+				    "\n\tby running 'zpool scrub'\n"));
 				break;
 
 			case ZPOOL_ERRATA_ZOL_2094_ASYNC_DESTROY:
-				(void) printf(gettext("The pool cannot be "
-				    "imported with this version of ZFS due to\n"
-				    "\t%san active asynchronous destroy. "
-				    "Revert to an earlier version\n"
-				    "\t%sand allow the destroy to complete "
-				    "before updating.\n"), indent, indent);
+				(void) printf(gettext(" action: The pool can"
+				    "not be imported with this version of ZFS "
+				    "due to\n\tan active asynchronous destroy. "
+				    "Revert to an earlier version\n\tand "
+				    "allow the destroy to complete before "
+				    "updating.\n"));
 				break;
 
 			case ZPOOL_ERRATA_ZOL_6845_ENCRYPTION:
-				(void) printf(gettext("Existing encrypted "
-				    "datasets contain an on-disk "
-				    "incompatibility, which\n"
-				    "\t%sneeds to be corrected. Backup these "
-				    "datasets to new encrypted datasets\n"
-				    "\t%sand destroy the old ones.\n"),
-				    indent, indent);
+				(void) printf(gettext(" action: Existing "
+				    "encrypted datasets contain an on-disk "
+				    "incompatibility, which\n\tneeds to be "
+				    "corrected. Backup these datasets to new "
+				    "encrypted datasets\n\tand destroy the "
+				    "old ones.\n"));
 				break;
 
 			case ZPOOL_ERRATA_ZOL_8308_ENCRYPTION:
-				(void) printf(gettext("Existing encrypted "
-				    "snapshots and bookmarks contain an "
-				    "on-disk\n"
-				    "\t%sincompatibility. This may cause "
-				    "on-disk corruption if they are used\n"
-				    "\t%swith 'zfs recv'. To correct the "
-				    "issue, enable the bookmark_v2 feature.\n"
-				    "\t%sNo additional action is needed if "
-				    "there are no encrypted snapshots or\n"
-				    "\t%sbookmarks. If preserving the "
-				    "encrypted snapshots and bookmarks is\n"
-				    "\t%srequired, use a non-raw send to "
-				    "backup and restore them. Alternately,\n"
-				    "\t%sthey may be removed to resolve the "
-				    "incompatibility.\n"), indent, indent,
-				    indent, indent, indent, indent);
+				(void) printf(gettext(" action: Existing "
+				    "encrypted snapshots and bookmarks contain "
+				    "an on-disk\n\tincompatibility. This may "
+				    "cause on-disk corruption if they are used"
+				    "\n\twith 'zfs recv'. To correct the "
+				    "issue, enable the bookmark_v2 feature.\n\t"
+				    "No additional action is needed if there "
+				    "are no encrypted snapshots or\n\t"
+				    "bookmarks. If preserving the encrypted "
+				    "snapshots and bookmarks is\n\trequired, "
+				    "use a non-raw send to backup and restore "
+				    "them. Alternately,\n\tthey may be removed"
+				    " to resolve the incompatibility.\n"));
 				break;
 			default:
 				/*
 				 * All errata must contain an action message.
 				 */
-				assert(errata == ZPOOL_ERRATA_NONE);
+				assert(0);
 			}
 		} else {
-			(void) printf(gettext("The pool can be imported using "
-			    "its name or numeric identifier.\n"));
+			(void) printf(gettext(" action: The pool can be "
+			    "imported using its name or numeric "
+			    "identifier.\n"));
 		}
 	} else if (vs->vs_state == VDEV_STATE_DEGRADED) {
-		(void) printf(gettext("The pool can be imported despite "
-		    "missing or damaged devices.  The\n"
-		    "\t%sfault tolerance of the pool may be compromised if "
-		    "imported.\n"), indent);
+		(void) printf(gettext(" action: The pool can be imported "
+		    "despite missing or damaged devices.  The\n\tfault "
+		    "tolerance of the pool may be compromised if imported.\n"));
 	} else {
 		switch (reason) {
 		case ZPOOL_STATUS_VERSION_NEWER:
-			(void) printf(gettext("The pool cannot be imported.  "
-			    "Access the pool on a system running newer\n"
-			    "\t%ssoftware, or recreate the pool from "
-			    "backup.\n"), indent);
+			(void) printf(gettext(" action: The pool cannot be "
+			    "imported.  Access the pool on a system running "
+			    "newer\n\tsoftware, or recreate the pool from "
+			    "backup.\n"));
 			break;
 		case ZPOOL_STATUS_UNSUP_FEAT_READ:
-			(void) printf(gettext("The pool cannot be imported. "
-			    "Access the pool on a system that supports\n"
-			    "\t%sthe required feature(s), or recreate the pool "
-			    "from backup.\n"), indent);
+			printf_color(ANSI_BOLD, gettext("action: "));
+			printf_color(ANSI_YELLOW, gettext("The pool cannot be "
+			    "imported. Access the pool on a system that "
+			    "supports\n\tthe required feature(s), or recreate "
+			    "the pool from backup.\n"));
 			break;
 		case ZPOOL_STATUS_UNSUP_FEAT_WRITE:
-			(void) printf(gettext("The pool cannot be imported in "
-			    "read-write mode. Import the pool with\n"
-			    "\t%s'-o readonly=on', access the pool on a system "
-			    "that supports the\n"
-			    "\t%srequired feature(s), or recreate the pool "
-			    "from backup.\n"), indent, indent);
+			printf_color(ANSI_BOLD, gettext("action: "));
+			printf_color(ANSI_YELLOW, gettext("The pool cannot be "
+			    "imported in read-write mode. Import the pool "
+			    "with\n"
+			    "\t\"-o readonly=on\", access the pool on a system "
+			    "that supports the\n\trequired feature(s), or "
+			    "recreate the pool from backup.\n"));
 			break;
 		case ZPOOL_STATUS_MISSING_DEV_R:
 		case ZPOOL_STATUS_MISSING_DEV_NR:
 		case ZPOOL_STATUS_BAD_GUID_SUM:
-			(void) printf(gettext("The pool cannot be imported. "
-			    "Attach the missing\n"
-			    "\t%sdevices and try again.\n"), indent);
+			(void) printf(gettext(" action: The pool cannot be "
+			    "imported. Attach the missing\n\tdevices and try "
+			    "again.\n"));
 			break;
 		case ZPOOL_STATUS_HOSTID_ACTIVE:
 			VERIFY0(nvlist_lookup_nvlist(config,
@@ -3321,49 +3239,47 @@ show_import(nvlist_t *config, boolean_t report_error)
 				hostid = fnvlist_lookup_uint64(nvinfo,
 				    ZPOOL_CONFIG_MMP_HOSTID);
 
-			(void) printf(gettext("The pool must be exported from "
-			    "%s (hostid=%"PRIx64")\n"
-			    "\t%sbefore it can be safely imported.\n"),
-			    hostname, hostid, indent);
+			(void) printf(gettext(" action: The pool must be "
+			    "exported from %s (hostid=%"PRIx64")\n\tbefore it "
+			    "can be safely imported.\n"), hostname, hostid);
 			break;
 		case ZPOOL_STATUS_HOSTID_REQUIRED:
-			(void) printf(gettext("Set a unique system hostid with "
-			    "the zgenhostid(8) command.\n"));
+			(void) printf(gettext(" action: Set a unique system "
+			    "hostid with the zgenhostid(8) command.\n"));
 			break;
 		default:
-			(void) printf(gettext("The pool cannot be imported due "
-			    "to damaged devices or data.\n"));
+			(void) printf(gettext(" action: The pool cannot be "
+			    "imported due to damaged devices or data.\n"));
 		}
 	}
 
 	/* Print the comment attached to the pool. */
-	if (comment != NULL)
+	if (nvlist_lookup_string(config, ZPOOL_CONFIG_COMMENT, &comment) == 0)
 		(void) printf(gettext("comment: %s\n"), comment);
 
 	/*
 	 * If the state is "closed" or "can't open", and the aux state
 	 * is "corrupt data":
 	 */
-	if ((vs->vs_state == VDEV_STATE_CLOSED ||
-	    vs->vs_state == VDEV_STATE_CANT_OPEN) &&
-	    vs->vs_aux == VDEV_AUX_CORRUPT_DATA) {
+	if (((vs->vs_state == VDEV_STATE_CLOSED) ||
+	    (vs->vs_state == VDEV_STATE_CANT_OPEN)) &&
+	    (vs->vs_aux == VDEV_AUX_CORRUPT_DATA)) {
 		if (pool_state == POOL_STATE_DESTROYED)
-			(void) printf(gettext("\t%sThe pool was destroyed, "
-			    "but can be imported using the '-Df' flags.\n"),
-			    indent);
+			(void) printf(gettext("\tThe pool was destroyed, "
+			    "but can be imported using the '-Df' flags.\n"));
 		else if (pool_state != POOL_STATE_EXPORTED)
-			(void) printf(gettext("\t%sThe pool may be active on "
-			    "another system, but can be imported using\n"
-			    "\t%sthe '-f' flag.\n"), indent, indent);
+			(void) printf(gettext("\tThe pool may be active on "
+			    "another system, but can be imported using\n\t"
+			    "the '-f' flag.\n"));
 	}
 
 	if (msgid != NULL) {
-		(void) printf(gettext("%s   see: "
-		    "https://openzfs.github.io/openzfs-docs/msg/%s\n"),
-		    indent, msgid);
+		(void) printf(gettext(
+		    "   see: https://openzfs.github.io/openzfs-docs/msg/%s\n"),
+		    msgid);
 	}
 
-	(void) printf(gettext("%sconfig:\n\n"), indent);
+	(void) printf(gettext(" config:\n\n"));
 
 	cb.cb_namewidth = max_width(NULL, nvroot, 0, strlen(name),
 	    VDEV_NAME_TYPE_ID);
@@ -3377,10 +3293,9 @@ show_import(nvlist_t *config, boolean_t report_error)
 	print_class_vdevs(NULL, &cb, nvroot, VDEV_ALLOC_CLASS_LOGS);
 
 	if (reason == ZPOOL_STATUS_BAD_GUID_SUM) {
-		(void) printf(gettext("\n\t%sAdditional devices are known to "
-		    "be part of this pool, though their\n"
-		    "\t%sexact configuration cannot be determined.\n"),
-		    indent, indent);
+		(void) printf(gettext("\n\tAdditional devices are known to "
+		    "be part of this pool, though their\n\texact "
+		    "configuration cannot be determined.\n"));
 	}
 	return (0);
 }
@@ -3427,7 +3342,7 @@ zfs_force_import_required(nvlist_t *config)
  */
 static int
 do_import(nvlist_t *config, const char *newname, const char *mntopts,
-    nvlist_t *props, int flags, uint_t mntthreads)
+    nvlist_t *props, int flags)
 {
 	int ret = 0;
 	int ms_status = 0;
@@ -3527,7 +3442,7 @@ do_import(nvlist_t *config, const char *newname, const char *mntopts,
 
 	if (zpool_get_state(zhp) != POOL_STATE_UNAVAIL &&
 	    !(flags & ZFS_IMPORT_ONLY)) {
-		ms_status = zpool_enable_datasets(zhp, mntopts, 0, mntthreads);
+		ms_status = zpool_enable_datasets(zhp, mntopts, 0);
 		if (ms_status == EZFS_SHAREFAILED) {
 			(void) fprintf(stderr, gettext("Import was "
 			    "successful, but unable to share some datasets\n"));
@@ -3546,7 +3461,6 @@ typedef struct import_parameters {
 	const char *ip_mntopts;
 	nvlist_t *ip_props;
 	int ip_flags;
-	uint_t ip_mntthreads;
 	int *ip_err;
 } import_parameters_t;
 
@@ -3555,7 +3469,7 @@ do_import_task(void *arg)
 {
 	import_parameters_t *ip = arg;
 	*ip->ip_err |= do_import(ip->ip_config, NULL, ip->ip_mntopts,
-	    ip->ip_props, ip->ip_flags, ip->ip_mntthreads);
+	    ip->ip_props, ip->ip_flags);
 	free(ip);
 }
 
@@ -3569,7 +3483,6 @@ import_pools(nvlist_t *pools, nvlist_t *props, char *mntopts, int flags,
 	uint64_t pool_state;
 	boolean_t pool_specified = (import->poolname != NULL ||
 	    import->guid != 0);
-	uint_t npools = 0;
 
 
 	tpool_t *tp = NULL;
@@ -3587,10 +3500,6 @@ import_pools(nvlist_t *pools, nvlist_t *props, char *mntopts, int flags,
 	int err = 0;
 	nvpair_t *elem = NULL;
 	boolean_t first = B_TRUE;
-	if (!pool_specified && import->do_all) {
-		while ((elem = nvlist_next_nvpair(pools, elem)) != NULL)
-			npools++;
-	}
 	while ((elem = nvlist_next_nvpair(pools, elem)) != NULL) {
 
 		verify(nvpair_value_nvlist(elem, &config) == 0);
@@ -3621,7 +3530,6 @@ import_pools(nvlist_t *pools, nvlist_t *props, char *mntopts, int flags,
 				ip->ip_mntopts = mntopts;
 				ip->ip_props = props;
 				ip->ip_flags = flags;
-				ip->ip_mntthreads = mount_tp_nthr / npools;
 				ip->ip_err = &err;
 
 				(void) tpool_dispatch(tp, do_import_task,
@@ -3689,7 +3597,7 @@ import_pools(nvlist_t *pools, nvlist_t *props, char *mntopts, int flags,
 			err = B_TRUE;
 		} else {
 			err |= do_import(found_config, new_name,
-			    mntopts, props, flags, mount_tp_nthr);
+			    mntopts, props, flags);
 		}
 	}
 
@@ -7233,8 +7141,7 @@ zpool_do_split(int argc, char **argv)
 	}
 
 	if (zpool_get_state(zhp) != POOL_STATE_UNAVAIL) {
-		ms_status = zpool_enable_datasets(zhp, mntopts, 0,
-		    mount_tp_nthr);
+		ms_status = zpool_enable_datasets(zhp, mntopts, 0);
 		if (ms_status == EZFS_SHAREFAILED) {
 			(void) fprintf(stderr, gettext("Split was successful, "
 			    "datasets are mounted but sharing of some datasets "

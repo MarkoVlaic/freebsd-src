@@ -1,3 +1,4 @@
+
 KMOD=	wtap
 
 .PATH:	${SRCTOP}/sys/dev/wtap

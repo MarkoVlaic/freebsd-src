@@ -1,3 +1,4 @@
+
 PROG=	quotaon
 LINKS=	${BINDIR}/quotaon ${BINDIR}/quotaoff
 MAN=	quotaon.8

@@ -1,3 +1,4 @@
+
 PROG=	iasl
 
 # common

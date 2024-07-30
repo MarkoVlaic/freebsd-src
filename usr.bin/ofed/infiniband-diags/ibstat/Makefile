@@ -1,3 +1,4 @@
+
 PROG=	ibstat
 SRCS=	ibstat.c
 MAN=	ibstat.8

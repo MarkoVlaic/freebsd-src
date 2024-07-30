@@ -62,7 +62,7 @@ static struct wps_er_sta * wps_er_sta_get(struct wps_er_ap *ap, const u8 *addr,
 	struct wps_er_sta *sta;
 	dl_list_for_each(sta, &ap->sta, struct wps_er_sta, list) {
 		if ((addr == NULL ||
-		     ether_addr_equal(sta->addr, addr)) &&
+		     os_memcmp(sta->addr, addr, ETH_ALEN) == 0) &&
 		    (uuid == NULL ||
 		     os_memcmp(uuid, sta->uuid, WPS_UUID_LEN) == 0))
 			return sta;
@@ -106,7 +106,7 @@ static struct wps_er_ap * wps_er_ap_get(struct wps_er *er,
 		    (uuid == NULL ||
 		     os_memcmp(uuid, ap->uuid, WPS_UUID_LEN) == 0) &&
 		    (mac_addr == NULL ||
-		     ether_addr_equal(mac_addr, ap->mac_addr)))
+		     os_memcmp(mac_addr, ap->mac_addr, ETH_ALEN) == 0))
 			return ap;
 	}
 	return NULL;

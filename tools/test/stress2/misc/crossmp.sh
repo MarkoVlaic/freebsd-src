@@ -74,8 +74,7 @@ else
 	else
 
 		# The test: Parallel mount and unmounts
-		start=`date +%s`
-		while [ $((`date +%s`- start)) -lt 300 ]; do
+		for i in `jot 1024`; do
 			m=$1
 			mount /dev/md${m} ${mntpoint}$m
 			while mount | grep -q "on ${mntpoint}$m "; do

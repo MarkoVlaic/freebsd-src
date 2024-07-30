@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 PACKAGE=	iscsi
@@ -21,8 +22,5 @@ MAN=		ctladm.8
 .if ${MK_ISCSI} != "no"
 CFLAGS+=	-DWANT_ISCSI
 .endif
-
-HAS_TESTS=
-SUBDIR.${MK_TESTS}+=	tests
 
 .include <bsd.prog.mk>

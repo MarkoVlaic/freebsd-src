@@ -1,3 +1,4 @@
+
 .if ${MK_MACHDEP_OPTIMIZATIONS} != "no"
 .PATH: ${LIBC_SRCTOP}/${LIBC_ARCH}/string
 .endif

@@ -1,3 +1,4 @@
+
 PACKAGE=		tests
 
 FILESYSTEM?=		${.CURDIR:T}

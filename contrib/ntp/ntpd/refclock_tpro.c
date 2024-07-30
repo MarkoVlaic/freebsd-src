@@ -204,5 +204,5 @@ tpro_poll(
 }
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_tpro_bs;
 #endif /* REFCLOCK */

@@ -14,7 +14,6 @@
 #  install: Invokes the release-install and vm-install targets
 #  release-install: Copies all release installation media into ${DESTDIR}
 #  vm-install: Copies all virtual machine images into ${DESTDIR}
-#  cloud-install: Copies non-uploaded cloud images into ${DESTDIR}
 #
 # Variables affecting the build process:
 #  WORLDDIR: location of src tree -- must have built world and default kernel
@@ -327,7 +326,7 @@ real-release:
 	${MAKE} -C ${.CURDIR} ${.MAKEFLAGS} obj
 	${MAKE} -C ${.CURDIR} ${.MAKEFLAGS} ${RELEASE_TARGETS}
 
-install:	release-install vm-install .WAIT cloud-install
+install:	release-install vm-install
 
 release-install:
 .if defined(DESTDIR) && !empty(DESTDIR)

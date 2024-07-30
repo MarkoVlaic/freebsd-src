@@ -1,3 +1,4 @@
+
 .PATH:	${.CURDIR}/arch/${MACHINE_CPUARCH}
 
 PACKAGE=lib${LIB}

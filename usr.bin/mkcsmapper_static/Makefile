@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/lib/libc/iconv ${SRCTOP}/usr.bin/mkcsmapper
 
 PROG=	mkcsmapper_static

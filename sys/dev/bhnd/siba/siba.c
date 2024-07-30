@@ -1318,7 +1318,7 @@ siba_add_children(device_t dev)
 			goto failed;
 
 		/* Add the child device */
-		child = BUS_ADD_CHILD(dev, 0, NULL, DEVICE_UNIT_ANY);
+		child = BUS_ADD_CHILD(dev, 0, NULL, -1);
 		if (child == NULL) {
 			error = ENXIO;
 			goto failed;

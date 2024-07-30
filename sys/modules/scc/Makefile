@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/scc
 
 .if ${MACHINE_CPUARCH} == "powerpc"

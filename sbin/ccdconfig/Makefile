@@ -1,3 +1,4 @@
+
 PACKAGE=ccdconfig
 PROG=	ccdconfig
 MAN=	ccdconfig.8

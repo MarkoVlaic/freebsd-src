@@ -116,6 +116,7 @@ static unsigned int kernel_ptbls;	/* Number of KVA ptbls. */
 #define	VM_MAPDEV_BASE	((vm_offset_t)VM_MAXUSER_ADDRESS + PAGE_SIZE)
 
 static void tid_flush(tlbtid_t tid);
+static unsigned long ilog2(unsigned long);
 
 /**************************************************************************/
 /* Page table management */
@@ -929,6 +930,18 @@ mmu_booke_quick_remove_page(vm_offset_t addr)
 /**************************************************************************/
 /* TID handling */
 /**************************************************************************/
+
+/*
+ * Return the largest uint value log such that 2^log <= num.
+ */
+static unsigned long
+ilog2(unsigned long num)
+{
+	long lz;
+
+	__asm ("cntlzw %0, %1" : "=r" (lz) : "r" (num));
+	return (31 - lz);
+}
 
 /*
  * Invalidate all TLB0 entries which match the given TID. Note this is

@@ -42,8 +42,6 @@
 #ifdef BZERO
 #include <strings.h>
 
-#undef bzero	/* _FORTIFY_SOURCE */
-
 #define	RETURN	return
 #define	VAL	0
 #define	WIDEVAL	0
@@ -52,8 +50,6 @@ void
 bzero(void *dst0, size_t length)
 #else
 #include <string.h>
-
-#undef memset	/* _FORTIFY_SOURCE */
 
 #define	RETURN	return (dst0)
 #define	VAL	c0

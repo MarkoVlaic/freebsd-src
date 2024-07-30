@@ -216,7 +216,13 @@ ASN1_SEQUENCE(BasicOCSPResponse) = {
 
 IMPLEMENT_ASN1_FUNCTIONS(BasicOCSPResponse);
 
-DEFINE_STACK_OF(SingleResponse)
+#define sk_SingleResponse_num(sk) \
+sk_num(CHECKED_CAST(_STACK *, STACK_OF(SingleResponse) *, sk))
+
+#define sk_SingleResponse_value(sk, i) \
+	((SingleResponse *)						\
+	 sk_value(CHECKED_CAST(_STACK *, STACK_OF(SingleResponse) *, sk), (i)))
+
 
 static char * mem_bio_to_str(BIO *out)
 {
@@ -496,7 +502,7 @@ enum ocsp_result check_ocsp_resp(SSL_CTX *ssl_ctx, SSL *ssl, X509 *cert,
 	enum ocsp_result result = OCSP_INVALID;
 	X509_STORE *store;
 	STACK_OF(X509) *untrusted = NULL, *certs = NULL, *chain = NULL;
-	X509_STORE_CTX *ctx = NULL;
+	X509_STORE_CTX ctx;
 	X509 *signer, *tmp_cert;
 	int signer_trusted = 0;
 	EVP_PKEY *skey;
@@ -637,13 +643,12 @@ enum ocsp_result check_ocsp_resp(SSL_CTX *ssl_ctx, SSL *ssl, X509 *cert,
 		   "OpenSSL: Found OCSP signer certificate %s and verified BasicOCSPResponse signature",
 		   buf);
 
-	ctx = X509_STORE_CTX_new();
-	if (!ctx || !X509_STORE_CTX_init(ctx, store, signer, untrusted))
+	if (!X509_STORE_CTX_init(&ctx, store, signer, untrusted))
 		goto fail;
-	X509_STORE_CTX_set_purpose(ctx, X509_PURPOSE_OCSP_HELPER);
-	ret = X509_verify_cert(ctx);
-	chain = X509_STORE_CTX_get1_chain(ctx);
-	X509_STORE_CTX_cleanup(ctx);
+	X509_STORE_CTX_set_purpose(&ctx, X509_PURPOSE_OCSP_HELPER);
+	ret = X509_verify_cert(&ctx);
+	chain = X509_STORE_CTX_get1_chain(&ctx);
+	X509_STORE_CTX_cleanup(&ctx);
 	if (ret <= 0) {
 		wpa_printf(MSG_DEBUG,
 			   "OpenSSL: Could not validate OCSP signer certificate");
@@ -657,8 +662,8 @@ enum ocsp_result check_ocsp_resp(SSL_CTX *ssl_ctx, SSL *ssl, X509 *cert,
 
 	if (!signer_trusted) {
 		X509_check_purpose(signer, -1, 0);
-		if ((X509_get_extension_flags(signer) & EXFLAG_XKUSAGE) &&
-		    (X509_get_extended_key_usage(signer) & XKU_OCSP_SIGN)) {
+		if ((signer->ex_flags & EXFLAG_XKUSAGE) &&
+		    (signer->ex_xkusage & XKU_OCSP_SIGN)) {
 			wpa_printf(MSG_DEBUG,
 				   "OpenSSL: OCSP signer certificate delegation OK");
 		} else {
@@ -834,7 +839,6 @@ fail:
 	sk_X509_pop_free(certs, X509_free);
 	BasicOCSPResponse_free(basic);
 	OCSPResponse_free(resp);
-	X509_STORE_CTX_free(ctx);
 
 	return result;
 }

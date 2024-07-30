@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020,2021 Thomas E. Dickey                                     *
+ * Copyright 2020 Thomas E. Dickey                                          *
  * Copyright 1998-2012,2013 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -33,7 +33,7 @@
 
 #include "form.priv.h"
 
-MODULE_ID("$Id: frm_opts.c,v 1.21 2021/06/17 21:20:30 tom Exp $")
+MODULE_ID("$Id: frm_opts.c,v 1.20 2020/12/12 00:37:00 tom Exp $")
 
 /*---------------------------------------------------------------------------
 |   Facility      :  libnform

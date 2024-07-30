@@ -908,5 +908,5 @@ void DoyTimeFromSecTime(DoyTimeObj* pDt, SecTimeObj* pSt)
 } // End DoyTimeFromSecTime
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_tsyncpci_bs;
 #endif /* REFCLOCK */

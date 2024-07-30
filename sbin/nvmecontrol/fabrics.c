@@ -168,7 +168,6 @@ tcp_qpair_params(struct nvmf_qpair_params *params, int adrfam,
 		return (true);
 	}
 	warn("Failed to connect to controller at %s:%s", address, port);
-	freeaddrinfo(list);
 	return (false);
 }
 
@@ -453,8 +452,8 @@ connect_nvm_queues(const struct nvmf_association_params *aparams,
 
 	/* Validate I/O queue size. */
 	if (queue_size == 0)
-		queue_size = (u_int)mqes + 1;
-	else if (queue_size > (u_int)mqes + 1) {
+		queue_size = mqes + 1;
+	else if (queue_size > mqes + 1) {
 		shutdown_controller(*admin);
 		nvmf_free_association(na);
 		warn("I/O queue size exceeds controller maximum (%u)",
@@ -489,7 +488,7 @@ connect_nvm_queues(const struct nvmf_association_params *aparams,
 	}
 
 	/* I/O queues. */
-	memset(io, 0, sizeof(*io) * num_io_queues);
+	memset(io, 0, sizeof(io) * num_io_queues);
 	for (u_int i = 0; i < num_io_queues; i++) {
 		memset(&qparams, 0, sizeof(qparams));
 		qparams.admin = false;

@@ -1,3 +1,4 @@
+
 SRCDIR:=${.PARSEDIR:tA}
 
 PROG_CXX=	config

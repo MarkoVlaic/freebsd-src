@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/ipmi
 
 KMOD=	ipmi_linux

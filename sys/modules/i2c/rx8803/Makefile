@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/iicbus/rtc/
 KMOD	= rx8803
 SRCS	= rx8803.c

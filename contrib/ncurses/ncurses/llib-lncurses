@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2022,2023 Thomas E. Dickey                                *
+ * Copyright 2019,2020 Thomas E. Dickey                                     *
  * Copyright 1998-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -480,17 +480,17 @@ int	addstr(
 
 #undef attroff
 int	attroff(
-		NCURSES_ATTR_T	z)
+		int	z)
 		{ return(*(int *)0); }
 
 #undef attron
 int	attron(
-		NCURSES_ATTR_T	z)
+		int	z)
 		{ return(*(int *)0); }
 
 #undef attrset
 int	attrset(
-		NCURSES_ATTR_T	z)
+		int	z)
 		{ return(*(int *)0); }
 
 #undef attr_get
@@ -2805,19 +2805,6 @@ NCURSES_BOOL _nc_is_file_path(
 int	_nc_env_access(void)
 		{ return(*(int *)0); }
 
-#undef _nc_safe_fopen
-FILE	*_nc_safe_fopen(
-		const char *path,
-		const char *mode)
-		{ return(*(FILE **)0); }
-
-#undef _nc_safe_open3
-int	_nc_safe_open3(
-		const char *path,
-		int	flags,
-		mode_t	mode)
-		{ return(*(int *)0); }
-
 /* ./tinfo/add_tries.c */
 
 #undef _nc_add_to_try
@@ -2831,8 +2818,8 @@ int	_nc_add_to_try(
 
 #undef _nc_align_termtype
 void	_nc_align_termtype(
-		TERMTYPE *to,
-		TERMTYPE *from)
+		TERMTYPE2 *to,
+		TERMTYPE2 *from)
 		{ /* void */ }
 
 #undef _nc_copy_termtype
@@ -2994,7 +2981,7 @@ ENTRY	*_nc_tail;
 #undef _nc_free_entry
 void	_nc_free_entry(
 		ENTRY	*headp,
-		TERMTYPE *tterm)
+		TERMTYPE2 *tterm)
 		{ /* void */ }
 
 #undef _nc_free_entries
@@ -3014,19 +3001,14 @@ void	exit_terminfo(
 /* ./fallback.c */
 
 #undef _nc_fallback
-const TERMTYPE *_nc_fallback(
+const TERMTYPE2 *_nc_fallback(
 		const char *name)
-		{ return(*(const TERMTYPE **)0); }
+		{ return(*(const TERMTYPE2 **)0); }
 
 /* ./tinfo/free_ttype.c */
 
 #undef _nc_free_termtype
 void	_nc_free_termtype(
-		TERMTYPE *ptr)
-		{ /* void */ }
-
-#undef _nc_free_termtype1
-void	_nc_free_termtype1(
 		TERMTYPE *ptr)
 		{ /* void */ }
 
@@ -3411,42 +3393,6 @@ int	intrflush(
 		NCURSES_BOOL flag)
 		{ return(*(int *)0); }
 
-#undef is_nl_sp
-int	is_nl_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_raw_sp
-int	is_raw_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_cbreak_sp
-int	is_cbreak_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_echo_sp
-int	is_echo_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_nl
-int	is_nl(void)
-		{ return(*(int *)0); }
-
-#undef is_raw
-int	is_raw(void)
-		{ return(*(int *)0); }
-
-#undef is_cbreak
-int	is_cbreak(void)
-		{ return(*(int *)0); }
-
-#undef is_echo
-int	is_echo(void)
-		{ return(*(int *)0); }
-
 /* ./tinfo/lib_setup.c */
 
 #undef ttytype
@@ -3511,7 +3457,7 @@ void	_nc_update_screensize(
 #undef _nc_setup_tinfo
 int	_nc_setup_tinfo(
 		const char *const tn,
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ return(*(int *)0); }
 
 #undef _nc_tinfo_cmdch
@@ -3667,16 +3613,10 @@ char	*tigetstr(
 #undef _nc_tparm_err
 int	_nc_tparm_err;
 
-#undef _nc_free_tparm
-void	_nc_free_tparm(
-		TERMINAL *termp)
-		{ /* void */ }
-
 #undef _nc_tparm_analyze
 int	_nc_tparm_analyze(
-		TERMINAL *term,
 		const char *string,
-		char	**p_is_s,
+		char	*p_is_s[9],
 		int	*_nc_popcount)
 		{ return(*(int *)0); }
 
@@ -3692,32 +3632,12 @@ char	*tiparm(
 		...)
 		{ return(*(char **)0); }
 
-#undef tiparm_s
-char	*tiparm_s(
-		int	num_expected,
-		int	tparm_type,
-		const char *string,
-		...)
-		{ return(*(char **)0); }
-
-#undef tiscan_s
-int	tiscan_s(
-		int	*num_expected,
-		int	*tparm_type,
-		const char *string)
-		{ return(*(int *)0); }
-
 #undef _nc_tiparm
 char	*_nc_tiparm(
 		int	expected,
 		const char *string,
 		...)
 		{ return(*(char **)0); }
-
-#undef _nc_reset_tparm
-void	_nc_reset_tparm(
-		TERMINAL *term)
-		{ /* void */ }
 
 /* ./tinfo/lib_tputs.c */
 
@@ -3952,7 +3872,7 @@ chtype	_nc_retrace_chtype(
 
 #undef _nc_trace_ttymode
 char	*_nc_trace_ttymode(
-		const struct termios *tty)
+		struct termios *tty)
 		{ return(*(char **)0); }
 
 #undef _nc_tracebits
@@ -4108,12 +4028,12 @@ void	_nc_set_buffer(
 
 #undef _nc_init_termtype
 void	_nc_init_termtype(
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ /* void */ }
 
 #undef _nc_read_termtype
 int	_nc_read_termtype(
-		TERMTYPE *ptr,
+		TERMTYPE2 *ptr,
 		char	*buffer,
 		int	limit)
 		{ return(*(int *)0); }
@@ -4121,14 +4041,14 @@ int	_nc_read_termtype(
 #undef _nc_read_file_entry
 int	_nc_read_file_entry(
 		const char *const filename,
-		TERMTYPE *ptr)
+		TERMTYPE2 *ptr)
 		{ return(*(int *)0); }
 
 #undef _nc_read_entry
 int	_nc_read_entry(
 		const char *const name,
 		char	*const filename,
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ return(*(int *)0); }
 
 /* ./tinfo/read_termcap.c */
@@ -4136,7 +4056,7 @@ int	_nc_read_entry(
 #undef _nc_read_termcap_entry
 int	_nc_read_termcap_entry(
 		const char *const tn,
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ return(*(int *)0); }
 
 /* ./tinfo/strings.c */
@@ -4157,7 +4077,7 @@ string_desc *_nc_str_null(
 #undef _nc_str_copy
 string_desc *_nc_str_copy(
 		string_desc *dst,
-		const string_desc *const src)
+		string_desc *src)
 		{ return(*(string_desc **)0); }
 
 #undef _nc_safe_strcat
@@ -4219,7 +4139,7 @@ int	_nc_remove_string(
 
 #undef _nc_trim_sgr0
 char	*_nc_trim_sgr0(
-		TERMTYPE *tp)
+		TERMTYPE2 *tp)
 		{ return(*(char **)0); }
 
 /* ./unctrl.c */
@@ -4281,7 +4201,7 @@ ENTRY	*_nc_copy_entry(
 
 #undef _nc_save_str
 char	*_nc_save_str(
-		const char *string)
+		const char *const string)
 		{ return(*(char **)0); }
 
 #undef _nc_wrap_entry
@@ -4325,7 +4245,7 @@ char	*_nc_tic_expand(
 
 #undef _nc_check_termtype2
 void	(*_nc_check_termtype2)(
-		TERMTYPE *p1,
+		TERMTYPE2 *p1,
 		NCURSES_BOOL p2);
 
 #undef _nc_entry_match
@@ -4383,7 +4303,7 @@ int	_nc_get_token(
 #undef _nc_trans_string
 int	_nc_trans_string(
 		char	*ptr,
-		const char *const last)
+		char	*last)
 		{ return(*(int *)0); }
 
 #undef _nc_push_token
@@ -4420,12 +4340,12 @@ void	_nc_set_writedir(
 
 #undef _nc_write_entry
 void	_nc_write_entry(
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ /* void */ }
 
 #undef _nc_write_object
 int	_nc_write_object(
-		TERMTYPE *tp,
+		TERMTYPE2 *tp,
 		char	*buffer,
 		unsigned *offset,
 		unsigned limit)

@@ -1,3 +1,4 @@
+
 LDNSDIR=	${SRCTOP}/contrib/ldns
 LDNSHOSTDIR=	${SRCTOP}/contrib/ldns-host
 

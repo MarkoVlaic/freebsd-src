@@ -20,10 +20,10 @@
 #endif
 #ifndef YYSTYPE_IS_DECLARED
 #define YYSTYPE_IS_DECLARED 1
-union CalcData 
+typedef union
 {
     char *	cval;
     int		ival;
     double	dval;
-}; typedef union CalcData YYSTYPE;
+} YYSTYPE;
 #endif /* !YYSTYPE_IS_DECLARED */

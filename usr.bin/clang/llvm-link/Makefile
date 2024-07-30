@@ -1,3 +1,4 @@
+
 PROG_CXX=	llvm-link
 
 SRCDIR=		llvm/tools/llvm-link

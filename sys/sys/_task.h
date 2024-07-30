@@ -29,7 +29,6 @@
 #ifndef _SYS__TASK_H_
 #define _SYS__TASK_H_
 
-#include <sys/_callout.h>
 #include <sys/queue.h>
 
 /*
@@ -58,15 +57,6 @@ struct task {
 #define	TASK_NETWORK		0x4
 
 #define	TASK_IS_NET(ta)		((ta)->ta_flags & TASK_NETWORK)
-
-struct taskqueue;
-
-struct timeout_task {
-	struct taskqueue *q;
-	struct task t;
-	struct callout c;
-	int    f;
-};
 
 #ifdef _KERNEL
 

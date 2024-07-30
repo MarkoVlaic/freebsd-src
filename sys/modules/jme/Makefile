@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/jme
 
 KMOD=	if_jme

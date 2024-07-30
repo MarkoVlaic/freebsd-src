@@ -2077,10 +2077,6 @@ struct ibv_wq *mlx5_create_wq(struct ibv_context *context,
 	if (!rwq)
 		return NULL;
 
-	ret = ibv_init_wq(&rwq->wq);
-	if (ret < 0)
-		goto err;
-
 	rwq->wq_sig = rwq_sig_enabled(context);
 	if (rwq->wq_sig)
 		cmd.drv.flags = MLX5_RWQ_FLAG_SIGNATURE;
@@ -2088,8 +2084,12 @@ struct ibv_wq *mlx5_create_wq(struct ibv_context *context,
 	ret = mlx5_calc_rwq_size(ctx, rwq, attr);
 	if (ret < 0) {
 		errno = -ret;
-		goto err_cleanup_wq;
+		goto err;
 	}
+
+	ret = ibv_init_wq(&rwq->wq);
+	if (ret < 0)
+		goto err;
 
 	rwq->buf_size = ret;
 	if (mlx5_alloc_rwq_buf(context, rwq, ret))

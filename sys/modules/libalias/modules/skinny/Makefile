@@ -1,3 +1,4 @@
+
 KMOD=	alias_skinny
 SRCS=	alias_skinny.c
 

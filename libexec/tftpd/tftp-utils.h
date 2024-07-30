@@ -25,6 +25,7 @@
  * SUCH DAMAGE.
  */
 
+#include <sys/cdefs.h>
 /*
  */
 #define	TIMEOUT		5
@@ -99,7 +100,7 @@ struct debugs {
 };
 extern int	debug;
 extern struct debugs debugs[];
-extern unsigned int packetdroppercentage;
+extern int	packetdroppercentage;
 int	debug_find(char *s);
 int	debug_finds(char *s);
 const char *debug_show(int d);

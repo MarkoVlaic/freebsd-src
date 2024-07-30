@@ -97,9 +97,9 @@ main(int argc, char *argv[])
 		if ((n = mixer_get_nmixers()) < 0)
 			errx(1, "no mixers present in the system");
 		for (i = 0; i < n; i++) {
-			(void)mixer_get_path(buf, sizeof(buf), i);
+			(void)snprintf(buf, sizeof(buf), "/dev/mixer%d", i);
 			if ((m = mixer_open(buf)) == NULL)
-				continue;
+				errx(1, "%s: no such mixer", buf);
 			initctls(m);
 			if (sflag)
 				printrecsrc(m, oflag);

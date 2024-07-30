@@ -1,3 +1,4 @@
+
 # We're actually creating a libc_noshared.a that is PIC along side libc.so.*
 # It is used exclusively with libc.so.* - there is no need for any other
 # compile modes.

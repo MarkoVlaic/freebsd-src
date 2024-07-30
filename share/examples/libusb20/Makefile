@@ -1,3 +1,4 @@
+
 PACKAGE=examples
 FILESDIR=${SHAREDIR}/examples/libusb20
 TARGETS=	bulk control

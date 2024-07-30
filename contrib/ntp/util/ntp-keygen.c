@@ -409,11 +409,11 @@ main(
 		iffkey++;
 
 	if (HAVE_OPT( MV_PARAMS )) {
-		mvkey++;			/* DLH are these two swapped? */
+		mvkey++;
 		nkeys = OPT_VALUE_MV_PARAMS;
 	}
 	if (HAVE_OPT( MV_KEYS )) {
-		mvpar++;	/* not used! */	/* DLH are these two swapped? */
+		mvpar++;
 		nkeys = OPT_VALUE_MV_KEYS;
 	}
 
@@ -642,13 +642,12 @@ main(
 		}
 	}
 	if (pkey_gqkey != NULL) {
-		RSA		*rsa;
-		const BIGNUM	*q;
+		RSA	*rsa;
+		const BIGNUM *q;
 
-		rsa = EVP_PKEY_get1_RSA(pkey_gqkey);
+		rsa = EVP_PKEY_get0_RSA(pkey_gqkey);
 		RSA_get0_factors(rsa, NULL, &q);
 		grpkey = BN_bn2hex(q);
-		RSA_free(rsa);
 	}
 
 	/*
@@ -665,19 +664,17 @@ main(
 		    filename);
 		fprintf(stdout, "# %s\n# %s\n", filename,
 		    ctime(&epoch));
-		rsa = EVP_PKEY_get1_RSA(pkey_gqkey);
+		/* XXX: This modifies the private key and should probably use a
+		 * copy of it instead. */
+		rsa = EVP_PKEY_get0_RSA(pkey_gqkey);
 		RSA_set0_factors(rsa, BN_dup(BN_value_one()), BN_dup(BN_value_one()));
 		pkey = EVP_PKEY_new();
 		EVP_PKEY_assign_RSA(pkey, rsa);
 		PEM_write_PKCS8PrivateKey(stdout, pkey, NULL, NULL, 0,
 		    NULL, NULL);
 		fflush(stdout);
-		if (debug) {
+		if (debug)
 			RSA_print_fp(stderr, rsa, 0);
-		}
-		EVP_PKEY_free(pkey);
-		pkey = NULL;
-		RSA_free(rsa);
 	}
 
 	/*
@@ -692,18 +689,14 @@ main(
 		    filename);
 		fprintf(stdout, "# %s\n# %s\n", filename,
 		    ctime(&epoch));
-		rsa = EVP_PKEY_get1_RSA(pkey_gqkey);
+		rsa = EVP_PKEY_get0_RSA(pkey_gqkey);
 		pkey = EVP_PKEY_new();
 		EVP_PKEY_assign_RSA(pkey, rsa);
 		PEM_write_PKCS8PrivateKey(stdout, pkey, cipher, NULL, 0,
 		    NULL, passwd2);
 		fflush(stdout);
-		if (debug) {
+		if (debug)
 			RSA_print_fp(stderr, rsa, 0);
-		}
-		EVP_PKEY_free(pkey);
-		pkey = NULL;
-		RSA_free(rsa);
 	}
 
 	/*
@@ -737,19 +730,17 @@ main(
 		    filename);
 		fprintf(stdout, "# %s\n# %s\n", filename,
 		    ctime(&epoch));
-		dsa = EVP_PKEY_get1_DSA(pkey_iffkey);
+		/* XXX: This modifies the private key and should probably use a
+		 * copy of it instead. */
+		dsa = EVP_PKEY_get0_DSA(pkey_iffkey);
 		DSA_set0_key(dsa, NULL, BN_dup(BN_value_one()));
 		pkey = EVP_PKEY_new();
 		EVP_PKEY_assign_DSA(pkey, dsa);
 		PEM_write_PKCS8PrivateKey(stdout, pkey, NULL, NULL, 0,
 		    NULL, NULL);
 		fflush(stdout);
-		if (debug) {
+		if (debug)
 			DSA_print_fp(stderr, dsa, 0);
-		}
-		EVP_PKEY_free(pkey);
-		pkey = NULL;
-		DSA_free(dsa);
 	}
 
 	/*
@@ -764,18 +755,14 @@ main(
 		    filename);
 		fprintf(stdout, "# %s\n# %s\n", filename,
 		    ctime(&epoch));
-		dsa = EVP_PKEY_get1_DSA(pkey_iffkey);
+		dsa = EVP_PKEY_get0_DSA(pkey_iffkey);
 		pkey = EVP_PKEY_new();
 		EVP_PKEY_assign_DSA(pkey, dsa);
 		PEM_write_PKCS8PrivateKey(stdout, pkey, cipher, NULL, 0,
 		    NULL, passwd2);
 		fflush(stdout);
-		if (debug) {
+		if (debug)
 			DSA_print_fp(stderr, dsa, 0);
-		}
-		EVP_PKEY_free(pkey);
-		pkey = NULL;
-		DSA_free(dsa);
 	}
 
 	/*
@@ -812,9 +799,8 @@ main(
 		PEM_write_PKCS8PrivateKey(stdout, pkey, NULL, NULL, 0,
 		    NULL, NULL);
 		fflush(stdout);
-		if (debug) {
+		if (debug)
 			DSA_print_fp(stderr, EVP_PKEY_get0_DSA(pkey), 0);
-		}
 	}
 
 	/*
@@ -831,9 +817,8 @@ main(
 		PEM_write_PKCS8PrivateKey(stdout, pkey, cipher, NULL, 0,
 		    NULL, passwd2);
 		fflush(stdout);
-		if (debug) {
+		if (debug)
 			DSA_print_fp(stderr, EVP_PKEY_get0_DSA(pkey), 0);
-		}
 	}
 
 	/*
@@ -845,7 +830,7 @@ main(
 		fprintf(stderr,
 		    "Invalid digest/signature combination %s\n",
 		    scheme);
-		exit (-1);
+			exit (-1);
 	}
 	x509(pkey_sign, ectx, grpkey, exten, certname);
 #endif	/* AUTOKEY */

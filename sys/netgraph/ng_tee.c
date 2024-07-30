@@ -60,12 +60,6 @@
 #include <netgraph/ng_parse.h>
 #include <netgraph/ng_tee.h>
 
-#ifdef NG_SEPARATE_MALLOC
-static MALLOC_DEFINE(M_NETGRAPH_TEE, "netgraph_tee", "netgraph tee node");
-#else
-#define M_NETGRAPH_TEE M_NETGRAPH
-#endif
-
 /* Per hook info */
 struct hookinfo {
 	hook_p			hook;
@@ -157,7 +151,7 @@ ng_tee_constructor(node_p node)
 {
 	sc_p privdata;
 
-	privdata = malloc(sizeof(*privdata), M_NETGRAPH_TEE, M_WAITOK | M_ZERO);
+	privdata = malloc(sizeof(*privdata), M_NETGRAPH, M_WAITOK | M_ZERO);
 
 	NG_NODE_SET_PRIVATE(node, privdata);
 	return (0);
@@ -358,7 +352,7 @@ ng_tee_shutdown(node_p node)
 	const sc_p privdata = NG_NODE_PRIVATE(node);
 
 	NG_NODE_SET_PRIVATE(node, NULL);
-	free(privdata, M_NETGRAPH_TEE);
+	free(privdata, M_NETGRAPH);
 	NG_NODE_UNREF(node);
 	return (0);
 }

@@ -218,14 +218,14 @@ authreadkeys(
 		keytype = keytype_from_text(token, NULL);
 		if (keytype == 0) {
 			log_maybe(NULL,
-				  "authreadkeys: unsupported type %s for key %d",
-				  token, keyno);
+				  "authreadkeys: invalid type for key %d",
+				  keyno);
 #  ifdef ENABLE_CMAC
 		} else if (NID_cmac != keytype &&
 				EVP_get_digestbynid(keytype) == NULL) {
 			log_maybe(NULL,
-				  "authreadkeys: no algorithm for %s key %d",
-				  token, keyno);
+				  "authreadkeys: no algorithm for key %d",
+				  keyno);
 			keytype = 0;
 #  endif /* ENABLE_CMAC */
 		}
@@ -270,13 +270,11 @@ authreadkeys(
 					  "authreadkeys: passwd has bad char for key %d",
 					  keyno);
 				break;
-#ifdef DEBUG
 			default:
 				log_maybe(&nerr,
-					  "authreadkeys: unexpected errno %d for key %d: %m",
+					  "authreadkeys: unknown errno %d for key %d",
 					  errno, keyno);
 				break;
-#endif
 			}
 			continue;
 		}

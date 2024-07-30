@@ -1,3 +1,4 @@
+
 SUBDIR=	koi2alt koi2855
 
 PACKAGE=lp

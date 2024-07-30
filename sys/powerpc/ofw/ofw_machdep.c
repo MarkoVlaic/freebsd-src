@@ -595,10 +595,10 @@ OF_initial_setup(void *fdt_ptr, void *junk, int (*openfirm)(void *))
 	fdt = fdt_ptr;
 }
 
-bool
+boolean_t
 OF_bootstrap(void)
 {
-	bool status = false;
+	boolean_t status = FALSE;
 	int err = 0;
 
 #ifdef AIM
@@ -613,8 +613,8 @@ OF_bootstrap(void)
 			#endif
 		}
 
-		if (!status)
-			return (status);
+		if (status != TRUE)
+			return status;
 
 		err = OF_init(openfirmware);
 	} else
@@ -629,8 +629,8 @@ OF_bootstrap(void)
 #endif
 
 		status = OF_install(OFW_FDT, 0);
-		if (!status)
-			return (status);
+		if (status != TRUE)
+			return status;
 
 #ifdef AIM /* AIM-only for now -- Book-E does this remapping in early init */
 		/* Get the FDT size for mapping if we can */
@@ -668,15 +668,15 @@ OF_bootstrap(void)
 	 */
 	else {
 		status = OF_install(OFW_FDT, 0);
-		if (!status)
-			return (status);
+		if (status != TRUE)
+			return status;
 		err = OF_init(&fdt_static_dtb);
 	}
 	#endif
 
 	if (err != 0) {
 		OF_install(NULL, 0);
-		status = false;
+		status = FALSE;
 	}
 
 	return (status);

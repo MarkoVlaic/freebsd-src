@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 TESTSDIR=	${TESTSBASE}/sys/netpfil/common
@@ -12,9 +13,8 @@ ATF_TESTS_SH+=	\
 		fragments \
 		forward
 
-# Allow tests to run in parallel in their own jails
-TEST_METADATA+= execenv="jail"
-TEST_METADATA+= execenv_jail_params="vnet allow.raw_sockets"
+# Tests reuse jail names and so cannot run in parallel.
+TEST_METADATA+=	is_exclusive=true
 
 ${PACKAGE}FILES+=	\
 		utils.subr \

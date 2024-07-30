@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 SUBDIR.yes=		test

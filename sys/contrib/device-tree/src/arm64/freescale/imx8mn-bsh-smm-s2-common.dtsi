@@ -7,7 +7,6 @@
 /dts-v1/;
 
 #include "imx8mn.dtsi"
-#include "imx8mn-bsh-smm-s2-display.dtsi"
 
 / {
 	chosen {
@@ -93,7 +92,7 @@
 		rohm,reset-snvs-powered;
 
 		#clock-cells = <0>;
-		clocks = <&osc_32k>;
+		clocks = <&osc_32k 0>;
 		clock-output-names = "clk-32k-out";
 
 		regulators {

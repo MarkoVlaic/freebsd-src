@@ -1,3 +1,4 @@
+
 PACKAGE=	periodic
 
 CONFS=	periodic.conf

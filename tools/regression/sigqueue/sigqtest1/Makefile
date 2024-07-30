@@ -1,3 +1,4 @@
+
 PROG=sigqtest1
 MAN=
 DEBUG_FLAGS=-g

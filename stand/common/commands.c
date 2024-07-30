@@ -229,7 +229,7 @@ command_commandlist(int argc __unused, char *argv[] __unused)
 {
 	struct bootblk_command	**cmdp;
 	int	res;
-	char	name[23];
+	char	name[20];
 
 	res = 0;
 	pager_open();
@@ -238,10 +238,9 @@ command_commandlist(int argc __unused, char *argv[] __unused)
 		if (res)
 			break;
 		if ((*cmdp)->c_name != NULL && (*cmdp)->c_desc != NULL) {
-			snprintf(name, sizeof(name), "  %-20s",
+			snprintf(name, sizeof(name), "  %-15s  ",
 			    (*cmdp)->c_name);
 			pager_output(name);
-			pager_output("  ");
 			pager_output((*cmdp)->c_desc);
 			res = pager_output("\n");
 		}

@@ -1,3 +1,4 @@
+
 PROG=	killall
 LIBADD=	jail
 

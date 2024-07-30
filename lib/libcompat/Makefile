@@ -1,3 +1,4 @@
+
 PACKAGE=lib${LIB}
 LIB=	compat
 CFLAGS+=-I${SRCTOP}/lib/libc/locale
@@ -5,7 +6,12 @@ NO_PIC=
 
 WARNS?=	0
 
-.PATH:	${.CURDIR}/4.3 ${.CURDIR}/4.4
+.PATH:	${.CURDIR}/4.1 ${.CURDIR}/4.3 ${.CURDIR}/4.4
+
+# compat 4.1 sources
+SRCS+=	ftime.c
+
+MAN+=	4.1/ftime.3
 
 # compat 4.3 sources
 SRCS+=	re_comp.c rexec.c

@@ -1,3 +1,4 @@
+
 .include <bsd.own.mk>
 
 MOD=    lm75

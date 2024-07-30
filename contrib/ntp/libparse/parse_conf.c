@@ -148,7 +148,7 @@ clockformat_t *clockformats[] =
 unsigned short nformats = sizeof(clockformats) / sizeof(clockformats[0]) - 1;
 
 #else /* not (REFCLOCK && CLOCK_PARSE) */
-NONEMPTY_TRANSLATION_UNIT
+int parse_conf_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE) */
 
 /*

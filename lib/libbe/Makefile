@@ -1,3 +1,4 @@
+
 SHLIBDIR?=	/lib
 
 .include <src.opts.mk>
@@ -60,7 +61,7 @@ CFLAGS+= -I${SRCTOP}/sys/contrib/openzfs/lib/libzfs
 CFLAGS+= -I${SRCTOP}/sys
 CFLAGS+= -I${SRCTOP}/cddl/compat/opensolaris/include
 CFLAGS+= -include ${SRCTOP}/sys/contrib/openzfs/include/os/freebsd/spl/sys/ccompile.h
-CFLAGS+= -DHAVE_ISSETUGID -DHAVE_STRLCAT -DHAVE_STRLCPY
+CFLAGS+= -DHAVE_ISSETUGID
 CFLAGS.be.c=		-Wno-cast-qual
 CFLAGS.be_access.c=	-Wno-cast-qual
 CFLAGS.be_error.c=	-Wno-cast-qual

@@ -71,13 +71,13 @@ static struct errmsg {
 
 #define DROPPACKET(s)							\
 	if (packetdroppercentage != 0 &&				\
-	    arc4random()%100 < packetdroppercentage) {			\
+	    random()%100 < packetdroppercentage) {			\
 		tftp_log(LOG_DEBUG, "Artificial packet drop in %s", s);	\
 		return;							\
 	}
 #define DROPPACKETn(s,n)						\
 	if (packetdroppercentage != 0 &&				\
-	    arc4random()%100 < packetdroppercentage) {			\
+	    random()%100 < packetdroppercentage) {			\
 		tftp_log(LOG_DEBUG, "Artificial packet drop in %s", s);	\
 		return (n);						\
 	}
@@ -156,8 +156,10 @@ send_error(int peer, int error)
 		pe->e_msg = strerror(error - 100);
 		tp->th_code = EUNDEF;   /* set 'undef' errorcode */
 	}
-	snprintf(tp->th_msg, MAXPKTSIZE - 4, "%s%n", pe->e_msg, &length);
-	length += 5; /* header and terminator */
+	strcpy(tp->th_msg, pe->e_msg);
+	length = strlen(pe->e_msg);
+	tp->th_msg[length] = '\0';
+	length += 5;
 
 	if (debug & DEBUG_PACKETS)
 		tftp_log(LOG_DEBUG, "Sending ERROR %d: %s", error, tp->th_msg);
@@ -328,6 +330,7 @@ send_ack(int fp, uint16_t block)
 	DROPPACKETn("send_ack", 0);
 
 	tp = (struct tftphdr *)buf;
+	size = sizeof(buf) - 2;
 	tp->th_opcode = htons((u_short)ACK);
 	tp->th_block = htons((u_short)block);
 	size = 4;

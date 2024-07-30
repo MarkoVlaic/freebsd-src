@@ -1,3 +1,4 @@
+
 MAN=
 
 .include <src.opts.mk>
@@ -5,7 +6,6 @@ MAN=
 .PATH:	${SRCTOP}/contrib/ntp/ntpd \
 	${.OBJDIR}
 
-PACKAGE=	ntp
 DIRS=	ETC_NTP
 ETC_NTP=	/etc/ntp
 ETC_NTP_MODE=	0700
@@ -45,10 +45,12 @@ CFLAGS+= -I${SRCTOP}/contrib/ntp/ntpd \
 	-I${.CURDIR:H} \
 	-I${.CURDIR}
 
-LIBADD=	parse ntp m md opts pthread
+LIBADD=	parse ntp m opts pthread
 
 .if ${MK_OPENSSL} != "no"
 LIBADD+=	crypto
+.else
+LIBADD+=	md
 .endif
 
 CLEANFILES+= .version version.c

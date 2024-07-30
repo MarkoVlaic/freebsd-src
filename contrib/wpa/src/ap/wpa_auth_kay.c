@@ -138,6 +138,7 @@ static unsigned int conf_offset_val(enum confidentiality_offset co)
 	switch (co) {
 	case CONFIDENTIALITY_OFFSET_30:
 		return 30;
+		break;
 	case CONFIDENTIALITY_OFFSET_50:
 		return 50;
 	default:
@@ -327,11 +328,8 @@ int ieee802_1x_alloc_kay_sm_hapd(struct hostapd_data *hapd,
 	res = ieee802_1x_kay_init(kay_ctx, policy,
 				  hapd->conf->macsec_replay_protect,
 				  hapd->conf->macsec_replay_window,
-				  hapd->conf->macsec_offload,
 				  hapd->conf->macsec_port,
-				  hapd->conf->mka_priority,
-				  hapd->conf->macsec_csindex,
-				  hapd->conf->iface,
+				  hapd->conf->mka_priority, hapd->conf->iface,
 				  hapd->own_addr);
 	/* ieee802_1x_kay_init() frees kay_ctx on failure */
 	if (!res)
@@ -350,6 +348,33 @@ void ieee802_1x_dealloc_kay_sm_hapd(struct hostapd_data *hapd)
 
 	ieee802_1x_kay_deinit(hapd->kay);
 	hapd->kay = NULL;
+}
+
+
+static int ieee802_1x_auth_get_session_id(struct hostapd_data *hapd,
+					  struct sta_info *sta, u8 *sid,
+					  size_t *len)
+{
+	const u8 *session_id;
+	size_t id_len, need_len;
+
+	session_id = ieee802_1x_get_session_id(sta->eapol_sm, &id_len);
+	if (!session_id) {
+		wpa_printf(MSG_DEBUG,
+			   "MACsec: Failed to get SessionID from EAPOL state machines");
+		return -1;
+	}
+
+	need_len = 1 + 2 * 32 /* random size */;
+	if (need_len > id_len) {
+		wpa_printf(MSG_DEBUG, "EAP Session-Id not long enough");
+		return -1;
+	}
+
+	os_memcpy(sid, session_id, need_len);
+	*len = need_len;
+
+	return 0;
 }
 
 
@@ -384,8 +409,8 @@ static int ieee802_1x_auth_get_msk(struct hostapd_data *hapd,
 void * ieee802_1x_notify_create_actor_hapd(struct hostapd_data *hapd,
 					   struct sta_info *sta)
 {
-	const u8 *sid;
-	size_t sid_len;
+	u8 *sid;
+	size_t sid_len = 128;
 	struct mka_key_name *ckn;
 	struct mka_key *cak;
 	struct mka_key *msk;
@@ -399,9 +424,10 @@ void * ieee802_1x_notify_create_actor_hapd(struct hostapd_data *hapd,
 		   MACSTR, MAC2STR(sta->addr));
 
 	msk = os_zalloc(sizeof(*msk));
+	sid = os_zalloc(sid_len);
 	ckn = os_zalloc(sizeof(*ckn));
 	cak = os_zalloc(sizeof(*cak));
-	if (!msk || !ckn || !cak)
+	if (!msk || !sid || !ckn || !cak)
 		goto fail;
 
 	msk->len = DEFAULT_KEY_LEN;
@@ -410,8 +436,8 @@ void * ieee802_1x_notify_create_actor_hapd(struct hostapd_data *hapd,
 		goto fail;
 	}
 
-	sid = ieee802_1x_get_session_id(sta->eapol_sm, &sid_len);
-	if (!sid) {
+	if (ieee802_1x_auth_get_session_id(hapd, sta, sid, &sid_len))
+	{
 		wpa_printf(MSG_ERROR,
 			   "IEEE 802.1X: Could not get EAP Session Id");
 		goto fail;
@@ -443,6 +469,7 @@ void * ieee802_1x_notify_create_actor_hapd(struct hostapd_data *hapd,
 
 fail:
 	bin_clear_free(msk, sizeof(*msk));
+	os_free(sid);
 	os_free(ckn);
 	bin_clear_free(cak, sizeof(*cak));
 

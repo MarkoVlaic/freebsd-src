@@ -623,11 +623,8 @@ bool AArch64RegisterBankInfo::isLoadFromFPType(const MachineInstr &MI) const {
     EltTy = GV->getValueType();
     // Look at the first element of the struct to determine the type we are
     // loading
-    while (StructType *StructEltTy = dyn_cast<StructType>(EltTy)) {
-      if (StructEltTy->getNumElements() == 0)
-        break;
+    while (StructType *StructEltTy = dyn_cast<StructType>(EltTy))
       EltTy = StructEltTy->getTypeAtIndex(0U);
-    }
     // Look at the first element of the array to determine its type
     if (isa<ArrayType>(EltTy))
       EltTy = EltTy->getArrayElementType();

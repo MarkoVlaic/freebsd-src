@@ -29,8 +29,6 @@
 #define GAS_QUERY_WAIT_TIME_INITIAL 1000
 #define GAS_QUERY_WAIT_TIME_COMEBACK 150
 
-#define GAS_QUERY_MAX_COMEBACK_DELAY 60000
-
 /**
  * struct gas_query_pending - Pending GAS query
  */
@@ -185,7 +183,7 @@ gas_query_get_pending(struct gas_query_ap *gas, const u8 *addr, u8 dialog_token)
 {
 	struct gas_query_pending *q;
 	dl_list_for_each(q, &gas->pending, struct gas_query_pending, list) {
-		if (ether_addr_equal(q->addr, addr) &&
+		if (os_memcmp(q->addr, addr, ETH_ALEN) == 0 &&
 		    q->dialog_token == dialog_token)
 			return q;
 	}
@@ -223,7 +221,7 @@ void gas_query_ap_tx_status(struct gas_query_ap *gas, const u8 *dst,
 	wpa_printf(MSG_DEBUG, "GAS: TX status: dst=" MACSTR
 		   " ok=%d query=%p dialog_token=%u dur=%d ms",
 		   MAC2STR(dst), ok, query, query->dialog_token, dur);
-	if (!ether_addr_equal(dst, query->addr)) {
+	if (os_memcmp(dst, query->addr, ETH_ALEN) != 0) {
 		wpa_printf(MSG_DEBUG, "GAS: TX status for unexpected destination");
 		return;
 	}
@@ -547,8 +545,6 @@ int gas_query_ap_rx(struct gas_query_ap *gas, const u8 *sa, u8 categ,
 	if (pos + 2 > data + len)
 		return 0;
 	comeback_delay = WPA_GET_LE16(pos);
-	if (comeback_delay > GAS_QUERY_MAX_COMEBACK_DELAY)
-		comeback_delay = GAS_QUERY_MAX_COMEBACK_DELAY;
 	pos += 2;
 
 	/* Advertisement Protocol element */
@@ -618,7 +614,7 @@ static int gas_query_dialog_token_available(struct gas_query_ap *gas,
 {
 	struct gas_query_pending *q;
 	dl_list_for_each(q, &gas->pending, struct gas_query_pending, list) {
-		if (ether_addr_equal(dst, q->addr) &&
+		if (os_memcmp(dst, q->addr, ETH_ALEN) == 0 &&
 		    dialog_token == q->dialog_token)
 			return 0;
 	}

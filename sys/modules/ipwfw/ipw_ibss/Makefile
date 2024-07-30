@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/contrib/dev/ipw
 
 KMOD=	ipw_ibss

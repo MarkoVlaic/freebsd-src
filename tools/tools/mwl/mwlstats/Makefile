@@ -1,3 +1,4 @@
+
 PROG=	mwlstats
 BINDIR=	/usr/local/bin
 MAN=

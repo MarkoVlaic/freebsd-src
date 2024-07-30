@@ -41,13 +41,6 @@ nvmf_tcp_validate_pdu_header(const struct nvme_tcp_common_pdu_hdr *ch,
 	uint8_t digest_flags, valid_flags;
 
 	plen = le32toh(ch->plen);
-	full_hlen = ch->hlen;
-	if ((ch->flags & NVME_TCP_CH_FLAGS_HDGSTF) != 0)
-		full_hlen += sizeof(uint32_t);
-	if (plen == full_hlen)
-		data_len = 0;
-	else
-		data_len = plen - ch->pdo;
 
 	/*
 	 * Errors must be reported for the lowest incorrect field
@@ -57,7 +50,7 @@ nvmf_tcp_validate_pdu_header(const struct nvme_tcp_common_pdu_hdr *ch,
 	/* Validate pdu_type. */
 
 	/* Controllers only receive PDUs with a PDU direction of 0. */
-	if (controller != ((ch->pdu_type & 0x01) == 0)) {
+	if (controller != (ch->pdu_type & 0x01) == 0) {
 		printf("NVMe/TCP: Invalid PDU type %u\n", ch->pdu_type);
 		*fes = NVME_TCP_TERM_REQ_FES_INVALID_HEADER_FIELD;
 		*fei = offsetof(struct nvme_tcp_common_pdu_hdr, pdu_type);
@@ -132,15 +125,11 @@ nvmf_tcp_validate_pdu_header(const struct nvme_tcp_common_pdu_hdr *ch,
 		return (EBADMSG);
 	}
 
-	/*
-	 * Verify that digests are present iff enabled.  Note that the
-	 * data digest will not be present if there is no data
-	 * payload.
-	 */
+	/* Verify that digests are present iff enabled. */
 	digest_flags = 0;
 	if (header_digests)
 		digest_flags |= NVME_TCP_CH_FLAGS_HDGSTF;
-	if (data_digests && data_len != 0)
+	if (data_digests)
 		digest_flags |= NVME_TCP_CH_FLAGS_DDGSTF;
 	if ((digest_flags & valid_flags) !=
 	    (ch->flags & (NVME_TCP_CH_FLAGS_HDGSTF |
@@ -195,6 +184,9 @@ nvmf_tcp_validate_pdu_header(const struct nvme_tcp_common_pdu_hdr *ch,
 	}
 
 	/* Validate pdo. */
+	full_hlen = ch->hlen;
+	if ((ch->flags & NVME_TCP_CH_FLAGS_HDGSTF) != 0)
+		full_hlen += sizeof(uint32_t);
 	switch (ch->pdu_type) {
 	default:
 		__assert_unreachable();
@@ -215,7 +207,7 @@ nvmf_tcp_validate_pdu_header(const struct nvme_tcp_common_pdu_hdr *ch,
 	case NVME_TCP_PDU_TYPE_H2C_DATA:
 	case NVME_TCP_PDU_TYPE_C2H_DATA:
 		/* Permit PDO of 0 if there is no data. */
-		if (data_len == 0 && ch->pdo == 0)
+		if (full_hlen == plen && ch->pdo == 0)
 			break;
 
 		if (ch->pdo < full_hlen || ch->pdo > plen ||
@@ -237,6 +229,10 @@ nvmf_tcp_validate_pdu_header(const struct nvme_tcp_common_pdu_hdr *ch,
 		return (EBADMSG);
 	}
 
+	if (plen == full_hlen)
+		data_len = 0;
+	else
+		data_len = plen - ch->pdo;
 	switch (ch->pdu_type) {
 	default:
 		__assert_unreachable();

@@ -1,3 +1,4 @@
+
 PROG=	pstat
 LINKS=	${BINDIR}/pstat ${BINDIR}/swapinfo
 MAN=	pstat.8

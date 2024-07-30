@@ -66,7 +66,7 @@ DISTCLEANFILES = .gcc-warning
 BUILT_SOURCES =				\
 	.gcc-warning			\
 	libtool				\
-	$(srcdir)/html/.datecheck	\
+	html/.datecheck			\
 	$(srcdir)/COPYRIGHT		\
 	$(srcdir)/.checkChangeLog	\
 	$(NULL)
@@ -83,7 +83,7 @@ BUILT_SOURCES =				\
 	@sleep 1
 	@touch $@
 
-$(srcdir)/html/.datecheck: $(srcdir)/html/*.html
+html/.datecheck: FRC.html
 	cd $(srcdir)/html && \
 	../scripts/build/checkHtmlFileDates
 
@@ -128,7 +128,7 @@ uninstall-local:
 CommitLog: FRC.CommitLog
 	cd $(srcdir)					\
 	&& $(PATH_TEST) -e CommitLog			\
-		-a .bk/SCCS/ChangeSet,s -ot CommitLog	\
+		-a SCCS/s.ChangeSet -ot CommitLog	\
 	|| scripts/build/genCommitLog
 
 # HMS: The following seems to be a work-in-progress...

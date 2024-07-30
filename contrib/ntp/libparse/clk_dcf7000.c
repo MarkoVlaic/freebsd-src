@@ -176,7 +176,7 @@ inp_dcf7000(
 }
 
 #else /* not (REFCLOCK && CLOCK_PARSE && CLOCK_DCF7000) */
-NONEMPTY_TRANSLATION_UNIT
+int clk_dcf7000_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE && CLOCK_DCF7000) */
 
 /*

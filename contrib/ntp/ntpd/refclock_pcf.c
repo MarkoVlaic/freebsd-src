@@ -223,5 +223,5 @@ pcf_poll(
 	refclock_receive(peer);
 }
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_pcf_bs;
 #endif /* REFCLOCK */

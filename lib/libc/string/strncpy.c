@@ -34,8 +34,6 @@
 
 #include <string.h>
 
-#undef strncpy	/* FORTIFY_SOURCE */
-
 /*
  * Copy src to dst, truncating or null-padding to always copy n bytes.
  * Return dst.

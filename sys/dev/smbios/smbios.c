@@ -145,7 +145,7 @@ smbios_identify (driver_t *driver, device_t parent)
 			}
 		}
 
-		child = BUS_ADD_CHILD(parent, 5, "smbios", DEVICE_UNIT_ANY);
+		child = BUS_ADD_CHILD(parent, 5, "smbios", -1);
 		device_set_driver(child, driver);
 
 		/* smuggle the phys addr into probe and attach */

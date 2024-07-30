@@ -1,3 +1,4 @@
+
 PACKAGE=runtime
 PROG=	ldconfig
 SRCS=	elfhints.c ldconfig.c

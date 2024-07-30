@@ -1,3 +1,4 @@
+
 PROG_CXX=	llvm-mc
 MAN=
 

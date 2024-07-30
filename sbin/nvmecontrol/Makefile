@@ -26,7 +26,6 @@ SRCS+=	reset.c
 SRCS+=	resv.c
 SRCS+=	sanitize.c
 SRCS+=  selftest.c
-SRCS+=	telemetry.c
 CFLAGS+= -I${SRCTOP}/lib/libnvmf
 MAN=	nvmecontrol.8
 LDFLAGS+= -rdynamic

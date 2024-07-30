@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/alc
 
 KMOD=	if_alc

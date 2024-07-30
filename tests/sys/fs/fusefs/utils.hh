@@ -77,7 +77,7 @@ class FuseTest : public ::testing::Test {
 
 	public:
 	int m_maxbcachebuf;
-	unsigned long m_maxphys;
+	int m_maxphys;
 
 	FuseTest():
 		m_maxreadahead(0),

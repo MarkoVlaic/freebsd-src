@@ -335,7 +335,6 @@ pbr_common_body()
 		atf_skip "This test requires carp"
 	fi
 	pfsynct_init
-	vnet_init_bridge
 
 	bridge0=$(vnet_mkbridge)
 	bridge1=$(vnet_mkbridge)

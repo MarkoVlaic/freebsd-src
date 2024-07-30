@@ -5,7 +5,7 @@ SANITIZER_SHAREDIR=		${CLANGDIR}/share
 
 # armv[67] is a bit special since we allow a soft-floating version via
 # CPUTYPE matching *soft*. This variant may not actually work though.
-.if ${MACHINE_CPUARCH} == "arm" && \
+.if ${MACHINE_ARCH:Marmv[67]*} != "" && \
     (!defined(CPUTYPE) || ${CPUTYPE:M*soft*} == "")
 CRTARCH?=	armhf
 .else

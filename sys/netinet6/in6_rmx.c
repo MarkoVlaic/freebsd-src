@@ -67,6 +67,7 @@
 #include <sys/lock.h>
 #include <sys/queue.h>
 #include <sys/socket.h>
+#include <sys/socketvar.h>
 #include <sys/mbuf.h>
 #include <sys/rwlock.h>
 #include <sys/syslog.h>

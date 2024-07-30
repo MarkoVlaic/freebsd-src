@@ -1,3 +1,4 @@
+
 CONTRIB=${SRCTOP}/contrib/bsnmp
 .PATH: ${CONTRIB}/tests
 

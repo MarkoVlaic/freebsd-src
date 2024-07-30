@@ -45,8 +45,6 @@
 
 #include "local.h"
 
-#undef snprintf	/* _FORTIFY_SOURCE */
-
 int
 snprintf(char * __restrict str, size_t n, char const * __restrict fmt, ...)
 {

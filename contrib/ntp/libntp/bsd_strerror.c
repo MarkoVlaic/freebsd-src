@@ -45,5 +45,5 @@ strerror(
 	return ebuf;
 }
 #else
-NONEMPTY_TRANSLATION_UNIT
+int strerror_bs;
 #endif

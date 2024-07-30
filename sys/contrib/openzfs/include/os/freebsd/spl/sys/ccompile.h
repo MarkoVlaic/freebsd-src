@@ -138,8 +138,7 @@ typedef int enum_t;
 #define	readdir64 readdir
 #define	dirent64 dirent
 #endif
-// Deprecated. Use P2ALIGN_TYPED instead.
-// #define	P2ALIGN(x, align)		((x) & -(align))
+#define	P2ALIGN(x, align)		((x) & -(align))
 #define	P2CROSS(x, y, align)	(((x) ^ (y)) > (align) - 1)
 #define	P2ROUNDUP(x, align)		((((x) - 1) | ((align) - 1)) + 1)
 #define	P2PHASE(x, align)		((x) & ((align) - 1))

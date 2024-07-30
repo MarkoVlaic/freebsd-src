@@ -122,8 +122,7 @@ int
 main(void)
 {
 	pid_t wpid, spid;
-	time_t start;
-	int e, fd, status;
+	int e, fd, i, status;
 
 	if ((wpid = fork()) == 0)
 		r1();
@@ -133,8 +132,7 @@ main(void)
 	setproctitle("main");
 	e = 0;
 
-	start = time(NULL);
-	while (time(NULL) - start < 60) {
+	for (i = 0; i < 800000; i++) {
 		if ((fd = open(logfile, O_RDWR | O_CREAT | O_TRUNC, 0644)) == -1)
 			warn("creat(%s)", logfile);
 		close(fd);

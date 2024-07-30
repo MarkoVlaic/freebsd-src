@@ -1,3 +1,4 @@
+
 .PATH:	${.CURDIR}/../kern
 
 SRCS+=		kern

@@ -35,10 +35,9 @@ __RCSID("$NetBSD: wcscat.c,v 1.1 2000/12/23 23:14:36 itojun Exp $");
 #endif /* LIBC_SCCS and not lint */
 #endif
 #include <wchar.h>
-#include <ssp/ssp.h>
 
 wchar_t *
-__ssp_real(wcscat)(wchar_t * __restrict s1, const wchar_t * __restrict s2)
+wcscat(wchar_t * __restrict s1, const wchar_t * __restrict s2)
 {
 	wchar_t *cp;
 

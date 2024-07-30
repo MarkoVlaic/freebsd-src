@@ -45,7 +45,6 @@ static void db_pprint_type(db_addr_t addr, struct ctf_type_v3 *type,
 
 static u_int max_depth = DB_PPRINT_DEFAULT_DEPTH;
 static struct db_ctf_sym_data sym_data;
-static const char *asteriskstr = "*****";
 
 /*
  * Pretty-prints a CTF_INT type.
@@ -118,7 +117,7 @@ db_pprint_struct(db_addr_t addr, struct ctf_type_v3 *type, u_int depth)
 				return;
 			}
 			mtype = db_ctf_typeid_to_type(&sym_data, mp->ctm_type);
-			maddr = addr + (mp->ctm_offset / NBBY);
+			maddr = addr + mp->ctm_offset;
 			mname = db_ctf_stroff_to_str(&sym_data, mp->ctm_name);
 			db_indent = depth;
 			if (mname != NULL) {
@@ -141,7 +140,7 @@ db_pprint_struct(db_addr_t addr, struct ctf_type_v3 *type, u_int depth)
 				return;
 			}
 			mtype = db_ctf_typeid_to_type(&sym_data, mp->ctlm_type);
-			maddr = addr + (CTF_LMEM_OFFSET(mp) / NBBY);
+			maddr = addr + CTF_LMEM_OFFSET(mp);
 			mname = db_ctf_stroff_to_str(&sym_data, mp->ctlm_name);
 			db_indent = depth;
 			if (mname != NULL) {
@@ -249,14 +248,9 @@ db_pprint_ptr(db_addr_t addr, struct ctf_type_v3 *type, u_int depth)
 	const char *qual = "";
 	const char *name;
 	db_addr_t val;
-	uint32_t tid;
 	u_int kind;
-	int ptrcnt;
 
-	ptrcnt = 1;
-	tid = type->ctt_type;
-again:
-	ref_type = db_ctf_typeid_to_type(&sym_data, tid);
+	ref_type = db_ctf_typeid_to_type(&sym_data, type->ctt_type);
 	kind = CTF_V3_INFO_KIND(ref_type->ctt_info);
 	switch (kind) {
 	case CTF_K_STRUCT:
@@ -264,41 +258,25 @@ again:
 		break;
 	case CTF_K_VOLATILE:
 		qual = "volatile ";
-		tid = ref_type->ctt_type;
-		goto again;
+		break;
 	case CTF_K_CONST:
 		qual = "const ";
-		tid = ref_type->ctt_type;
-		goto again;
-	case CTF_K_RESTRICT:
-		qual = "restrict ";
-		tid = ref_type->ctt_type;
-		goto again;
-	case CTF_K_POINTER:
-		ptrcnt++;
-		tid = ref_type->ctt_type;
-		goto again;
-	case CTF_K_TYPEDEF:
-		tid = ref_type->ctt_type;
-		goto again;
+		break;
 	default:
 		break;
 	}
 
-	ptrcnt = min(ptrcnt, strlen(asteriskstr));
-	val = (addr != 0) ? db_get_value(addr, sizeof(db_addr_t), false) : 0;
-	if (depth < max_depth && (val != 0)) {
+	val = db_get_value(addr, sizeof(db_addr_t), false);
+	if (depth < max_depth) {
 		/* Print contents of memory pointed to by this pointer. */
-		db_pprint_type(val, ref_type, depth + 1);
+		db_pprint_type(addr, ref_type, depth + 1);
 	} else {
 		name = db_ctf_stroff_to_str(&sym_data, ref_type->ctt_name);
 		db_indent = depth;
 		if (name != NULL)
-			db_printf("(%s%s %.*s) 0x%lx", qual, name, ptrcnt,
-			    asteriskstr, (long)val);
+			db_printf("(%s%s *) 0x%lx", qual, name, (long)val);
 		else
-			db_printf("(%s %.*s) 0x%lx", qual, ptrcnt, asteriskstr,
-			    (long)val);
+			db_printf("(%s *) 0x%lx", qual, (long)val);
 	}
 }
 

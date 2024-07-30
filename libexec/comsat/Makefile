@@ -1,3 +1,4 @@
+
 PROG=	comsat
 MAN=	comsat.8
 

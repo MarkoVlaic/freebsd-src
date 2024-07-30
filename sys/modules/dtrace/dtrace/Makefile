@@ -1,3 +1,4 @@
+
 SYSDIR?=	${SRCTOP}/sys
 
 ARCHDIR=	${MACHINE_CPUARCH}
@@ -12,7 +13,6 @@ KMOD=		dtrace
 SRCS=		dtrace.c \
 		dtrace_xoroshiro128_plus.c \
 		dtrace_asm.S \
-		dtrace_isa.c \
 		dtrace_subr.c
 
 .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "i386"

@@ -1,3 +1,4 @@
+
 CONFGROUPS=	CONFTTYS
 PACKAGE=runtime
 PROG=	init

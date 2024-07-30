@@ -12,7 +12,6 @@
 #endif /* __linux__ */
 
 #include "common.h"
-#include "crypto/crypto.h"
 #include "fst/fst.h"
 #include "wpa_supplicant_i.h"
 #include "driver_i.h"
@@ -403,7 +402,6 @@ out:
 #endif /* CONFIG_MATCH_IFACE */
 	os_free(params.pid_file);
 
-	crypto_unload();
 	os_program_deinit();
 
 	return exitcode;

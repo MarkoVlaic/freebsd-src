@@ -1,3 +1,4 @@
+
 .PATH:  ${SRCTOP}/sys/dev/iwn
 
 KMOD    = if_iwn

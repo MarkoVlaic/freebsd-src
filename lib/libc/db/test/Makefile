@@ -1,3 +1,4 @@
+
 PROG=	dbtest
 OBJS=	dbtest.o strerror.o
 

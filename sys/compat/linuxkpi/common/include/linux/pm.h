@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2020-2024 The FreeBSD Foundation
+ * Copyright (c) 2020 The FreeBSD Foundation
  *
  * This software was developed by Björn Zeeb under sponsorship from
  * the FreeBSD Foundation.
@@ -58,26 +58,25 @@ struct dev_pm_info {
     IS_ENABLED(CONFIG_PM_SLEEP) ? (_p) : NULL
 
 #ifdef CONFIG_PM_SLEEP
-#define	__SET_PM_OPS(_suspendfunc, _resumefunc)			\
-	.suspend	= _suspendfunc,				\
-	.resume		= _resumefunc,				\
-	.freeze		= _suspendfunc,				\
-	.thaw		= _resumefunc,				\
-	.poweroff	= _suspendfunc,				\
-	.restore	= _resumefunc,				\
-
 #define	SIMPLE_DEV_PM_OPS(_name, _suspendfunc, _resumefunc)	\
 const struct dev_pm_ops _name = {				\
-	__SET_PM_OPS(_suspendfunc, _resumefunc)			\
+	.suspend	= _suspendfunc,		\
+	.resume		= _resumefunc,		\
+	.freeze		= _suspendfunc,		\
+	.thaw		= _resumefunc,		\
+	.poweroff	= _suspendfunc,		\
+	.restore	= _resumefunc,		\
 }
 
 #define	DEFINE_SIMPLE_DEV_PM_OPS(_name, _suspendfunc, _resumefunc) \
 const struct dev_pm_ops _name = {				\
-	__SET_PM_OPS(_suspendfunc, _resumefunc)			\
+	.suspend	= _suspendfunc,		\
+	.resume		= _resumefunc,		\
+	.freeze		= _suspendfunc,		\
+	.thaw		= _resumefunc,		\
+	.poweroff	= _suspendfunc,		\
+	.restore	= _resumefunc,		\
 }
-
-#define	SET_SYSTEM_SLEEP_PM_OPS(_suspendfunc, _resumefunc)	\
-	__SET_PM_OPS(_suspendfunc, _resumefunc)
 #else
 #define	SIMPLE_DEV_PM_OPS(_name, _suspendfunc, _resumefunc)	\
 const struct dev_pm_ops _name = {				\
@@ -86,9 +85,6 @@ const struct dev_pm_ops _name = {				\
 const struct dev_pm_ops _name = {				\
 }
 #endif
-
-bool linuxkpi_device_can_wakeup(struct device *);
-#define	device_can_wakeup(_dev)		linuxkpi_device_can_wakeup(_dev)
 
 static inline void
 pm_wakeup_event(struct device *dev __unused, unsigned int x __unused)

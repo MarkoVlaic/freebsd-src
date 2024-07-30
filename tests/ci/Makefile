@@ -147,31 +147,19 @@ beforeclean: .PHONY
 clean: beforeclean .PHONY
 
 ci-buildworld: .PHONY
-	@echo "Building world for ${TARGET_ARCH}"
-	${IMAKE} -j${PARALLEL_JOBS} -C ${WORLDDIR} ${METAMODE} \
-		${CROSS_TOOLCHAIN_PARAM} __MAKE_CONF=${MAKECONF} SRCCONF=${SRCCONF} \
-		buildworld > ${.CURDIR}/_.${TARGET_ARCH}.${.TARGET} 2>&1 || \
-		(echo "${.TARGET} failed, check _.${TARGET_ARCH}.${.TARGET} for details" ; false)
-
+	${IMAKE} -j${PARALLEL_JOBS} -C ${WORLDDIR} ${METAMODE} ${CROSS_TOOLCHAIN_PARAM} __MAKE_CONF=${MAKECONF} SRCCONF=${SRCCONF} buildworld
 
 ci-buildkernel: ci-buildworld-${TARGET_ARCH:tl} .PHONY
-	@echo "Building kenrel for ${TARGET_ARCH"}"
-	${IMAKE} -j${PARALLEL_JOBS} -C ${WORLDDIR} ${METAMODE} \
-		${CROSS_TOOLCHAIN_PARAM} __MAKE_CONF=${MAKECONF} \
-		SRCCONF=${SRCCONF} buildkernel > ${.CURDIR}/_.${TARGET_ARCH}.${.TARGET} 2>&1 || \
-		(echo "${.TARGET} failed, check _.${TARGET_ARCH}.${.TARGET} for details" ; false)
+	${IMAKE} -j${PARALLEL_JOBS} -C ${WORLDDIR} ${METAMODE} ${CROSS_TOOLCHAIN_PARAM} __MAKE_CONF=${MAKECONF} SRCCONF=${SRCCONF} buildkernel
 
 ci-buildimage: ${QEMUTGT} ci-buildkernel-${TARGET_ARCH:tl} .PHONY
-	@echo "Building ci image for ${TARGET_ARCH"}"
 	mkdir -p ${.OBJDIR}/${.TARGET}
 	env TARGET=${TARGET} TARGET_ARCH=${TARGET_ARCH} SWAPSIZE=${SWAPSIZE} \
 		QEMUSTATIC=${QEMUSTATIC} CITYPE=${CITYPE} \
 		${RELEASEDIR}/scripts/mk-vmimage.sh \
 		-C ${RELEASEDIR}/tools/vmimage.subr -d ${.OBJDIR}/${.TARGET} -F ${VMFS} \
 		-i ${.OBJDIR}/ci.img -s ${VMSIZE} -f ${FORMAT} \
-		-S ${WORLDDIR} -o ${.OBJDIR}/${CIIMAGE} -c ${CICONF} \
-		> ${.CURDIR}/_.${TARGET_ARCH}.${.TARGET} 2>&1 || \
-		(echo "${.TARGET} failed, check _.${TARGET_ARCH}.${.TARGET} for details" ; false)
+		-S ${WORLDDIR} -o ${.OBJDIR}/${CIIMAGE} -c ${CICONF}
 	touch ${.TARGET}
 
 ci-setsmokevar: .PHONY

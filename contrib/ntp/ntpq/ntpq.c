@@ -25,9 +25,13 @@
 #include <isc/result.h>
 
 #include "ntpq.h"
+#include "ntp_assert.h"
+#include "ntp_stdlib.h"
 #include "ntp_unixtime.h"
 #include "ntp_calendar.h"
 #include "ntp_select.h"
+#include "ntp_assert.h"
+#include "lib_strbuf.h"
 #include "ntp_lineedit.h"
 #include "ntp_debug.h"
 #ifdef OPENSSL
@@ -3937,25 +3941,31 @@ list_md_fn(const EVP_MD *m, const char *from, const char *to, void *arg)
 	size_t 	       len, n;
 	const char    *name, **seen;
 	struct hstate *hstate = arg;
+	const char    *cp;
 
 	/* m is MD obj, from is name or alias, to is base name for alias */
-	if (!m || !from || to) {
+	if (!m || !from || to)
 		return; /* Ignore aliases */
-	}
 
 	/* Discard MACs that NTP won't accept. */
 	/* Keep this consistent with keytype_from_text() in ssl_init.c. */
-	if (EVP_MD_size(m) > MAX_MDG_LEN) {
+	if (EVP_MD_size(m) > (MAX_MAC_LEN - sizeof(keyid_t)))
 		return;
-	}
 
 	name = EVP_MD_name(m);
-	len = strlen(name) + 1;
+
+	/* Lowercase names aren't accepted by keytype_from_text in ssl_init.c */
+
+	for (cp = name; *cp; cp++)
+		if (islower((unsigned char)*cp))
+			return;
+
+	len = (cp - name) + 1;
 
 	/* There are duplicates.  Discard if name has been seen. */
 
 	for (seen = hstate->seen; *seen; seen++)
-		if (!strcasecmp(*seen, name))
+		if (!strcmp(*seen, name))
 			return;
 
 	n = (seen - hstate->seen) + 2;
@@ -4047,12 +4057,11 @@ insert_cmac(char *list)
 					/* No - end of list */
 					if (!delim && !last_nl) {
 						delim = list + len;
-					} else {
+					} else
 						/* New line and no delim or before delim? */
 						if (last_nl && (!delim || last_nl < delim)) {
 							delim = last_nl;
 						}
-					}
 
 					/* Found insertion point where CMAC before entry? */
 					if (strncmp(CMAC, point, delim - point) < 0) {

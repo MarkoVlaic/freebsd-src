@@ -138,7 +138,7 @@ ahc_pci_map_registers(struct ahc_softc *ahc)
 	struct	resource *regs;
 	int	regs_type;
 	int	regs_id;
-	int	allow_memio = 1;
+	int	allow_memio;
 
 	regs = NULL;
 	regs_type = 0;
@@ -150,14 +150,14 @@ ahc_pci_map_registers(struct ahc_softc *ahc)
 			       "allow_memio", &allow_memio) != 0) {
 		if (bootverbose)
 			device_printf(ahc->dev_softc, "Defaulting to MEMIO ");
-#if defined(AHC_ALLOW_MEMIO) && (AHC_ALLOW_MEMIO == 0)
-		if (bootverbose)
-			printf("off\n");
-		allow_memio = 0;
-#else
+#ifdef AHC_ALLOW_MEMIO
 		if (bootverbose)
 			printf("on\n");
 		allow_memio = 1;
+#else
+		if (bootverbose)
+			printf("off\n");
+		allow_memio = 0;
 #endif
 	}
 

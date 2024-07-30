@@ -1,3 +1,4 @@
+
 PROG=	edquota
 MAN=	edquota.8
 

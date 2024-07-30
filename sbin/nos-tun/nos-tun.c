@@ -141,7 +141,7 @@ tun_open(char *dev_name, struct sockaddr *ouraddr, char *theiraddr)
    *  when tunN have no addresses, so - log and ignore it.
    *
    */
-  if (ioctl(s, SIOCDIFADDR, &ifrq) < 0) {
+  if (ioctl(s, SIOCDIFADDR, &ifra) < 0) {
     syslog(LOG_ERR,"SIOCDIFADDR - %m");
   }
 
@@ -220,8 +220,10 @@ Finish(int signum)
   /*
    *  Delete addresses for interface
    */
-  bzero(&ifrq.ifr_addr, sizeof(ifrq.ifr_addr));
-  if (ioctl(s, SIOCDIFADDR, &ifrq) < 0) {
+  bzero(&ifra.ifra_addr, sizeof(ifra.ifra_addr));
+  bzero(&ifra.ifra_broadaddr, sizeof(ifra.ifra_addr));
+  bzero(&ifra.ifra_mask, sizeof(ifra.ifra_addr));
+  if (ioctl(s, SIOCDIFADDR, &ifra) < 0) {
     syslog(LOG_ERR,"can't delete interface's addresses - %m");
   }
 closing_fds:

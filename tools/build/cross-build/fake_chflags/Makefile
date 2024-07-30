@@ -1,3 +1,4 @@
+
 NO_OBJ=
 SCRIPTS=	chflags
 BINDIR=		/usr/bin

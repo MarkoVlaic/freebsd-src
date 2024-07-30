@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2021 Thomas E. Dickey                                     *
+ * Copyright 2020,2021 Thomas E. Dickey                                     *
  * Copyright 1998-2010,2012 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -45,7 +45,7 @@
 #endif
 #endif
 
-MODULE_ID("$Id: m_item_new.c,v 1.38 2021/06/17 21:26:02 tom Exp $")
+MODULE_ID("$Id: m_item_new.c,v 1.37 2021/02/13 19:40:51 tom Exp $")
 
 /*---------------------------------------------------------------------------
 |   Facility      :  libnmenu

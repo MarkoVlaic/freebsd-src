@@ -1,3 +1,4 @@
+
 .include <bsd.own.mk>
 
 SUBDIR=	BIG5 DECHanyu EUC EUCTW GBK2K HZ ISO2022 JOHAB MSKanji UES UTF1632 \

@@ -1,18 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
-
 project(libcbor)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/")
 include(CTest)
-include(GNUInstallDirs) # Provides CMAKE_INSTALL_ variables
 
 SET(CBOR_VERSION_MAJOR "0")
-SET(CBOR_VERSION_MINOR "11")
-SET(CBOR_VERSION_PATCH "0")
+SET(CBOR_VERSION_MINOR "10")
+SET(CBOR_VERSION_PATCH "2")
 SET(CBOR_VERSION ${CBOR_VERSION_MAJOR}.${CBOR_VERSION_MINOR}.${CBOR_VERSION_PATCH})
 
-option(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY "cmake --build --target install does not depend on cmake --build" true)
-option(BUILD_SHARED_LIBS "Build as a shared library" false)
-
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
 include(CheckIncludeFiles)
 
 include(TestBigEndian)
@@ -26,7 +22,7 @@ if(CBOR_CUSTOM_ALLOC)
     message(WARNING
         "CBOR_CUSTOM_ALLOC has been deprecated. Custom allocators are now enabled by default."
         "The flag is a no-op and will be removed in the next version. "
-        "Please remove CBOR_CUSTOM_ALLOC from your build configuration.")
+        "Please remove CBOR_CUSTOM_ALLOC from your build configuation.")
 endif(CBOR_CUSTOM_ALLOC)
 
 option(CBOR_PRETTY_PRINTER "Include a pretty-printing routine" ON)
@@ -142,10 +138,12 @@ if (COVERAGE)
     endif()
 endif (COVERAGE)
 
+
 # We want to generate configuration.h from the template and make it so that it is accessible using the same
 # path during both library build and installed header use, without littering the source dir.
+# Using cbor/configuration.h in the build dir works b/c headers will be installed to <prefix>/cbor
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/cbor/configuration.h.in ${PROJECT_BINARY_DIR}/cbor/configuration.h)
-install(FILES ${PROJECT_BINARY_DIR}/cbor/configuration.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cbor)
+install(FILES ${PROJECT_BINARY_DIR}/cbor/configuration.h DESTINATION include/cbor)
 # Make the header visible at compile time
 include_directories(${PROJECT_BINARY_DIR})
 

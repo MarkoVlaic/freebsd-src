@@ -1,3 +1,4 @@
+
 PACKAGE=	pkg-bootstrap
 
 _BRANCH!=	${MAKE} -C ${SRCTOP}/release -V BRANCH

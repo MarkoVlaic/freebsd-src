@@ -1,3 +1,4 @@
+
 .PATH: ${.CURDIR:H}/fdread
 
 PROG=	fdformat

@@ -29,9 +29,7 @@
  *
  */
 
-#include <sys/elf_common.h>
 #include <sys/errno.h>
-
 #include <machine/asm.h>
 #include <machine/param.h>
 
@@ -192,5 +190,3 @@ ENTRY(cache_maint_fault)
 	mov	x0, #EFAULT
 	ret
 END(cache_maint_fault)
-
-GNU_PROPERTY_AARCH64_FEATURE_1_NOTE(GNU_PROPERTY_AARCH64_FEATURE_1_VAL)

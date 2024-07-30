@@ -1,3 +1,4 @@
+
 TAP_TESTS_C+=	legacy_test
 
 WARNS?=		3

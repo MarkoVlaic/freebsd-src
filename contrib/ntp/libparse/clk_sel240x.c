@@ -168,5 +168,5 @@ cvt_sel240x( unsigned char *buffer,
 }
 
 #else  /* not (REFCLOCK && CLOCK_PARSE && CLOCK_SEL240X) */
-NONEMPTY_TRANSLATION_UNIT
+int clk_sel240x_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE && CLOCK_SEL240X) */

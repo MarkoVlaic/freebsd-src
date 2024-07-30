@@ -1614,7 +1614,8 @@ check_release_defrouter(const struct rib_cmd_info *rc, void *_cbdata)
 	struct nhop_object *nh;
 
 	nh = rc->rc_nh_old;
-	if (rc->rc_cmd == RTM_DELETE && (nh->nh_flags & NHF_DEFAULT) != 0) {
+
+	if ((nh != NULL) && (nh->nh_flags & NHF_DEFAULT)) {
 		dr = defrouter_lookup(&nh->gw6_sa.sin6_addr, nh->nh_ifp);
 		if (dr != NULL) {
 			dr->installed = 0;
@@ -1626,10 +1627,9 @@ check_release_defrouter(const struct rib_cmd_info *rc, void *_cbdata)
 void
 nd6_subscription_cb(struct rib_head *rnh, struct rib_cmd_info *rc, void *arg)
 {
+
 #ifdef ROUTE_MPATH
 	rib_decompose_notification(rc, check_release_defrouter, NULL);
-	if (rc->rc_cmd == RTM_DELETE && !NH_IS_NHGRP(rc->rc_nh_old))
-		check_release_defrouter(rc, NULL);
 #else
 	check_release_defrouter(rc, NULL);
 #endif

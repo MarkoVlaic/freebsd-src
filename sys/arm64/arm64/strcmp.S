@@ -12,8 +12,6 @@
  * MTE compatible.
  */
 
-#include <sys/elf_common.h>
-
 #include <machine/asm.h>
 
 #define L(l) .L ## l
@@ -189,4 +187,3 @@ L(done):
 
 END (strcmp)
 
-GNU_PROPERTY_AARCH64_FEATURE_1_NOTE(GNU_PROPERTY_AARCH64_FEATURE_1_VAL)

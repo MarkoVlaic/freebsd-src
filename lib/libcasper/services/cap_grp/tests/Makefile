@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 TAP_TESTS_C=	grp_test

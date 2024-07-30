@@ -1,3 +1,4 @@
+
 CONFS=	openssl.cnf
 CONFSDIR=	/etc/ssl
 PROG=	openssl

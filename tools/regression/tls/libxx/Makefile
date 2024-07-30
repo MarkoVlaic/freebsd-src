@@ -1,3 +1,4 @@
+
 SHLIB_NAME=	libxx.so
 
 SRCS=	xx.c

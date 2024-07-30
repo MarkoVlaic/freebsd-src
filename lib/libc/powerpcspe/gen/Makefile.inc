@@ -1,3 +1,4 @@
+
 .include "${LIBC_SRCTOP}/powerpc/gen/Makefile.common"
 
 SRCS += fabs.S flt_rounds.c fpgetmask.c fpgetround.c \

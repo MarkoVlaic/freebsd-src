@@ -82,8 +82,6 @@ extern time_t MAX_TTL;
 extern time_t MIN_TTL;
 /** Maximum Negative TTL that is allowed */
 extern time_t MAX_NEG_TTL;
-/** Minimum Negative TTL that is allowed */
-extern time_t MIN_NEG_TTL;
 /** If we serve expired entries and prefetch them */
 extern int SERVE_EXPIRED;
 /** Time to serve records after expiration */

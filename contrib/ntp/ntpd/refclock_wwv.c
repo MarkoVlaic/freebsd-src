@@ -2707,5 +2707,5 @@ wwv_gain(
 
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_wwv_bs;
 #endif /* REFCLOCK */

@@ -742,7 +742,7 @@ inp_rawdcf(
 }
 
 #else /* not (REFCLOCK && CLOCK_PARSE && CLOCK_RAWDCF) */
-NONEMPTY_TRANSLATION_UNIT
+int clk_rawdcf_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE && CLOCK_RAWDCF) */
 
 /*

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2021,2023 Thomas E. Dickey                                *
+ * Copyright 2020 Thomas E. Dickey                                          *
  * Copyright 2013-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -48,7 +48,7 @@ ENTRY	*_nc_copy_entry(
 
 #undef _nc_save_str
 char	*_nc_save_str(
-		const char *string)
+		const char *const string)
 		{ return(*(char **)0); }
 
 #undef _nc_wrap_entry
@@ -92,7 +92,7 @@ char	*_nc_tic_expand(
 
 #undef _nc_check_termtype2
 void	(*_nc_check_termtype2)(
-		TERMTYPE *p1,
+		TERMTYPE2 *p1,
 		NCURSES_BOOL p2);
 
 #undef _nc_entry_match
@@ -150,7 +150,7 @@ int	_nc_get_token(
 #undef _nc_trans_string
 int	_nc_trans_string(
 		char	*ptr,
-		const char *const last)
+		char	*last)
 		{ return(*(int *)0); }
 
 #undef _nc_push_token
@@ -187,12 +187,12 @@ void	_nc_set_writedir(
 
 #undef _nc_write_entry
 void	_nc_write_entry(
-		TERMTYPE *const tp)
+		TERMTYPE2 *const tp)
 		{ /* void */ }
 
 #undef _nc_write_object
 int	_nc_write_object(
-		TERMTYPE *tp,
+		TERMTYPE2 *tp,
 		char	*buffer,
 		unsigned *offset,
 		unsigned limit)

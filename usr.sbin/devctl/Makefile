@@ -1,3 +1,4 @@
+
 PROG=	devctl
 MAN=	devctl.8
 

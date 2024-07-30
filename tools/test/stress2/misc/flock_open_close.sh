@@ -87,7 +87,6 @@ EOF
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <unistd.h>
 
 static void
@@ -136,8 +135,7 @@ main(int ac, char **av)
 {
 	struct stat sb;
 	pid_t pid;
-	time_t start;
-	int e, status;
+	int e, i, status;
 
 	if (ac < 2)
 		usage();
@@ -152,8 +150,7 @@ main(int ac, char **av)
 	if (pid == 0)
 		child(av[1]);
 	e = 0;
-	start = time(NULL);
-	while (time(NULL) - start < 150) {
+	for (i = 0; i < 200000; i++) {
 		pid = fork();
 		if (pid < 0)
 			err(1, "vfork");

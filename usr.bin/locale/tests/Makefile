@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 ATF_TESTS_SH=	locale_test

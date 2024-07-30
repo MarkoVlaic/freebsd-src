@@ -42,7 +42,6 @@
 #include <linux/completion.h>
 #include <linux/hrtimer.h>
 #include <linux/mm_types.h>
-#include <linux/nodemask.h>
 #include <linux/pid.h>
 #include <linux/slab.h>
 #include <linux/string.h>

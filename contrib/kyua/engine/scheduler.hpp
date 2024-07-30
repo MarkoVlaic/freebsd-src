@@ -262,7 +262,6 @@ public:
 
 
 extern utils::datetime::delta cleanup_timeout;
-extern utils::datetime::delta execenv_cleanup_timeout;
 extern utils::datetime::delta list_timeout;
 
 

@@ -1,3 +1,4 @@
+
 .PATH:	${.CURDIR}/../../../../sys/net80211
 
 KMOD=	test_wep

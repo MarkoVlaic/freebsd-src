@@ -1,3 +1,4 @@
+
 .include "${.CURDIR}/Makefile.inc"
 
 CONFS=	atrun

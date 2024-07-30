@@ -344,5 +344,5 @@ zyfer_poll(
 }
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_zyfer_bs;
 #endif /* REFCLOCK */

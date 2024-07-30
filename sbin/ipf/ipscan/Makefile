@@ -1,3 +1,4 @@
+
 PACKAGE=	ipf
 PROG=		ipscan
 SRCS=		${GENHDRS} ipscan_y.c

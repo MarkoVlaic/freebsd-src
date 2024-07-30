@@ -667,7 +667,7 @@ upgrade_check_kmod_ports() {
 	local report
 	local w
 
-	if ! pkg -N 2>/dev/null; then
+	if ! command -v pkg >/dev/null; then
 		echo "Skipping kernel modules check. pkg(8) not present."
 		return
 	fi
@@ -1307,7 +1307,7 @@ fetch_tag () {
 		return 1
 	fi
 
-	openssl pkeyutl -pubin -inkey pub.ssl -verifyrecover	\
+	openssl rsautl -pubin -inkey pub.ssl -verify		\
 	    < latest.ssl > tag.new 2>${QUIETREDIR} || true
 	rm latest.ssl
 

@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 TESTSDIR=	${TESTSBASE}/sys/capsicum

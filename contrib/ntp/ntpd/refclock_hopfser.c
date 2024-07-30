@@ -362,5 +362,5 @@ hopfserial_poll (
 }
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_hopfser_bs;
 #endif /* REFCLOCK */

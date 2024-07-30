@@ -8,8 +8,6 @@
 
 #include <string.h>
 
-#undef strncat	/* _FORTIFY_SOURCE */
-
 void *__memccpy(void *restrict, const void *restrict, int, size_t);
 
 char *

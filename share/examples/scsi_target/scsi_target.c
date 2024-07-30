@@ -77,9 +77,7 @@ static struct ccb_queue		work_queue;
 static struct ioc_enable_lun	ioc_enlun = {
 	CAM_BUS_WILDCARD,
 	CAM_TARGET_WILDCARD,
-	CAM_LUN_WILDCARD,
-	0,
-	0
+	CAM_LUN_WILDCARD
 };
 
 /* Local functions */
@@ -210,7 +208,7 @@ main(int argc, char *argv[])
 	if (argc != 2)
 		usage();
 
-	sscanf(argv[0], "%u:%u:%ju", &ioc_enlun.path_id, &ioc_enlun.target_id,
+	sscanf(argv[0], "%u:%u:%u", &ioc_enlun.path_id, &ioc_enlun.target_id,
 	       &ioc_enlun.lun_id);
 	file_name = argv[1];
 
@@ -260,12 +258,10 @@ main(int argc, char *argv[])
 
 	if (notaio == 0) {
 		struct aiocb aio, *aiop;
-		void *aio_buf;
 		
 		/* See if we have we have working AIO support */
 		memset(&aio, 0, sizeof(aio));
-		aio_buf = malloc(sector_size);
-		aio.aio_buf = aio_buf;
+		aio.aio_buf = malloc(sector_size);
 		if (aio.aio_buf == NULL)
 			err(1, "malloc");
 		aio.aio_fildes = file_fd;
@@ -282,7 +278,7 @@ main(int argc, char *argv[])
 			assert(aiop == &aio);
 			signal(SIGSYS, SIG_DFL);
 		}
-		free(aio_buf);
+		free((void *)aio.aio_buf);
 		if (debug && notaio == 0)
 			warnx("aio support tested ok");
 	}
@@ -335,7 +331,7 @@ main(int argc, char *argv[])
 }
 
 static void
-cleanup(void)
+cleanup()
 {
 	struct ccb_hdr *ccb_h;
 
@@ -362,7 +358,7 @@ cleanup(void)
 
 /* Allocate ATIOs/INOTs and queue on HBA */
 static int
-init_ccbs(void)
+init_ccbs()
 {
 	int i;
 
@@ -399,7 +395,7 @@ init_ccbs(void)
 }
 
 static void
-request_loop(void)
+request_loop()
 {
 	struct kevent events[MAX_EVENTS];
 	struct timespec ts, *tptr;
@@ -539,10 +535,10 @@ request_loop(void)
 
 /* CCBs are ready from the kernel */
 static void
-handle_read(void)
+handle_read()
 {
 	union ccb *ccb_array[MAX_INITIATORS], *ccb;
-	int ccb_count, i;
+	int ccb_count, i, oo;
 
 	ccb_count = read(targ_fd, ccb_array, sizeof(ccb_array));
 	if (ccb_count <= 0) {
@@ -594,7 +590,7 @@ handle_read(void)
 			/* Queue on the appropriate ATIO */
 			queue_io(ctio);
 			/* Process any queued completions. */
-			run_queue(c_descr->atio);
+			oo += run_queue(c_descr->atio);
 			break;
 		}
 		case XPT_IMMEDIATE_NOTIFY:
@@ -844,7 +840,7 @@ send_ccb(union ccb *ccb, int priority)
 
 /* Return a CTIO/descr/buf combo from the freelist or malloc one */
 static struct ccb_scsiio *
-get_ctio(void)
+get_ctio()
 {
 	struct ccb_scsiio *ctio;
 	struct ctio_descr *c_descr;
@@ -942,7 +938,7 @@ get_sim_flags(u_int16_t *flags)
 }
 
 static void
-rel_simq(void)
+rel_simq()
 {
 	struct ccb_relsim crs;
 
@@ -957,7 +953,7 @@ rel_simq(void)
 
 /* Cancel all pending CCBs. */
 static void
-abort_all_pending(void)
+abort_all_pending()
 {
 	struct ccb_abort	 cab;
 	struct ccb_hdr		*ccb_h;
@@ -980,7 +976,7 @@ abort_all_pending(void)
 }
 
 static void
-usage(void)
+usage()
 {
 	fprintf(stderr,
 		"Usage: scsi_target [-AdSTY] [-b bufsize] [-c sectorsize]\n"

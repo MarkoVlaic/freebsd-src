@@ -192,6 +192,7 @@ libntp_a_SRCS =						\
 	ntp_rfc2553.c					\
 	ntp_worker.c					\
 	numtoa.c					\
+	numtohost.c					\
 	octtoint.c					\
 	prettydate.c					\
 	refidsmear.c					\

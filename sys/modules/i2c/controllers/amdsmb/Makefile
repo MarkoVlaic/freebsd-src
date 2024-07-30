@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/amdsmb
 
 KMOD=	amdsmb

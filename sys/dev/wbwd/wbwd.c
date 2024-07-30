@@ -461,6 +461,7 @@ wb_watchdog_fn(void *private, u_int cmd, int *error)
 static int
 wb_probe(device_t dev)
 {
+	char buf[128];
 	struct wb_softc *sc;
 	int j;
 	uint8_t devid;
@@ -477,9 +478,10 @@ wb_probe(device_t dev)
 	for (j = 0; j < nitems(wb_devs); j++) {
 		if (wb_devs[j].device_id == devid) {
 			sc->chip = wb_devs[j].chip;
-			device_set_descf(dev,
+			snprintf(buf, sizeof(buf),
 			    "%s (0x%02x/0x%02x) Watchdog Timer",
 			    wb_devs[j].descr, devid, revid);
+			device_set_desc_copy(dev, buf);
 			return (BUS_PROBE_SPECIFIC);
 		}
 	}

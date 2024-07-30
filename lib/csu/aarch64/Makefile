@@ -1,3 +1,4 @@
+
 .PATH: ${.CURDIR:H}/common
 
 CFLAGS+=	-I${.CURDIR}

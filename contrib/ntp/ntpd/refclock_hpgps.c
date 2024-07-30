@@ -622,5 +622,5 @@ hpgps_poll(
 }
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_hpgps_bs;
 #endif /* REFCLOCK */

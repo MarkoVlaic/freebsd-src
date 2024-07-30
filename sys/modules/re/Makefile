@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/re
 
 KMOD=	if_re

@@ -1,3 +1,4 @@
+
 .include <bsd.own.mk>
 
 TESTS_SUBDIRS+=	bugs-fixed

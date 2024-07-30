@@ -91,8 +91,6 @@
 #include "util/net_help.h"
 #include "sldns/keyraw.h"
 #include "respip/respip.h"
-#include "iterator/iter_fwd.h"
-#include "iterator/iter_hints.h"
 #include <signal.h>
 
 #ifdef HAVE_SYSTEMD
@@ -100,9 +98,6 @@
 #endif
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
-#endif
-#ifdef USE_CACHEDB
-#include "cachedb/cachedb.h"
 #endif
 
 /** How many quit requests happened. */
@@ -265,7 +260,6 @@ daemon_init(void)
 		free(daemon);
 		return NULL;
 	}
-	daemon->env->modstack = &daemon->mods;
 	/* init edns_known_options */
 	if(!edns_known_options_init(daemon->env)) {
 		free(daemon->env);
@@ -327,15 +321,17 @@ static int setup_acl_for_ports(struct acl_list* list,
 	struct listen_port* port_list)
 {
 	struct acl_addr* acl_node;
+	struct addrinfo* addr;
 	for(; port_list; port_list=port_list->next) {
 		if(!port_list->socket) {
 			/* This is mainly for testbound where port_list is
 			 * empty. */
 			continue;
 		}
+		addr = port_list->socket->addr;
 		if(!(acl_node = acl_interface_insert(list,
-			(struct sockaddr_storage*)port_list->socket->addr,
-			port_list->socket->addrlen,
+			(struct sockaddr_storage*)addr->ai_addr,
+			(socklen_t)addr->ai_addrlen,
 			acl_refuse))) {
 			return 0;
 		}
@@ -720,12 +716,6 @@ daemon_fork(struct daemon* daemon)
 		fatal_exit("Could not create local zones: out of memory");
 	if(!local_zones_apply_cfg(daemon->local_zones, daemon->cfg))
 		fatal_exit("Could not set up local zones");
-	if(!(daemon->env->fwds = forwards_create()) ||
-		!forwards_apply_cfg(daemon->env->fwds, daemon->cfg))
-		fatal_exit("Could not set forward zones");
-	if(!(daemon->env->hints = hints_create()) ||
-		!hints_apply_cfg(daemon->env->hints, daemon->cfg))
-		fatal_exit("Could not set root or stub hints");
 
 	/* process raw response-ip configuration data */
 	if(!(daemon->respip_set = respip_set_create()))
@@ -750,10 +740,6 @@ daemon_fork(struct daemon* daemon)
 	if(!edns_strings_apply_cfg(daemon->env->edns_strings, daemon->cfg))
 		fatal_exit("Could not set up EDNS strings");
 
-#ifdef USE_CACHEDB
-	daemon->env->cachedb_enabled = cachedb_is_enabled(&daemon->mods,
-		daemon->env);
-#endif
 	/* response-ip-xxx options don't work as expected without the respip
 	 * module.  To avoid run-time operational surprise we reject such
 	 * configuration. */
@@ -846,10 +832,6 @@ daemon_cleanup(struct daemon* daemon)
 		slabhash_clear(daemon->env->msg_cache);
 	}
 	daemon->old_num = daemon->num; /* save the current num */
-	forwards_delete(daemon->env->fwds);
-	daemon->env->fwds = NULL;
-	hints_delete(daemon->env->hints);
-	daemon->env->hints = NULL;
 	local_zones_delete(daemon->local_zones);
 	daemon->local_zones = NULL;
 	respip_set_delete(daemon->respip_set);

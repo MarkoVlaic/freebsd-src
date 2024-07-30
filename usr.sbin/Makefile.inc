@@ -1,1 +1,2 @@
+
 BINDIR?=	/usr/sbin

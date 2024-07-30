@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 NETBSD_ATF_TESTS_SH=	sort_test

@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/vr
 
 KMOD=	if_vr

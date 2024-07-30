@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 PACKAGE=	periodic
@@ -43,11 +44,8 @@ CONFS+=	130.clean-msgs
 .endif
 
 .if ${MK_NTP} != "no"
-CONFGROUPS+=	NTP
-NTP+=		480.status-ntpd \
-		480.leapfile-ntpd
-NTPMODE=	${BINMODE}
-NTPPACKAGE=	ntp
+CONFS+=	480.status-ntpd \
+	480.leapfile-ntpd
 .endif
 
 .if ${MK_SENDMAIL} != "no"

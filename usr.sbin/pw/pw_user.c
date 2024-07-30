@@ -28,7 +28,7 @@
  */
 
 #include <sys/param.h>
-#include <sys/wait.h>
+#include <sys/types.h>
 
 #include <assert.h>
 #include <ctype.h>
@@ -146,7 +146,7 @@ create_and_populate_homedir(struct userconf *cnf, struct passwd *pwd,
 
 	copymkdir(conf.rootfd, pwd->pw_dir, skelfd, homemode, pwd->pw_uid,
 	    pwd->pw_gid, 0);
-	pw_log(cnf, update ? M_MODIFY : M_ADD, W_USER, "%s(%ju) home %s made",
+	pw_log(cnf, update ? M_UPDATE : M_ADD, W_USER, "%s(%ju) home %s made",
 	    pwd->pw_name, (uintmax_t)pwd->pw_uid, pwd->pw_dir);
 }
 
@@ -669,7 +669,6 @@ rmat(uid_t uid)
 
 		while ((e = readdir(d)) != NULL) {
 			struct stat     st;
-			pid_t		pid;
 
 			if (strncmp(e->d_name, ".lock", 5) != 0 &&
 			    stat(e->d_name, &st) == 0 &&
@@ -680,12 +679,11 @@ rmat(uid_t uid)
 					e->d_name,
 					NULL
 				};
-				if (posix_spawn(&pid, argv[0], NULL, NULL,
+				if (posix_spawn(NULL, argv[0], NULL, NULL,
 				    (char *const *) argv, environ)) {
 					warn("Failed to execute '%s %s'",
 					    argv[0], argv[1]);
-				} else
-					(void) waitpid(pid, NULL, 0);
+				}
 			}
 		}
 		closedir(d);
@@ -710,13 +708,9 @@ pw_user_next(int argc, char **argv, char *name __unused)
 			quiet = true;
 			break;
 		default:
-			usage();
+			exit(EX_USAGE);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-	if (argc > 0)
-		usage();
 
 	if (quiet)
 		freopen(_PATH_DEVNULL, "w", stderr);
@@ -778,13 +772,9 @@ pw_user_show(int argc, char **argv, char *arg1)
 			v7 = true;
 			break;
 		default:
-			usage();
+			exit(EX_USAGE);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-	if (argc > 0)
-		usage();
 
 	if (quiet)
 		freopen(_PATH_DEVNULL, "w", stderr);
@@ -865,13 +855,9 @@ pw_user_del(int argc, char **argv, char *arg1)
 			nis = true;
 			break;
 		default:
-			usage();
+			exit(EX_USAGE);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-	if (argc > 0)
-		usage();
 
 	if (quiet)
 		freopen(_PATH_DEVNULL, "w", stderr);
@@ -921,14 +907,11 @@ pw_user_del(int argc, char **argv, char *arg1)
 				"-r",
 				NULL
 			};
-			pid_t pid;
-
-			if (posix_spawnp(&pid, argv[0], NULL, NULL,
+			if (posix_spawnp(NULL, argv[0], NULL, NULL,
 						(char *const *) argv, environ)) {
 				warn("Failed to execute '%s %s'",
 						argv[0], argv[1]);
-			} else
-				(void) waitpid(pid, NULL, 0);
+			}
 		}
 	}
 
@@ -1020,13 +1003,9 @@ pw_user_lock(int argc, char **argv, char *arg1)
 			/* compatibility */
 			break;
 		default:
-			usage();
+			exit(EX_USAGE);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-	if (argc > 0)
-		usage();
 
 	return (pw_userlock(arg1, M_LOCK));
 }
@@ -1043,13 +1022,9 @@ pw_user_unlock(int argc, char **argv, char *arg1)
 			/* compatibility */
 			break;
 		default:
-			usage();
+			exit(EX_USAGE);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-	if (argc > 0)
-		usage();
 
 	return (pw_userlock(arg1, M_UNLOCK));
 }
@@ -1316,13 +1291,9 @@ pw_user_add(int argc, char **argv, char *arg1)
 			nis = true;
 			break;
 		default:
-			usage();
+			exit(EX_USAGE);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-	if (argc > 0)
-		usage();
 
 	if (geteuid() != 0 && ! dryrun)
 		errx(EX_NOPERM, "you must be root");
@@ -1633,13 +1604,9 @@ pw_user_mod(int argc, char **argv, char *arg1)
 			nis = true;
 			break;
 		default:
-			usage();
+			exit(EX_USAGE);
 		}
 	}
-	argc -= optind;
-	argv += optind;
-	if (argc > 0)
-		usage();
 
 	if (geteuid() != 0 && ! dryrun)
 		errx(EX_NOPERM, "you must be root");
@@ -1820,7 +1787,7 @@ pw_user_mod(int argc, char **argv, char *arg1)
 	if (pwd == NULL)
 		errx(EX_NOUSER, "user '%s' disappeared during update", name);
 	grp = GETGRGID(pwd->pw_gid);
-	pw_log(cnf, M_MODIFY, W_USER, "%s(%ju):%s(%ju):%s:%s:%s",
+	pw_log(cnf, M_UPDATE, W_USER, "%s(%ju):%s(%ju):%s:%s:%s",
 	    pwd->pw_name, (uintmax_t)pwd->pw_uid,
 	    grp ? grp->gr_name : "unknown",
 	    (uintmax_t)(grp ? grp->gr_gid : (uid_t)-1),
@@ -1841,7 +1808,7 @@ pw_user_mod(int argc, char **argv, char *arg1)
 	}
 
 	if (nis && nis_update() == 0)
-		pw_log(cnf, M_MODIFY, W_USER, "NIS maps updated");
+		pw_log(cnf, M_UPDATE, W_USER, "NIS maps updated");
 
 	return (EXIT_SUCCESS);
 }

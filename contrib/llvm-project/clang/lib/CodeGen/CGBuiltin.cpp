@@ -823,32 +823,29 @@ const FieldDecl *CodeGenFunction::FindFlexibleArrayMemberField(
     ASTContext &Ctx, const RecordDecl *RD, StringRef Name, uint64_t &Offset) {
   const LangOptions::StrictFlexArraysLevelKind StrictFlexArraysLevel =
       getLangOpts().getStrictFlexArraysLevel();
-  uint32_t FieldNo = 0;
+  unsigned FieldNo = 0;
+  bool IsUnion = RD->isUnion();
 
-  if (RD->isImplicit())
-    return nullptr;
-
-  for (const FieldDecl *FD : RD->fields()) {
-    if ((Name.empty() || FD->getNameAsString() == Name) &&
+  for (const Decl *D : RD->decls()) {
+    if (const auto *Field = dyn_cast<FieldDecl>(D);
+        Field && (Name.empty() || Field->getNameAsString() == Name) &&
         Decl::isFlexibleArrayMemberLike(
-            Ctx, FD, FD->getType(), StrictFlexArraysLevel,
+            Ctx, Field, Field->getType(), StrictFlexArraysLevel,
             /*IgnoreTemplateOrMacroSubstitution=*/true)) {
       const ASTRecordLayout &Layout = Ctx.getASTRecordLayout(RD);
       Offset += Layout.getFieldOffset(FieldNo);
-      return FD;
+      return Field;
     }
 
-    QualType Ty = FD->getType();
-    if (Ty->isRecordType()) {
-      if (const FieldDecl *Field = FindFlexibleArrayMemberField(
-              Ctx, Ty->getAsRecordDecl(), Name, Offset)) {
+    if (const auto *Record = dyn_cast<RecordDecl>(D))
+      if (const FieldDecl *Field =
+              FindFlexibleArrayMemberField(Ctx, Record, Name, Offset)) {
         const ASTRecordLayout &Layout = Ctx.getASTRecordLayout(RD);
         Offset += Layout.getFieldOffset(FieldNo);
         return Field;
       }
-    }
 
-    if (!RD->isUnion())
+    if (!IsUnion && isa<FieldDecl>(D))
       ++FieldNo;
   }
 

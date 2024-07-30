@@ -1,3 +1,4 @@
+
 PROG=	mbr
 STRIP=
 BINMODE=${NOBINMODE}

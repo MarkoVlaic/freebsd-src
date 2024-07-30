@@ -1,3 +1,4 @@
+
 DEVRTW89DIR=	${SRCTOP}/sys/contrib/dev/rtw89
 
 .PATH: ${DEVRTW89DIR}

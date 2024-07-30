@@ -11,6 +11,7 @@
 #include "ntp_malloc.h"
 #include "ntp_assert.h"
 #include "ntp_control.h"
+#include "lib_strbuf.h"
 
 #include "ntpq-opts.h"
 

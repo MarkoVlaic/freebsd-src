@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/netpfil/pf
 
 KMOD=	pfsync

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2021,2023 Thomas E. Dickey                                *
+ * Copyright 2020 Thomas E. Dickey                                          *
  * Copyright 2005-2012,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -37,10 +37,14 @@
 
 #include <tic.h>
 
-MODULE_ID("$Id: trim_sgr0.c,v 1.22 2023/09/23 18:47:56 tom Exp $")
+MODULE_ID("$Id: trim_sgr0.c,v 1.20 2020/05/27 23:54:31 tom Exp $")
 
 #undef CUR
 #define CUR tp->
+
+#define CSI       233
+#define ESC       033		/* ^[ */
+#define L_BRACK   '['
 
 static char *
 set_attribute_9(TERMTYPE2 *tp, int flag)
@@ -61,9 +65,9 @@ is_csi(const char *s)
 {
     int result = 0;
     if (s != 0) {
-	if (UChar(s[0]) == CSI_CHR)
+	if (UChar(s[0]) == CSI)
 	    result = 1;
-	else if (s[0] == ESC_CHR && s[1] == L_BLOCK)
+	else if (s[0] == ESC && s[1] == L_BRACK)
 	    result = 2;
     }
     return result;

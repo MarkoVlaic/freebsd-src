@@ -1,3 +1,4 @@
+
 PROG_CXX=	mcgrab
 CFLAGS+=	-I${.CURDIR}/../mctest
 

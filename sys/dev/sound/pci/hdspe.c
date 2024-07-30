@@ -37,6 +37,7 @@
 
 #include <dev/sound/pcm/sound.h>
 #include <dev/sound/pci/hdspe.h>
+#include <dev/sound/chip.h>
 
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
@@ -580,7 +581,7 @@ hdspe_attach(device_t dev)
 		scp = malloc(sizeof(struct sc_pcminfo), M_DEVBUF, M_NOWAIT | M_ZERO);
 		scp->hc = &chan_map[i];
 		scp->sc = sc;
-		scp->dev = device_add_child(dev, "pcm", DEVICE_UNIT_ANY);
+		scp->dev = device_add_child(dev, "pcm", -1);
 		device_set_ivars(scp->dev, scp);
 	}
 

@@ -31,51 +31,58 @@
 
 #include <linux/atomic.h>
 
-typedef atomic_t refcount_t;
+struct refcount_linux {
+	atomic_t value;
+};
+typedef struct refcount_linux refcount_t;
 
 static inline void
 refcount_set(refcount_t *ref, unsigned int i)
 {
-	atomic_set(ref, i);
+	atomic_set(&ref->value, i);
 }
 
 static inline void
 refcount_inc(refcount_t *ref)
 {
-	atomic_inc(ref);
+	atomic_inc(&ref->value);
 }
 
 static inline bool
 refcount_inc_not_zero(refcount_t *ref)
 {
-	return (atomic_inc_not_zero(ref));
+	return (atomic_inc_not_zero(&ref->value));
 }
 
 static inline void
 refcount_dec(refcount_t *ref)
 {
-	atomic_dec(ref);
+	atomic_dec(&ref->value);
 }
 
 static inline unsigned int
 refcount_read(refcount_t *ref)
 {
-	return atomic_read(ref);
+	return atomic_read(&ref->value);
 }
 
 static inline bool
 refcount_dec_and_lock_irqsave(refcount_t *ref, spinlock_t *lock,
     unsigned long *flags)
 {
-	if (atomic_dec_and_test(ref) == true) {
+	if (atomic_dec_and_test(&ref->value) == true) {
 		spin_lock_irqsave(lock, flags);
 		return (true);
 	}
 	return (false);
 }
 
+/*
+ * struct kref uses atomic_t and not refcount_t so
+ * we differ from Linux here.
+ */
 static inline bool
-refcount_dec_and_test(refcount_t *r)
+refcount_dec_and_test(atomic_t *r)
 {
 
 	return (atomic_dec_and_test(r));

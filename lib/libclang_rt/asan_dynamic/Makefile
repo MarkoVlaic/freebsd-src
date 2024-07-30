@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 SHLIB_NAME=	libclang_rt.asan-${CRTARCH}.so

@@ -100,7 +100,7 @@ public:
   bool emitDirectiveOptionArch();
 
 private:
-  void emitAttributes(const MCSubtargetInfo &SubtargetInfo);
+  void emitAttributes();
 
   void emitNTLHint(const MachineInstr *MI);
 
@@ -385,32 +385,8 @@ void RISCVAsmPrinter::emitStartOfAsmFile(Module &M) {
   if (const MDString *ModuleTargetABI =
           dyn_cast_or_null<MDString>(M.getModuleFlag("target-abi")))
     RTS.setTargetABI(RISCVABI::getTargetABI(ModuleTargetABI->getString()));
-
-  MCSubtargetInfo SubtargetInfo = *TM.getMCSubtargetInfo();
-
-  // Use module flag to update feature bits.
-  if (auto *MD = dyn_cast_or_null<MDNode>(M.getModuleFlag("riscv-isa"))) {
-    for (auto &ISA : MD->operands()) {
-      if (auto *ISAString = dyn_cast_or_null<MDString>(ISA)) {
-        auto ParseResult = llvm::RISCVISAInfo::parseArchString(
-            ISAString->getString(), /*EnableExperimentalExtension=*/true,
-            /*ExperimentalExtensionVersionCheck=*/true);
-        if (!errorToBool(ParseResult.takeError())) {
-          auto &ISAInfo = *ParseResult;
-          for (const auto &Feature : RISCVFeatureKV) {
-            if (ISAInfo->hasExtension(Feature.Key) &&
-                !SubtargetInfo.hasFeature(Feature.Value))
-              SubtargetInfo.ToggleFeature(Feature.Key);
-          }
-        }
-      }
-    }
-
-    RTS.setFlagsFromFeatures(SubtargetInfo);
-  }
-
   if (TM.getTargetTriple().isOSBinFormatELF())
-    emitAttributes(SubtargetInfo);
+    emitAttributes();
 }
 
 void RISCVAsmPrinter::emitEndOfAsmFile(Module &M) {
@@ -422,13 +398,13 @@ void RISCVAsmPrinter::emitEndOfAsmFile(Module &M) {
   EmitHwasanMemaccessSymbols(M);
 }
 
-void RISCVAsmPrinter::emitAttributes(const MCSubtargetInfo &SubtargetInfo) {
+void RISCVAsmPrinter::emitAttributes() {
   RISCVTargetStreamer &RTS =
       static_cast<RISCVTargetStreamer &>(*OutStreamer->getTargetStreamer());
   // Use MCSubtargetInfo from TargetMachine. Individual functions may have
   // attributes that differ from other functions in the module and we have no
   // way to know which function is correct.
-  RTS.emitTargetAttributes(SubtargetInfo, /*EmitStackAlign*/ true);
+  RTS.emitTargetAttributes(*TM.getMCSubtargetInfo(), /*EmitStackAlign*/ true);
 }
 
 void RISCVAsmPrinter::emitFunctionEntryLabel() {

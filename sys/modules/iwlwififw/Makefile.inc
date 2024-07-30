@@ -1,3 +1,4 @@
+
 # Common rules for building iwlwifi firmware.
 
 EXT?=		ucode

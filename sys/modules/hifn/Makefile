@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/hifn
 KMOD	= hifn
 SRCS	= hifn7751.c opt_hifn.h

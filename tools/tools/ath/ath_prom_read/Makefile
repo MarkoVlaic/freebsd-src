@@ -1,3 +1,4 @@
+
 PROG=	ath_prom_read
 
 .include <bsd.prog.mk>

@@ -1,3 +1,4 @@
+
 SUBDIR=		tests
 
 .PATH:		${SRCTOP}/tests

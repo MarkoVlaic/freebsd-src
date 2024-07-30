@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/spibus/controller/allwinner/
 
 KMOD=	aw_spi

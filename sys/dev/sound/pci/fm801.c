@@ -647,7 +647,7 @@ fm801_pci_attach(device_t dev)
 	pcm_addchan(dev, PCMDIR_REC, &fm801ch_class, fm801);
 	pcm_setstatus(dev, status);
 
-	fm801->radio = device_add_child(dev, "radio", DEVICE_UNIT_ANY);
+	fm801->radio = device_add_child(dev, "radio", -1);
 	bus_generic_attach(dev);
 
 	return 0;

@@ -35,7 +35,6 @@ extern "C" {
 #include <cstdlib>
 
 #include "engine/exceptions.hpp"
-#include "engine/execenv/execenv.hpp"
 #include "engine/tap_parser.hpp"
 #include "model/test_case.hpp"
 #include "model/test_program.hpp"
@@ -49,7 +48,6 @@ extern "C" {
 #include "utils/sanity.hpp"
 
 namespace config = utils::config;
-namespace execenv = engine::execenv;
 namespace fs = utils::fs;
 namespace process = utils::process;
 
@@ -153,11 +151,7 @@ engine::tap_interface::exec_test(
     }
 
     process::args_vector args;
-
-    auto e = execenv::get(test_program, test_case_name);
-    e->init();
-    e->exec(args);
-    __builtin_unreachable();
+    process::exec(test_program.absolute_path(), args);
 }
 
 

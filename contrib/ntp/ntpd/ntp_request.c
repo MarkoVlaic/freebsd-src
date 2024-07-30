@@ -1790,7 +1790,6 @@ do_restrict(
 	sockaddr_u		matchaddr;
 	sockaddr_u		matchmask;
 	int			bad;
-	int/*BOOL*/		success;
 
 	switch(op) {
 	    case RESTRICT_FLAGS:
@@ -1839,7 +1838,7 @@ do_restrict(
 	}
 
 	if (bad) {
-		msyslog(LOG_ERR, "%s: bad = 0x%x", __func__, bad);
+		msyslog(LOG_ERR, "do_restrict: bad = %#x", bad);
 		req_ack(srcadr, inter, inpkt, INFO_ERR_FMT);
 		return;
 	}
@@ -1869,16 +1868,8 @@ do_restrict(
 			NSRCADR(&matchaddr) = cr.addr;
 			NSRCADR(&matchmask) = cr.mask;
 		}
-		success =  hack_restrict(op, &matchaddr, &matchmask,
-					 cr.ippeerlimit, cr.mflags,
-					 cr.flags, 0);
-		if (!success) {
-			DPRINTF(1, ("%s: %s %s mask %s ippeerlimit %hd %s %s failed",
-				    __func__, resop_str(op),
-				    stoa(&matchaddr), stoa(&matchmask),
-				    cr.ippeerlimit, mflags_str(cr.mflags),
-				    rflags_str(cr.flags)));
-		}
+		hack_restrict(op, &matchaddr, &matchmask, cr.mflags,
+			      cr.ippeerlimit, cr.flags, 0);
 		datap += item_sz;
 	}
 

@@ -1,3 +1,4 @@
+
 PROG=	acpidb
 SRCS=	acpidb.c
 

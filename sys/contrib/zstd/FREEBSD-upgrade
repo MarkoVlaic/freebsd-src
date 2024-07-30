@@ -1,3 +1,5 @@
+$FreeBSD$
+
 zstd
 
 To import new vendor sources, prune unwanted files with:

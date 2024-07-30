@@ -37,6 +37,7 @@
 #include <errno.h>
 #include "libc_private.h"
 
+#if __ARM_ARCH >= 6
 static inline uint64_t
 cp15_cntvct_get(void)
 {
@@ -54,6 +55,7 @@ cp15_cntpct_get(void)
 	__asm __volatile("mrrc\tp15, 0, %Q0, %R0, c14" : "=r" (reg));
 	return (reg);
 }
+#endif
 
 #pragma weak __vdso_gettc
 int
@@ -62,6 +64,7 @@ __vdso_gettc(const struct vdso_timehands *th, u_int *tc)
 
 	if (th->th_algo != VDSO_TH_ALGO_ARM_GENTIM)
 		return (ENOSYS);
+#if __ARM_ARCH >= 6
 	/*
 	 * Userspace gettimeofday() is only enabled on ARMv7 CPUs, but
 	 * libc is compiled for ARMv6.  Due to clang issues, .arch
@@ -70,6 +73,10 @@ __vdso_gettc(const struct vdso_timehands *th, u_int *tc)
 	__asm __volatile(".word\t0xf57ff06f" : : : "memory"); /* isb */
 	*tc = th->th_physical == 0 ? cp15_cntvct_get() : cp15_cntpct_get();
 	return (0);
+#else
+	*tc = 0;
+	return (ENOSYS);
+#endif
 }
 
 #pragma weak __vdso_gettimekeep

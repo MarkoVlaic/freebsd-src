@@ -1,3 +1,4 @@
+
 PROG=	locate.bigram
 MAN=
 BINDIR=	${LIBEXECDIR}

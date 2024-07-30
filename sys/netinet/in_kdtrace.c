@@ -294,7 +294,6 @@ MIB_PROBE_TCP(tcps_finwait2_drops);
 
 MIB_PROBE_TCP(tcps_sack_recovery_episode);
 MIB_PROBE_TCP(tcps_sack_rexmits);
-MIB_PROBE_TCP(tcps_sack_rexmits_tso);
 MIB_PROBE_TCP(tcps_sack_rexmit_bytes);
 MIB_PROBE_TCP(tcps_sack_rcv_blocks);
 MIB_PROBE_TCP(tcps_sack_send_blocks);
@@ -339,8 +338,6 @@ MIB_PROBE_TCP(tcps_ecn_sndect1);
 MIB_PROBE_TCP(tcps_tlpresends);
 MIB_PROBE_TCP(tcps_tlpresend_bytes);
 
-MIB_PROBE_TCP(tcps_rcvghostack);
-MIB_PROBE_TCP(tcps_rcvacktooold);
 #endif
 
 SDT_PROBE_DEFINE6_XLATE(ip, , , receive,

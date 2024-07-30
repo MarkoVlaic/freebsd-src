@@ -33,8 +33,6 @@
 #
 # To skip over -stable beta1 directly to -RC1, set prerelease=rc.
 #
-# To proceed from  a -stable RC to the release set rcpoint=GO
-#
 # To skip all -stable prereleases and move from one primary or point 
 #   release directly to the next point release, set rcpoint=GO.
 #
@@ -85,7 +83,7 @@ CLTAG=NTP_4_2_0
 # - Numeric values increment
 # - empty 'increments' to 1
 # - NEW 'increments' to empty
-point=18
+point=17
 
 ### betapoint is normally modified by script.
 # ntp-stable Beta number (betapoint)

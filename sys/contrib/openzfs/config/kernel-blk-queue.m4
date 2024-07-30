@@ -332,7 +332,7 @@ AC_DEFUN([ZFS_AC_KERNEL_BLK_QUEUE_MAX_HW_SECTORS], [
 	ZFS_LINUX_TEST_RESULT([blk_queue_max_hw_sectors], [
 		AC_MSG_RESULT(yes)
 	],[
-		AC_MSG_RESULT(no)
+		ZFS_LINUX_TEST_ERROR([blk_queue_max_hw_sectors])
 	])
 ])
 
@@ -355,7 +355,7 @@ AC_DEFUN([ZFS_AC_KERNEL_BLK_QUEUE_MAX_SEGMENTS], [
 	ZFS_LINUX_TEST_RESULT([blk_queue_max_segments], [
 		AC_MSG_RESULT(yes)
 	], [
-		AC_MSG_RESULT(no)
+		ZFS_LINUX_TEST_ERROR([blk_queue_max_segments])
 	])
 ])
 

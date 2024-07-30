@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/rtwn/usb
 
 SYSDIR?=${SRCTOP}/sys

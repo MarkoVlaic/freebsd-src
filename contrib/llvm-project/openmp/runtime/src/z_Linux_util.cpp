@@ -2129,10 +2129,10 @@ int __kmp_is_address_mapped(void *addr) {
   // We pass from number of vm entry's semantic
   // to size of whole entry map list.
   lstsz = lstsz * 4 / 3;
-  buf = reinterpret_cast<char *>(KMP_INTERNAL_MALLOC(lstsz));
+  buf = reinterpret_cast<char *>(kmpc_malloc(lstsz));
   rc = sysctl(mib, 4, buf, &lstsz, NULL, 0);
   if (rc < 0) {
-    KMP_INTERNAL_FREE(buf);
+    kmpc_free(buf);
     return 0;
   }
 
@@ -2156,7 +2156,7 @@ int __kmp_is_address_mapped(void *addr) {
     }
     lw += cursz;
   }
-  KMP_INTERNAL_FREE(buf);
+  kmpc_free(buf);
 
 #elif KMP_OS_DARWIN
 

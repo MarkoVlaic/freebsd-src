@@ -1,3 +1,4 @@
+
 KMOD=	ng_sample
 SRCS= 	ng_sample.c
 

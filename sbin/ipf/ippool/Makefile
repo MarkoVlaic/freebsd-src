@@ -1,3 +1,4 @@
+
 PACKAGE=	ipf
 PROG=		ippool
 SRCS=		${GENHDRS} ippool_y.c ippool_l.c ippool.c

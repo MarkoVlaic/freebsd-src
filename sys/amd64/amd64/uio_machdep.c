@@ -97,26 +97,18 @@ uiomove_fromphys(vm_page_t ma[], vm_offset_t offset, int n, struct uio *uio)
 		switch (uio->uio_segflg) {
 		case UIO_USERSPACE:
 			maybe_yield();
-			switch (uio->uio_rw) {
-			case UIO_READ:
+			if (uio->uio_rw == UIO_READ)
 				error = copyout(cp, iov->iov_base, cnt);
-				break;
-			case UIO_WRITE:
+			else
 				error = copyin(iov->iov_base, cp, cnt);
-				break;
-			}
 			if (error)
 				goto out;
 			break;
 		case UIO_SYSSPACE:
-			switch (uio->uio_rw) {
-			case UIO_READ:
+			if (uio->uio_rw == UIO_READ)
 				bcopy(cp, iov->iov_base, cnt);
-				break;
-			case UIO_WRITE:
+			else
 				bcopy(iov->iov_base, cp, cnt);
-				break;
-			}
 			break;
 		case UIO_NOCOPY:
 			break;

@@ -1,3 +1,4 @@
+
 BINDIR=	/usr/local/bin
 MAN=
 

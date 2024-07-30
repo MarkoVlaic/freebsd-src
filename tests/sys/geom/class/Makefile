@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 PACKAGE=	tests
@@ -18,7 +19,6 @@ TESTS_SUBDIRS+=	shsec
 TESTS_SUBDIRS+=	stripe
 TESTS_SUBDIRS+=	union
 TESTS_SUBDIRS+=	uzip
-TESTS_SUBDIRS+=	virstor
 
 ${PACKAGE}FILES+=	geom_subr.sh
 

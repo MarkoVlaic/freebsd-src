@@ -2683,7 +2683,7 @@ icmp6_ctloutput(struct socket *so, struct sockopt *sopt)
 	}
 
 	switch (op) {
-	case SOPT_SET:
+	case PRCO_SETOPT:
 		switch (optname) {
 		case ICMP6_FILTER:
 		    {
@@ -2708,7 +2708,7 @@ icmp6_ctloutput(struct socket *so, struct sockopt *sopt)
 		}
 		break;
 
-	case SOPT_GET:
+	case PRCO_GETOPT:
 		switch (optname) {
 		case ICMP6_FILTER:
 		    {

@@ -1,3 +1,4 @@
+
 PROG=	cap_test
 SRCS=	cap_test.c \
 	cap_test_capmode.c \

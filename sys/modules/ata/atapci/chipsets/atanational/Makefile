@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/ata/chipsets
 
 KMOD=	atanational

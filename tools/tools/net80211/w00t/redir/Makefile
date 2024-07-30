@@ -1,3 +1,4 @@
+
 .include <../Makefile.inc>
 
 PROG=	redir

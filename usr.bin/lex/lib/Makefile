@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 .PATH:	${SRCTOP}/contrib/flex/src

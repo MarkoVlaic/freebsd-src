@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/neta
 
 CFLAGS+= -DFDT	

@@ -1,3 +1,4 @@
+
 .PATH:		${SRCTOP}/stand/zfs ${SRCTOP}/sys/cddl/boot/zfs
 
 BINDIR?=	/usr/bin

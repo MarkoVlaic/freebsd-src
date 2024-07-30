@@ -1,3 +1,4 @@
+
 all:	vm86_test
 
 vm86_test:	vm86_test_asm.s vm86_test.c

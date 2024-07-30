@@ -563,7 +563,7 @@ spi_attach(device_t dev)
 	 * devices as its children, and those devices may need to do IO during
 	 * their attach. We can't do IO until timers and interrupts are working.
 	 */
-	sc->spibus = device_add_child(dev, "spibus", DEVICE_UNIT_ANY);
+	sc->spibus = device_add_child(dev, "spibus", -1);
 	return (bus_delayed_attach_children(dev));
 }
 

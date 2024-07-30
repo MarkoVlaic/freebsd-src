@@ -150,11 +150,7 @@ vdev_bdev_mode(spa_mode_t smode)
 static uint64_t
 bdev_capacity(struct block_device *bdev)
 {
-#ifdef HAVE_BDEV_NR_BYTES
-	return (bdev_nr_bytes(bdev));
-#else
 	return (i_size_read(bdev->bd_inode));
-#endif
 }
 
 #if !defined(HAVE_BDEV_WHOLE)
@@ -213,7 +209,7 @@ bdev_max_capacity(struct block_device *bdev, uint64_t wholedisk)
 		 * "reserved" EFI partition: in such cases return the device
 		 * usable capacity.
 		 */
-		available = bdev_capacity(bdev_whole(bdev)) -
+		available = i_size_read(bdev_whole(bdev)->bd_inode) -
 		    ((EFI_MIN_RESV_SIZE + NEW_START_BLOCK +
 		    PARTITION_END_ALIGNMENT) << SECTOR_BITS);
 		psize = MAX(available, bdev_capacity(bdev));
@@ -401,7 +397,7 @@ vdev_disk_open(vdev_t *v, uint64_t *psize, uint64_t *max_psize,
 			if (v->vdev_removed)
 				break;
 
-			schedule_timeout_interruptible(MSEC_TO_TICK(10));
+			schedule_timeout(MSEC_TO_TICK(10));
 		} else if (unlikely(BDH_PTR_ERR(bdh) == -ERESTARTSYS)) {
 			timeout = MSEC2NSEC(zfs_vdev_open_timeout_ms * 10);
 			continue;
@@ -929,12 +925,12 @@ vdev_disk_io_rw(zio_t *zio)
 	/*
 	 * Accessing outside the block device is never allowed.
 	 */
-	if (zio->io_offset + zio->io_size > bdev_capacity(bdev)) {
+	if (zio->io_offset + zio->io_size > bdev->bd_inode->i_size) {
 		vdev_dbgmsg(zio->io_vd,
 		    "Illegal access %llu size %llu, device size %llu",
 		    (u_longlong_t)zio->io_offset,
 		    (u_longlong_t)zio->io_size,
-		    (u_longlong_t)bdev_capacity(bdev));
+		    (u_longlong_t)i_size_read(bdev->bd_inode));
 		return (SET_ERROR(EIO));
 	}
 
@@ -1127,12 +1123,12 @@ vdev_classic_physio(zio_t *zio)
 	/*
 	 * Accessing outside the block device is never allowed.
 	 */
-	if (io_offset + io_size > bdev_capacity(bdev)) {
+	if (io_offset + io_size > bdev->bd_inode->i_size) {
 		vdev_dbgmsg(zio->io_vd,
 		    "Illegal access %llu size %llu, device size %llu",
 		    (u_longlong_t)io_offset,
 		    (u_longlong_t)io_size,
-		    (u_longlong_t)bdev_capacity(bdev));
+		    (u_longlong_t)i_size_read(bdev->bd_inode));
 		return (SET_ERROR(EIO));
 	}
 

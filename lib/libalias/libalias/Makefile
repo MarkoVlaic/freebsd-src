@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/netinet/libalias
 
 PACKAGE=	natd

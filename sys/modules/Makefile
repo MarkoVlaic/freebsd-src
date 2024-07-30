@@ -1,3 +1,4 @@
+
 SYSDIR?=${SRCTOP}/sys
 .include "${SYSDIR}/conf/kern.opts.mk"
 
@@ -225,7 +226,6 @@ SUBDIR=	\
 	${_mac_biba} \
 	${_mac_bsdextended} \
 	${_mac_ddb} \
-	${_mac_do} \
 	${_mac_ifoff} \
 	${_mac_ipacl} \
 	${_mac_lomac} \
@@ -304,7 +304,6 @@ SUBDIR=	\
 	otus \
 	${_otusfw} \
 	ow \
-	p9fs \
 	${_padlock} \
 	${_padlock_rng} \
 	${_pchtherm} \
@@ -392,7 +391,7 @@ SUBDIR=	\
 	${_ti} \
 	tmpfs \
 	${_toecore} \
-	tpm \
+	${_tpm} \
 	tws \
 	uart \
 	udf \
@@ -442,7 +441,8 @@ SUBDIR+=	dtrace
 SUBDIR+=	opensolaris
 .endif
 
-.if !${MACHINE_ABI:Mlong32}
+# Requires bus_space_read_8
+.if ${MACHINE_ARCH} != "i386"
 _bnxt=		bnxt
 .endif
 
@@ -489,7 +489,7 @@ _sctp=		sctp
 _if_stf=	if_stf
 .endif
 
-.if (${KERN_OPTS:MINET} && ${MK_INET_SUPPORT} != "no") || defined(ALL_MODULES)
+.if ${MK_INET_SUPPORT} != "no" || defined(ALL_MODULES)
 _if_me=		if_me
 _ipfw=		ipfw
 .if ${MK_INET6_SUPPORT} != "no" || defined(ALL_MODULES)
@@ -505,7 +505,7 @@ _ipfw_nptv6=	ipfw_nptv6
 _ipfilter=	ipfilter
 .endif
 
-.if ${MK_INET_SUPPORT} != "no" && ${KERN_OPTS:MFIB_ALGO} && ${KERN_OPTS:MINET}
+.if ${MK_INET_SUPPORT} != "no" && ${KERN_OPTS:MFIB_ALGO}
 _dpdk_lpm4=	dpdk_lpm4
 _fib_dxr=	fib_dxr
 .endif
@@ -576,8 +576,7 @@ _vmware=	vmware
 .endif
 
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64" || \
-    ${MACHINE_CPUARCH} == "i386" || ${MACHINE_ARCH} == "armv7" || \
-	${MACHINE_ARCH:Mpowerpc64*} != ""
+    ${MACHINE_CPUARCH} == "i386" || ${MACHINE_ARCH} == "armv7"
 _ossl=		ossl
 .endif
 
@@ -588,7 +587,6 @@ _mac_bsdextended= mac_bsdextended
 .if ${KERN_OPTS:MDDB} || defined(ALL_MODULES)
 _mac_ddb=	mac_ddb
 .endif
-_mac_do=	mac_do
 _mac_ifoff=	mac_ifoff
 _mac_ipacl=	mac_ipacl
 _mac_lomac=	mac_lomac
@@ -816,6 +814,7 @@ _pchtherm = pchtherm
 _s3=		s3
 _sdhci_acpi=	sdhci_acpi
 _superio=	superio
+_tpm=		tpm
 _vesa=		vesa
 _viawd=		viawd
 _vmd=		vmd

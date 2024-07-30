@@ -7,6 +7,7 @@
 
 #include "ntp.h"
 #include "ntp_stdlib.h"
+#include "lib_strbuf.h"
 
 #define HLINE "--------------------------------------------------------------------------------\n"
 #define PHLINE fprintf(output, HLINE);

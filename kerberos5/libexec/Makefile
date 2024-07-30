@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 
 SUBDIR=	digest-service ipropd-master ipropd-slave hprop hpropd kdc \

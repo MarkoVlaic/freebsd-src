@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 .include <src.tools.mk>
 
@@ -87,6 +88,10 @@ distribution:
 .if ${MK_SENDMAIL} != "no"
 	cd ${.CURDIR}/mail; ${INSTALL} -o ${BINOWN} -g ${BINGRP} -m 644 \
 		-T "package=sendmail" ${ETCMAIL_SENDMAIL} ${DESTDIR}/etc/mail
+.endif
+.if ${MK_LOCATE} != "no"
+	${INSTALL} -o nobody -g ${BINGRP} -m 644 -T "package=runtime"\
+	    /dev/null ${DESTDIR}/var/db/locate.database
 .endif
 	cd ${.CURDIR}/..; ${INSTALL} -o ${BINOWN} -g ${BINGRP} -m 444 \
 		-T "package=runtime" ${FREEBSD} ${DESTDIR}/

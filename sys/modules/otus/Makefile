@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/otus
 
 KMOD    = if_otus

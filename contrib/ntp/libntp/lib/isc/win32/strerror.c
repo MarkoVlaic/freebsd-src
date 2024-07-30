@@ -29,8 +29,6 @@
 #include <isc/strerror.h>
 #include <isc/util.h>
 
-#include "lib_strbuf.h"
-
 /*
  * Forward declarations
  */
@@ -90,46 +88,18 @@ isc__strerror(int num, char *buf, size_t size) {
  */
 char *
 FormatError(int error) {
-	char *lpMsgBuf = NULL;
-	char *pch;
-	const char boiler[] =
-		" For information about network troubleshooting, see Windows Help.";
-	size_t last;
-
+	LPVOID lpMsgBuf = NULL;
 	FormatMessage( 
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | 
 		FORMAT_MESSAGE_FROM_SYSTEM | 
-		(FORMAT_MESSAGE_MAX_WIDTH_MASK - 1),
+		FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL,
 		error,
 		/* Default language */
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)(PVOID)&lpMsgBuf,
+		(LPTSTR) &lpMsgBuf,
 		0,
 		NULL); 
-
-	/* remove useless boilerplate */
-	pch = strstr(lpMsgBuf, boiler);
-	if (pch != NULL) {
-		*pch = '\0';
-	}
-
-	/* strip any trailing CR/LF and spaces */
-	if (lpMsgBuf != NULL) {
-		last = strlen(lpMsgBuf);
-		if (last > 0) {
-			--last;
-		}
-		while ('\n' == lpMsgBuf[last] ||
-		       '\r' == lpMsgBuf[last] ||
-		       ' '  == lpMsgBuf[last]) {
-
-			lpMsgBuf[last] = '\0';
-			if (last > 0) {
-				--last;
-			}
-		}
-	}
 
 	return (lpMsgBuf);
 }
@@ -143,31 +113,27 @@ char *
 NTstrerror(int err, BOOL *bfreebuf) {
 	char *retmsg = NULL;
 
+	/* Copy the error value first in case of other errors */
+	DWORD errval = err;
+
 	*bfreebuf = FALSE;
 
 	/* Get the Winsock2 error messages */
-	/* DLH this may not be needed, FormatError/FormatMessage may handle Winsock error codes */
-	if (err >= WSABASEERR && err <= (WSABASEERR + 1999)) {
-		retmsg = GetWSAErrorMessage(err);
+	if (errval >= WSABASEERR && errval <= (WSABASEERR + 1999)) {
+		retmsg = GetWSAErrorMessage(errval);
+		if (retmsg != NULL)
+			return (retmsg);
 	}
 	/*
 	 * If it's not one of the standard Unix error codes,
 	 * try a system error message
 	 */
-	if (NULL == retmsg) {
-		if (err > _sys_nerr) {
-			*bfreebuf = TRUE;
-			retmsg = FormatError(err);
-		} else {
-			retmsg = lib_getbuf();
-			if (0 != strerror_s(retmsg, LIB_BUFLENGTH, err)) {
-				snprintf(retmsg, LIB_BUFLENGTH,
-					 "Unknown error number %d/0x%x",
-					 err, err);
-			}
-		}
+	if (errval > (DWORD) _sys_nerr) {
+		*bfreebuf = TRUE;
+		return (FormatError(errval));
+	} else {
+		return (strerror(errval));
 	}
-	return retmsg;
 }
 
 /*

@@ -490,6 +490,7 @@ dsl_dir_finalize_props(zfs_dsl_dir_t *dir)
 static void
 dsl_dir_finalize(zfs_opt_t *zfs, zfs_dsl_dir_t *dir, void *arg __unused)
 {
+	char key[32];
 	zfs_dsl_dir_t *cdir;
 	dnode_phys_t *snapnames;
 	zfs_dsl_dataset_t *headds;
@@ -518,7 +519,8 @@ dsl_dir_finalize(zfs_opt_t *zfs, zfs_dsl_dir_t *dir, void *arg __unused)
 	objset_root_blkptr_copy(os, &headds->phys->ds_bp);
 
 	zfs->snapds->phys->ds_num_children++;
-	zap_add_uint64_self(zfs->cloneszap, headds->dsid);
+	snprintf(key, sizeof(key), "%jx", (uintmax_t)headds->dsid);
+	zap_add_uint64(zfs->cloneszap, key, headds->dsid);
 
 	bytes = objset_space(os);
 	headds->phys->ds_used_bytes = bytes;

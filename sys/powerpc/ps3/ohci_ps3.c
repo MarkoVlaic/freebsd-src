@@ -112,7 +112,7 @@ ohci_ps3_attach(device_t dev)
 		return (ENXIO);
 	}
 
-	sc->sc_bus.bdev = device_add_child(dev, "usbus", DEVICE_UNIT_ANY);
+	sc->sc_bus.bdev = device_add_child(dev, "usbus", -1);
 	if (!sc->sc_bus.bdev) {
 		device_printf(dev, "Could not add USB device\n");
 		return (ENXIO);

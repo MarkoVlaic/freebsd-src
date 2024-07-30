@@ -32,11 +32,8 @@
 #define	_LINUXKPI_LINUX_SCATTERLIST_H_
 
 #include <sys/types.h>
-#include <sys/proc.h>
-#include <sys/sched.h>
 #include <sys/sf_buf.h>
 
-#include <linux/err.h>
 #include <linux/page.h>
 #include <linux/slab.h>
 #include <linux/mm.h>

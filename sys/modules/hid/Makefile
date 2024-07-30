@@ -1,3 +1,4 @@
+
 SUBDIR = \
 	hid \
 	hidbus \

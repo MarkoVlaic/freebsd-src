@@ -434,7 +434,7 @@ zy7_spi_attach(device_t dev)
 		return (err);
 	}
 
-	sc->child = device_add_child(dev, "spibus", DEVICE_UNIT_ANY);
+	sc->child = device_add_child(dev, "spibus", -1);
 
 	zy7_spi_add_sysctls(dev);
 

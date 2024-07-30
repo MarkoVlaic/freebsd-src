@@ -1,3 +1,4 @@
+
 PACKAGE=	natd
 NAME=		skinny
 SRCS=		alias_skinny.c

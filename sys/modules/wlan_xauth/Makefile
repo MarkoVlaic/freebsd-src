@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/net80211
 
 KMOD=	wlan_xauth

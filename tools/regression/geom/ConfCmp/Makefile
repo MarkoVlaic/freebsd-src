@@ -1,3 +1,4 @@
+
 PROG=	ConfCmp
 SRCS+=	ConfCmp.c
 SRCS+=	subr_sbuf.c

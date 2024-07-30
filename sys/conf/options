@@ -112,6 +112,7 @@ FULL_PREEMPTION	opt_sched.h
 GZIO		opt_gzio.h
 IMGACT_BINMISC		opt_dontuse.h
 IPI_PREEMPTION	opt_sched.h
+GEOM_BDE	opt_geom.h
 GEOM_CACHE	opt_geom.h
 GEOM_CONCAT	opt_geom.h
 GEOM_ELI	opt_geom.h
@@ -186,6 +187,7 @@ MFI_DEBUG	opt_mfi.h
 MFI_DECODE_LOG	opt_mfi.h
 MPROF_BUFFERS	opt_mprof.h
 MPROF_HASH_SIZE	opt_mprof.h
+NEW_PCIB	opt_global.h
 NO_ADAPTIVE_MUTEXES	opt_adaptive_mutexes.h
 NO_ADAPTIVE_RWLOCKS
 NO_ADAPTIVE_SX
@@ -206,7 +208,6 @@ SCHED_STATS	opt_sched.h
 SCHED_ULE	opt_sched.h
 SLEEPQUEUE_PROFILING
 SLHCI_DEBUG	opt_slhci.h
-SOCKET_HHOOK	opt_global.h
 STACK		opt_stack.h
 SUIDDIR
 MSGMNB		opt_sysvipc.h
@@ -240,6 +241,7 @@ TCP_RACK	opt_inet.h
 # algorithm that uses "normal" behaviour with SACK's to detect
 # a possible attack. It is strictly experimental at this point.
 #
+TCP_SAD_DETECTION opt_inet.h
 TURNSTILE_PROFILING
 UMTX_PROFILING
 UMTX_CHAINS	opt_global.h
@@ -282,7 +284,6 @@ TMPFS		opt_dontuse.h
 UDF		opt_dontuse.h
 UNIONFS		opt_dontuse.h
 ZFS		opt_dontuse.h
-P9FS		opt_dontuse.h
 
 # Pseudofs debugging
 PSEUDOFS_TRACE	opt_pseudofs.h
@@ -465,7 +466,6 @@ IPFIREWALL_PMOD		opt_ipfw.h
 IPSEC			opt_ipsec.h
 IPSEC_DEBUG		opt_ipsec.h
 IPSEC_SUPPORT		opt_ipsec.h
-IPSEC_OFFLOAD		opt_ipsec.h
 IPSTEALTH
 KERN_TLS
 KRPC

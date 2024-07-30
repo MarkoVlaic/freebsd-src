@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/acpica
 KMOD=	acpi_ged
 SRCS=	acpi_ged.c

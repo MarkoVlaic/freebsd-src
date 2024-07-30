@@ -1,3 +1,4 @@
+
 SYSDIR?=${SRCTOP}/sys
 .PATH: ${SYSDIR}/net ${SYSDIR}/netinet ${SYSDIR}/netinet6
 .include "${SYSDIR}/conf/kern.opts.mk"

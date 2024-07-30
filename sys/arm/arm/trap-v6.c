@@ -408,6 +408,8 @@ abort_handler(struct trapframe *tf, int prefetch)
 	if (td->td_md.md_spinlock_count == 0) {
 		if (__predict_true(tf->tf_spsr & PSR_I) == 0)
 			enable_interrupts(PSR_I);
+		if (__predict_true(tf->tf_spsr & PSR_F) == 0)
+			enable_interrupts(PSR_F);
 	}
 
 	p = td->td_proc;
@@ -563,7 +565,7 @@ abort_fatal(struct trapframe *tf, u_int idx, u_int fsr, u_int far,
 
 	mode = usermode ? "user" : "kernel";
 	rw_mode  = fsr & FSR_WNR ? "write" : "read";
-	disable_interrupts(PSR_I);
+	disable_interrupts(PSR_I|PSR_F);
 
 	if (td != NULL) {
 		printf("Fatal %s mode data abort: '%s' on %s\n", mode,

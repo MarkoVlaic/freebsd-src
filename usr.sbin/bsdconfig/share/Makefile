@@ -1,3 +1,4 @@
+
 SUBDIR=	media packages
 
 FILESDIR=	${SHAREDIR}/bsdconfig

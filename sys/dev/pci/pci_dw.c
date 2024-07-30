@@ -821,7 +821,7 @@ pci_dw_init(device_t dev)
 	if (rv != 0)
 		goto out;
 
-	device_add_child(dev, "pci", DEVICE_UNIT_ANY);
+	device_add_child(dev, "pci", -1);
 
 	return (0);
 out:

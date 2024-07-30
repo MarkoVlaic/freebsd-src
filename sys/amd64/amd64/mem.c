@@ -79,7 +79,6 @@ memrw(struct cdev *dev, struct uio *uio, int flags)
 	struct iovec *iov;
 	void *p;
 	ssize_t orig_resid;
-	vm_prot_t prot;
 	u_long v, vd;
 	u_int c;
 	int error;
@@ -111,16 +110,8 @@ memrw(struct cdev *dev, struct uio *uio, int flags)
 				break;
 			}
 
-			switch (uio->uio_rw) {
-			case UIO_READ:
-				prot = VM_PROT_READ;
-				break;
-			case UIO_WRITE:
-				prot = VM_PROT_WRITE;
-				break;
-			}
-
-			if (!kernacc((void *)v, c, prot)) {
+			if (!kernacc((void *)v, c, uio->uio_rw == UIO_READ ?
+			    VM_PROT_READ : VM_PROT_WRITE)) {
 				error = EFAULT;
 				break;
 			}

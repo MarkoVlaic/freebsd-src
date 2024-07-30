@@ -1,3 +1,4 @@
+
 PACKAGE=runtime
 PROG=	comcontrol
 MAN=	comcontrol.8

@@ -1,3 +1,4 @@
+
 BINDIR=	${LIBEXECDIR}/lpr
 
 PACKAGE=lp

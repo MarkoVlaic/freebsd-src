@@ -11,9 +11,13 @@
 name=kfd
 desc="Receive forwarded tickets"
 rcvar=${name}_enable
-command_args="$command_args -i &"
+start_precmd=${name}_start_precmd
 
-: ${kfd_svcj_options:="net_basic"}
+kfd_start_precmd()
+{
+
+	command_args="$command_args -i &"
+}
 
 load_rc_config $name
 run_rc_command "$1"

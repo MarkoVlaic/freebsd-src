@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/pwm
 KMOD=	pwm_backlight
 SRCS=	pwm_backlight.c

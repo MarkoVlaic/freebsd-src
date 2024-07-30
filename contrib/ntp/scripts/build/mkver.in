@@ -1,6 +1,4 @@
 #!@CONFIG_SHELL@
-# @configure_input@
-
 PROG=${1-UNKNOWN}
 
 ConfStr="$PROG"

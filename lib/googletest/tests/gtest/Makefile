@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 .PATH:	${GOOGLETEST_SRCROOT}/src ${GOOGLETEST_SRCROOT}/test

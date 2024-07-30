@@ -1,3 +1,4 @@
+
 # Makefile for the fwip(4) module (IP over IEEE1394)
 
 .PATH: ${SRCTOP}/sys/dev/firewire ${SRCTOP}/sys/net

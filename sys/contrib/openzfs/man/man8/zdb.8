@@ -314,6 +314,7 @@ fragmentation,
 and free space histogram, as well as overall pool fragmentation and histogram.
 .It Fl MM
 "Special" vdevs are added to -M's normal output.
+.It Fl O , -object-lookups Ns = Ns Ar dataset path
 Also display information about the maximum contiguous free space and the
 percentage of free space in each space map.
 .It Fl MMM
@@ -326,7 +327,7 @@ but force zdb to interpret the
 in
 .Op Ar poolname Ns Op / Ns Ar dataset Ns | Ns Ar objset-ID
 as a numeric objset ID.
-.It Fl O , -object-lookups Ns = Ns Ar dataset path
+.It Fl O Ar dataset path
 Look up the specified
 .Ar path
 inside of the

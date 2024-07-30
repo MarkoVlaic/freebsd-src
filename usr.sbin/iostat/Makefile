@@ -1,3 +1,4 @@
+
 PROG=	iostat
 MAN=	iostat.8
 

@@ -1,3 +1,4 @@
+
 PACKAGE=	clibs
 LIB=		ssp_nonshared
 NO_PIC=

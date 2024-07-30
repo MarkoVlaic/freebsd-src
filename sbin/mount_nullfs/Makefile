@@ -1,3 +1,4 @@
+
 PACKAGE=runtime
 PROG=	mount_nullfs
 SRCS=	mount_nullfs.c getmntopts.c

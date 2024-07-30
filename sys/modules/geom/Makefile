@@ -1,7 +1,9 @@
+
 SYSDIR?=${SRCTOP}/sys
 .include "${SYSDIR}/conf/kern.opts.mk"
 
-SUBDIR=	geom_cache \
+SUBDIR=	geom_bde \
+	geom_cache \
 	geom_concat \
 	geom_eli \
 	geom_flashmap \

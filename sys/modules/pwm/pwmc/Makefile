@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/pwm
 KMOD=	pwmc
 SRCS=	pwmc.c

@@ -378,7 +378,7 @@ int tlsv12_key_x_server_params_hash(u16 tls_version, u8 hash_alg,
 int tls_key_x_server_params_hash(u16 tls_version, const u8 *client_random,
 				 const u8 *server_random,
 				 const u8 *server_params,
-				 size_t server_params_len, u8 *hash, size_t hsz)
+				 size_t server_params_len, u8 *hash)
 {
 	u8 *hpos;
 	size_t hlen;
@@ -393,8 +393,6 @@ int tls_key_x_server_params_hash(u16 tls_version, const u8 *client_random,
 	crypto_hash_update(ctx, server_random, TLS_RANDOM_LEN);
 	crypto_hash_update(ctx, server_params, server_params_len);
 	hlen = MD5_MAC_LEN;
-	if (hsz < hlen)
-		return -1;
 	if (crypto_hash_finish(ctx, hash, &hlen) < 0)
 		return -1;
 	hpos += hlen;
@@ -405,7 +403,7 @@ int tls_key_x_server_params_hash(u16 tls_version, const u8 *client_random,
 	crypto_hash_update(ctx, client_random, TLS_RANDOM_LEN);
 	crypto_hash_update(ctx, server_random, TLS_RANDOM_LEN);
 	crypto_hash_update(ctx, server_params, server_params_len);
-	hlen = hsz - hlen;
+	hlen = hash + sizeof(hash) - hpos;
 	if (crypto_hash_finish(ctx, hpos, &hlen) < 0)
 		return -1;
 	hpos += hlen;

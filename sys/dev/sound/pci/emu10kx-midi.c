@@ -43,6 +43,7 @@
 #include "opt_snd.h"
 #endif
 
+#include <dev/sound/chip.h>
 #include <dev/sound/pcm/sound.h>
 
 #include <dev/sound/midi/midi.h>

@@ -27,7 +27,6 @@
 
 #include <sys/param.h>
 #include <sys/systm.h>
-#include <sys/dtrace_impl.h>
 #include <sys/kernel.h>
 #include <sys/stack.h>
 #include <sys/pcpu.h>
@@ -46,8 +45,6 @@
 #include <ddb/db_sym.h>
 #include <ddb/ddb.h>
 #include <sys/kdb.h>
-
-#include <cddl/dev/dtrace/dtrace_cddl.h>
 
 #include "regset.h"
 
@@ -241,37 +238,14 @@ dtrace_getufpstack(uint64_t *pcstack, uint64_t *fpstack, int pcstack_limit)
 	printf("IMPLEMENT ME: %s\n", __func__);
 }
 
+/*ARGSUSED*/
 uint64_t
-dtrace_getarg(int arg, int aframes __unused)
+dtrace_getarg(int arg, int aframes)
 {
-	struct trapframe *tf;
 
-	/*
-	 * We only handle invop providers here.
-	 */
-	if ((tf = curthread->t_dtrace_trapframe) == NULL) {
-		DTRACE_CPUFLAG_SET(CPU_DTRACE_ILLOP);
-		return (0);
-	} else if (arg < 8) {
-		return (tf->tf_x[arg]);
-	} else {
-		uintptr_t p;
-		uint64_t val;
+	printf("IMPLEMENT ME: %s\n", __func__);
 
-		p = (tf->tf_sp + (arg - 8) * sizeof(uint64_t));
-		if ((p & 7) != 0) {
-			DTRACE_CPUFLAG_SET(CPU_DTRACE_BADALIGN);
-			cpu_core[curcpu].cpuc_dtrace_illval = p;
-			return (0);
-		}
-		if (!kstack_contains(curthread, p, sizeof(uint64_t))) {
-			DTRACE_CPUFLAG_SET(CPU_DTRACE_BADADDR);
-			cpu_core[curcpu].cpuc_dtrace_illval = p;
-			return (0);
-		}
-		memcpy(&val, (void *)p, sizeof(uint64_t));
-		return (val);
-	}
+	return (0);
 }
 
 int

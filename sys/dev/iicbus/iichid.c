@@ -1037,6 +1037,7 @@ iichid_probe(device_t dev)
 {
 	struct iichid_softc *sc;
 	ACPI_HANDLE handle;
+	char buf[80];
 	uint16_t config_reg;
 	int error, reg;
 
@@ -1096,8 +1097,10 @@ iichid_probe(device_t dev)
 
 	sc->probe_result = BUS_PROBE_DEFAULT;
 done:
-	if (sc->probe_result <= BUS_PROBE_SPECIFIC)
-		device_set_descf(dev, "%s I2C HID device", sc->hw.name);
+	if (sc->probe_result <= BUS_PROBE_SPECIFIC) {
+		snprintf(buf, sizeof(buf), "%s I2C HID device", sc->hw.name);
+		device_set_desc_copy(dev, buf);
+	}
 	return (sc->probe_result);
 }
 
@@ -1154,7 +1157,7 @@ iichid_attach(device_t dev)
 	if (sc->irq_res == NULL || error != 0) {
 #ifdef IICHID_SAMPLING
 		device_printf(sc->dev,
-		    "Using sampling mode\n");
+		    "Interrupt setup failed. Fallback to sampling\n");
 		sc->sampling_rate_slow = IICHID_SAMPLING_RATE_SLOW;
 #else
 		device_printf(sc->dev, "Interrupt setup failed\n");
@@ -1190,7 +1193,7 @@ iichid_attach(device_t dev)
 	}
 #endif /* IICHID_SAMPLING */
 
-	child = device_add_child(dev, "hidbus", DEVICE_UNIT_ANY);
+	child = device_add_child(dev, "hidbus", -1);
 	if (child == NULL) {
 		device_printf(sc->dev, "Could not add I2C device\n");
 		iichid_detach(dev);

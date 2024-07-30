@@ -39,7 +39,6 @@ rst_head()
 rst_body()
 {
 	pft_init
-	vnet_init_bridge
 
 	epair_srv=$(vnet_mkepair)
 	epair_cl=$(vnet_mkepair)

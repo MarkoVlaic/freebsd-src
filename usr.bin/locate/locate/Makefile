@@ -1,3 +1,4 @@
+
 CONFS=	locate.rc
 PROG=	locate
 SRCS=	util.c locate.c

@@ -15,6 +15,7 @@ extern int key_cnt;
 
 
 void PrepareAuthenticationTest(int key_id,int key_len,const char* type,const void* key_seq);
+void PrepareAuthenticationTestMD5(int key_id,int key_len,const void* key_seq);
 void setUp(void);
 void tearDown(void);
 void test_TooShortLength(void);
@@ -34,14 +35,13 @@ void test_RejectWrongResponseServerMode(void);
 void test_AcceptNoSentPacketBroadcastMode(void);
 void test_CorrectUnauthenticatedPacket(void);
 void test_CorrectAuthenticatedPacketMD5(void);
-void test_CorrectAuthenticatedPacketSHAKE128(void);
 void test_CorrectAuthenticatedPacketSHA1(void);
 void test_CorrectAuthenticatedPacketCMAC(void);
 
 /* [Bug 2998] There are some issues whith the definition of 'struct pkt'
  * when AUTOKEY is undefined -- the formal struct is too small to hold
  * all the extension fields that are going to be tested. We have to make
- * sure we have the extra bytes, or the test yields undefined results due
+ * sure we have the extra bytes, or the test yield undefined results due
  * to buffer overrun.
  */
 #ifndef AUTOKEY
@@ -70,24 +70,31 @@ PrepareAuthenticationTest(
 	)
 {
 	char str[25];
-
-	snprintf(str, sizeof(str), "%d", key_id);
+	snprintf(str, 25, "%d", key_id);
 	ActivateOption("-a", str);
 
 	key_cnt = 1;
-	if (NULL == key_ptr) {
-		key_ptr = emalloc(sizeof(*key_ptr));
-	}
+	key_ptr = emalloc(sizeof(struct key));
 	key_ptr->next = NULL;
 	key_ptr->key_id = key_id;
 	key_ptr->key_len = key_len;
-	strncpy(key_ptr->typen, type, sizeof(key_ptr->typen));
+	memcpy(key_ptr->typen, type, strlen(type) + 1);
 
 	TEST_ASSERT_TRUE(key_len < sizeof(key_ptr->key_seq));
 
-	memcpy(key_ptr->key_seq, key_seq,
-	       min(key_len, sizeof(key_ptr->key_seq)));
+	memcpy(key_ptr->key_seq, key_seq, key_ptr->key_len);
 	restoreKeyDb = true;
+}
+
+
+void
+PrepareAuthenticationTestMD5(
+	int 		key_id,
+	int 		key_len,
+	const void *	key_seq
+	)
+{
+	PrepareAuthenticationTest(key_id, key_len, "MD5", key_seq);
 }
 
 
@@ -102,7 +109,7 @@ setUp(void)
 	 * so they contain at least some valid data.
 	 */
 	testpkt.p.li_vn_mode = PKT_LI_VN_MODE(LEAP_NOWARNING, NTP_VERSION,
-					      MODE_SERVER);
+										MODE_SERVER);
 	testpkt.p.stratum = STRATUM_REFCLOCK;
 	memcpy(&testpkt.p.refid, "GPS\0", 4);
 
@@ -217,20 +224,19 @@ test_CryptoNAKPacketReject(void)
 void
 test_AuthenticatedPacketInvalid(void)
 {
-#ifdef OPENSSL
-	size_t pkt_len = LEN_PKT_NOMAC;
-	size_t mac_len;
-
 	/* Activate authentication option */
-	PrepareAuthenticationTest(50, 9, "SHAKE128", "123456789");
+	PrepareAuthenticationTestMD5(50, 9, "123456789");
 	TEST_ASSERT_TRUE(ENABLED_OPT(AUTHENTICATION));
 
 	/* Prepare the packet. */
-	testpkt.p.exten[0] = htonl(50);
-	mac_len = make_mac(&testpkt.p, pkt_len, key_ptr,
-			   &testpkt.p.exten[1], MAX_MDG_LEN);
+	int pkt_len = LEN_PKT_NOMAC;
 
-	pkt_len += KEY_MAC_LEN + mac_len;
+	testpkt.p.exten[0] = htonl(50);
+	int mac_len = make_mac(&testpkt.p, pkt_len,
+			       MAX_MD5_LEN - KEY_MAC_LEN, key_ptr,
+			       &testpkt.p.exten[1]);
+
+	pkt_len += 4 + mac_len;
 
 	/* Now, alter the MAC so it becomes invalid. */
 	testpkt.p.exten[1] += 1;
@@ -238,43 +244,30 @@ test_AuthenticatedPacketInvalid(void)
 	TEST_ASSERT_EQUAL(SERVER_AUTH_FAIL,
 			  process_pkt(&testpkt.p, &testsock, pkt_len,
 				      MODE_SERVER, &testspkt.p, "UnitTest"));
-
-#else
-
-	TEST_IGNORE_MESSAGE("OpenSSL not enabled, skipping...");
-
-#endif
 }
 
 
 void
 test_AuthenticatedPacketUnknownKey(void)
 {
-#ifdef OPENSSL
-	size_t pkt_len = LEN_PKT_NOMAC;
-	size_t mac_len;
-
 	/* Activate authentication option */
-	PrepareAuthenticationTest(30, 9, "SHAKE128", "123456789");
+	PrepareAuthenticationTestMD5(30, 9, "123456789");
 	TEST_ASSERT_TRUE(ENABLED_OPT(AUTHENTICATION));
 
 	/* Prepare the packet. Note that the Key-ID expected is 30, but
 	 * the packet has a key id of 50.
 	 */
+	int pkt_len = LEN_PKT_NOMAC;
+
 	testpkt.p.exten[0] = htonl(50);
-	mac_len = make_mac(&testpkt.p, pkt_len, key_ptr,
-			   &testpkt.p.exten[1], MAX_MDG_LEN);
+	int mac_len = make_mac(&testpkt.p, pkt_len,
+			       MAX_MD5_LEN - KEY_MAC_LEN, key_ptr,
+			       &testpkt.p.exten[1]);
 	pkt_len += KEY_MAC_LEN + mac_len;
 
 	TEST_ASSERT_EQUAL(SERVER_AUTH_FAIL,
 			  process_pkt(&testpkt.p, &testsock, pkt_len,
 				      MODE_SERVER, &testspkt.p, "UnitTest"));
-
-#else
-
-	TEST_IGNORE_MESSAGE("OpenSSL not enabled, skipping...");
-
-#endif
 }
 
 
@@ -425,96 +418,44 @@ test_CorrectUnauthenticatedPacket(void)
 void
 test_CorrectAuthenticatedPacketMD5(void)
 {
-#ifdef OPENSSL
-
-	keyid_t k_id = 10;
-	int pkt_len = LEN_PKT_NOMAC;
-	int mac_len;
-
-	PrepareAuthenticationTest(k_id, 15, "MD5", "123456789abcdef");
+	PrepareAuthenticationTestMD5(10, 15, "123456789abcdef");
 	TEST_ASSERT_TRUE(ENABLED_OPT(AUTHENTICATION));
 
-	/* Prepare the packet. */
-	testpkt.p.exten[0] = htonl(k_id);
-	mac_len = make_mac(&testpkt.p, pkt_len, key_ptr,
-			   &testpkt.p.exten[1], MAX_MDG_LEN);
+	int pkt_len = LEN_PKT_NOMAC;
 
-	/* TODO: Should not expect failure if non-FIPS OpenSSL */
-	TEST_EXPECT_FAIL_MESSAGE("FIPS OpenSSL bars MD5");
+	/* Prepare the packet. */
+	testpkt.p.exten[0] = htonl(10);
+	int mac_len = make_mac(&testpkt.p, pkt_len,
+			       MAX_MD5_LEN - KEY_MAC_LEN, key_ptr,
+			       &testpkt.p.exten[1]);
 
 	pkt_len += KEY_MAC_LEN + mac_len;
 
 	TEST_ASSERT_EQUAL(pkt_len,
 			  process_pkt(&testpkt.p, &testsock, pkt_len,
 				      MODE_SERVER, &testspkt.p, "UnitTest"));
-
-#else
-
-	TEST_IGNORE_MESSAGE("OpenSSL not enabled, skipping...");
-
-#endif
-}
-
-
-void
-test_CorrectAuthenticatedPacketSHAKE128(void)
-{
-#ifdef OPENSSL
-
-	keyid_t k_id = 10;
-	int pkt_len = LEN_PKT_NOMAC;
-	int mac_len;
-
-	PrepareAuthenticationTest(k_id, 15, "SHAKE128", "123456789abcdef");
-	TEST_ASSERT_TRUE(ENABLED_OPT(AUTHENTICATION));
-
-	/* Prepare the packet. */
-	testpkt.p.exten[0] = htonl(k_id);
-	mac_len = make_mac(&testpkt.p, pkt_len, key_ptr, &testpkt.p.exten[1],
-			   SHAKE128_LENGTH);
-
-	pkt_len += KEY_MAC_LEN + mac_len;
-
-	TEST_ASSERT_EQUAL(pkt_len,
-			  process_pkt(&testpkt.p, &testsock, pkt_len,
-				      MODE_SERVER, &testspkt.p, "UnitTest"));
-
-#else
-
-	TEST_IGNORE_MESSAGE("OpenSSL not enabled, skipping...");
-
-#endif
 }
 
 
 void
 test_CorrectAuthenticatedPacketSHA1(void)
 {
-#ifdef OPENSSL
-
-	keyid_t k_id = 20;
-	int pkt_len = LEN_PKT_NOMAC;
-	int mac_len;
-
-	PrepareAuthenticationTest(k_id, 15, "SHA1", "abcdefghijklmno");
+	PrepareAuthenticationTest(20, 15, "SHA1", "abcdefghijklmno");
 	TEST_ASSERT_TRUE(ENABLED_OPT(AUTHENTICATION));
 
+	int pkt_len = LEN_PKT_NOMAC;
+
 	/* Prepare the packet. */
-	testpkt.p.exten[0] = htonl(k_id);
-	mac_len = make_mac(&testpkt.p, pkt_len, key_ptr, &testpkt.p.exten[1],
-			   SHA1_LENGTH);
+	testpkt.p.exten[0] = htonl(20);
+	int mac_len = make_mac(&testpkt.p, pkt_len,
+			       MAX_MDG_LEN, key_ptr,
+			       &testpkt.p.exten[1]);
 
 	pkt_len += KEY_MAC_LEN + mac_len;
 
 	TEST_ASSERT_EQUAL(pkt_len,
 			  process_pkt(&testpkt.p, &testsock, pkt_len,
 				      MODE_SERVER, &testspkt.p, "UnitTest"));
-
-#else
-
-	TEST_IGNORE_MESSAGE("OpenSSL not enabled, skipping...");
-
-#endif
 }
 
 
@@ -530,8 +471,9 @@ test_CorrectAuthenticatedPacketCMAC(void)
 
 	/* Prepare the packet. */
 	testpkt.p.exten[0] = htonl(30);
-	int mac_len = make_mac(&testpkt.p, pkt_len, key_ptr,
-			       &testpkt.p.exten[1], MAX_MAC_LEN);
+	int mac_len = make_mac(&testpkt.p, pkt_len,
+			       MAX_MAC_LEN, key_ptr,
+			       &testpkt.p.exten[1]);
 
 	pkt_len += 4 + mac_len;
 
@@ -541,7 +483,7 @@ test_CorrectAuthenticatedPacketCMAC(void)
 
 #else
 
-	TEST_IGNORE_MESSAGE("CMAC not enabled, skipping...");
+	TEST_IGNORE_MESSAGE("OpenSSL CMAC not used, skipping...");
 
 #endif	/* OPENSSL */
 }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2018-2022,2023 Thomas E. Dickey                                *
+ * Copyright 2018-2019,2020 Thomas E. Dickey                                *
  * Copyright 2001-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
@@ -590,17 +590,17 @@ int	addstr(
 
 #undef attroff
 int	attroff(
-		NCURSES_ATTR_T	z)
+		int	z)
 		{ return(*(int *)0); }
 
 #undef attron
 int	attron(
-		NCURSES_ATTR_T	z)
+		int	z)
 		{ return(*(int *)0); }
 
 #undef attrset
 int	attrset(
-		NCURSES_ATTR_T	z)
+		int	z)
 		{ return(*(int *)0); }
 
 #undef attr_get
@@ -3243,20 +3243,8 @@ int	getcchar(
 
 /* ./widechar/lib_erasewchar.c */
 
-#undef erasewchar_sp
-int	erasewchar_sp(
-		SCREEN	*sp,
-		wchar_t	*wch)
-		{ return(*(int *)0); }
-
 #undef erasewchar
 int	erasewchar(
-		wchar_t	*wch)
-		{ return(*(int *)0); }
-
-#undef killwchar_sp
-int	killwchar_sp(
-		SCREEN	*sp,
 		wchar_t	*wch)
 		{ return(*(int *)0); }
 
@@ -3744,19 +3732,6 @@ NCURSES_BOOL _nc_is_file_path(
 int	_nc_env_access(void)
 		{ return(*(int *)0); }
 
-#undef _nc_safe_fopen
-FILE	*_nc_safe_fopen(
-		const char *path,
-		const char *mode)
-		{ return(*(FILE **)0); }
-
-#undef _nc_safe_open3
-int	_nc_safe_open3(
-		const char *path,
-		int	flags,
-		mode_t	mode)
-		{ return(*(int *)0); }
-
 /* ./tinfo/add_tries.c */
 
 #undef _nc_add_to_try
@@ -3978,11 +3953,6 @@ const TERMTYPE *_nc_fallback(
 
 #undef _nc_free_termtype
 void	_nc_free_termtype(
-		TERMTYPE *ptr)
-		{ /* void */ }
-
-#undef _nc_free_termtype1
-void	_nc_free_termtype1(
 		TERMTYPE *ptr)
 		{ /* void */ }
 
@@ -4372,42 +4342,6 @@ int	intrflush(
 		NCURSES_BOOL flag)
 		{ return(*(int *)0); }
 
-#undef is_nl_sp
-int	is_nl_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_raw_sp
-int	is_raw_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_cbreak_sp
-int	is_cbreak_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_echo_sp
-int	is_echo_sp(
-		SCREEN	*sp)
-		{ return(*(int *)0); }
-
-#undef is_nl
-int	is_nl(void)
-		{ return(*(int *)0); }
-
-#undef is_raw
-int	is_raw(void)
-		{ return(*(int *)0); }
-
-#undef is_cbreak
-int	is_cbreak(void)
-		{ return(*(int *)0); }
-
-#undef is_echo
-int	is_echo(void)
-		{ return(*(int *)0); }
-
 /* ./tinfo/lib_setup.c */
 
 #undef ttytype
@@ -4628,16 +4562,10 @@ char	*tigetstr(
 #undef _nc_tparm_err
 int	_nc_tparm_err;
 
-#undef _nc_free_tparm
-void	_nc_free_tparm(
-		TERMINAL *termp)
-		{ /* void */ }
-
 #undef _nc_tparm_analyze
 int	_nc_tparm_analyze(
-		TERMINAL *term,
 		const char *string,
-		char	**p_is_s,
+		char	*p_is_s[9],
 		int	*_nc_popcount)
 		{ return(*(int *)0); }
 
@@ -4653,32 +4581,12 @@ char	*tiparm(
 		...)
 		{ return(*(char **)0); }
 
-#undef tiparm_s
-char	*tiparm_s(
-		int	num_expected,
-		int	tparm_type,
-		const char *string,
-		...)
-		{ return(*(char **)0); }
-
-#undef tiscan_s
-int	tiscan_s(
-		int	*num_expected,
-		int	*tparm_type,
-		const char *string)
-		{ return(*(int *)0); }
-
 #undef _nc_tiparm
 char	*_nc_tiparm(
 		int	expected,
 		const char *string,
 		...)
 		{ return(*(char **)0); }
-
-#undef _nc_reset_tparm
-void	_nc_reset_tparm(
-		TERMINAL *term)
-		{ /* void */ }
 
 /* ./tinfo/lib_tputs.c */
 
@@ -4924,7 +4832,7 @@ char	*_tracecchar_t(
 
 #undef _nc_trace_ttymode
 char	*_nc_trace_ttymode(
-		const struct termios *tty)
+		struct termios *tty)
 		{ return(*(char **)0); }
 
 #undef _nc_tracebits
@@ -5136,7 +5044,7 @@ string_desc *_nc_str_null(
 #undef _nc_str_copy
 string_desc *_nc_str_copy(
 		string_desc *dst,
-		const string_desc *const src)
+		string_desc *src)
 		{ return(*(string_desc **)0); }
 
 #undef _nc_safe_strcat
@@ -5282,7 +5190,7 @@ ENTRY	*_nc_copy_entry(
 
 #undef _nc_save_str
 char	*_nc_save_str(
-		const char *string)
+		const char *const string)
 		{ return(*(char **)0); }
 
 #undef _nc_wrap_entry
@@ -5384,7 +5292,7 @@ int	_nc_get_token(
 #undef _nc_trans_string
 int	_nc_trans_string(
 		char	*ptr,
-		const char *const last)
+		char	*last)
 		{ return(*(int *)0); }
 
 #undef _nc_push_token

@@ -1,3 +1,4 @@
+
 PROG=	etdump
 
 MAKEFS_SRC=	${SRCTOP}/usr.sbin/makefs

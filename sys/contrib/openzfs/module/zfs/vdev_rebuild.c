@@ -1087,8 +1087,7 @@ vdev_rebuild_stop_wait(vdev_t *vd)
 {
 	spa_t *spa = vd->vdev_spa;
 
-	ASSERT(MUTEX_HELD(&spa_namespace_lock) ||
-	    spa->spa_export_thread == curthread);
+	ASSERT(MUTEX_HELD(&spa_namespace_lock));
 
 	if (vd == spa->spa_root_vdev) {
 		for (uint64_t i = 0; i < vd->vdev_children; i++)

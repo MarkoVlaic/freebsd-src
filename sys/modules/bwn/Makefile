@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/bwn
 
 KMOD=	if_bwn

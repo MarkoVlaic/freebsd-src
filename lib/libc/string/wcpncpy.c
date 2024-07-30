@@ -27,11 +27,9 @@
  */
 
 #include <wchar.h>
-#include <ssp/ssp.h>
 
 wchar_t *
-__ssp_real(wcpncpy)(wchar_t * __restrict dst, const wchar_t * __restrict src,
-    size_t n)
+wcpncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n)
 {
 
 	for (; n--; dst++, src++) {

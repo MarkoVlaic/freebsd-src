@@ -277,8 +277,8 @@ get_user_pages_remote(struct task_struct *task, struct mm_struct *mm,
 }
 
 long
-lkpi_get_user_pages(unsigned long start, unsigned long nr_pages,
-    unsigned int gup_flags, struct page **pages)
+get_user_pages(unsigned long start, unsigned long nr_pages,
+    unsigned int gup_flags, struct page **pages, struct vm_area_struct **vmas)
 {
 	vm_map_t map;
 

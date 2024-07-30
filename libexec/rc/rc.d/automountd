@@ -17,8 +17,4 @@ command="/usr/sbin/${name}"
 required_modules="autofs"
 
 load_rc_config $name
-
-# mounting shall not be performed in a svcj
-automountd_svcj="NO"
-
 run_rc_command "$1"

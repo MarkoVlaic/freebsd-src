@@ -1,3 +1,4 @@
+
 .include <src.opts.mk>
 .include <bsd.linker.mk>
 
@@ -91,7 +92,7 @@ CRUNCH_SRCDIRS+= sbin
 CRUNCH_PROGS_sbin= 						\
 	camcontrol clri devfs dmesg dump			\
 	dumpfs dumpon fsck fsck_ffs fsck_msdosfs fsdb		\
-	fsirand geom ifconfig init 				\
+	fsirand gbde geom ifconfig init 			\
 	kldconfig kldload kldstat kldunload ldconfig 		\
 	md5 mdconfig mdmfs mknod mount mount_cd9660		\
 	mount_msdosfs mount_nfs mount_nullfs			\

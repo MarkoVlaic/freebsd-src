@@ -875,7 +875,7 @@ parse_setcs(
 }
 
 #else /* not (REFCLOCK && CLOCK_PARSE) */
-NONEMPTY_TRANSLATION_UNIT
+int parse_bs;
 #endif /* not (REFCLOCK && CLOCK_PARSE) */
 
 /*

@@ -293,10 +293,7 @@ static void eap_pwd_build_commit_req(struct eap_sm *sm,
 	/* We send the element as (x,y) followed by the scalar */
 	element = wpabuf_put(data->outbuf, 2 * prime_len);
 	scalar = wpabuf_put(data->outbuf, order_len);
-	if (crypto_bignum_to_bin(data->my_scalar, scalar, order_len,
-				 order_len) < 0)
-		goto fin;
-
+	crypto_bignum_to_bin(data->my_scalar, scalar, order_len, order_len);
 	if (crypto_ec_point_to_bin(data->grp->group, data->my_element, element,
 				   element + prime_len) < 0) {
 		wpa_printf(MSG_INFO, "EAP-PWD (server): point assignment "
@@ -352,9 +349,7 @@ static void eap_pwd_build_confirm_req(struct eap_sm *sm,
 	 *
 	 * First is k
 	 */
-	if (crypto_bignum_to_bin(data->k, cruft, prime_len, prime_len) < 0)
-		goto fin;
-
+	crypto_bignum_to_bin(data->k, cruft, prime_len, prime_len);
 	eap_pwd_h_update(hash, cruft, prime_len);
 
 	/* server element: x, y */
@@ -367,10 +362,7 @@ static void eap_pwd_build_confirm_req(struct eap_sm *sm,
 	eap_pwd_h_update(hash, cruft, prime_len * 2);
 
 	/* server scalar */
-	if (crypto_bignum_to_bin(data->my_scalar, cruft, order_len,
-				 order_len) < 0)
-		goto fin;
-
+	crypto_bignum_to_bin(data->my_scalar, cruft, order_len, order_len);
 	eap_pwd_h_update(hash, cruft, order_len);
 
 	/* peer element: x, y */
@@ -383,10 +375,7 @@ static void eap_pwd_build_confirm_req(struct eap_sm *sm,
 	eap_pwd_h_update(hash, cruft, prime_len * 2);
 
 	/* peer scalar */
-	if (crypto_bignum_to_bin(data->peer_scalar, cruft, order_len,
-				 order_len) < 0)
-		goto fin;
-
+	crypto_bignum_to_bin(data->peer_scalar, cruft, order_len, order_len);
 	eap_pwd_h_update(hash, cruft, order_len);
 
 	/* ciphersuite */
@@ -796,9 +785,7 @@ eap_pwd_process_confirm_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 		goto fin;
 
 	/* k */
-	if (crypto_bignum_to_bin(data->k, cruft, prime_len, prime_len) < 0)
-		goto fin;
-
+	crypto_bignum_to_bin(data->k, cruft, prime_len, prime_len);
 	eap_pwd_h_update(hash, cruft, prime_len);
 
 	/* peer element: x, y */
@@ -811,10 +798,7 @@ eap_pwd_process_confirm_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 	eap_pwd_h_update(hash, cruft, prime_len * 2);
 
 	/* peer scalar */
-	if (crypto_bignum_to_bin(data->peer_scalar, cruft, order_len,
-				 order_len) < 0)
-		goto fin;
-
+	crypto_bignum_to_bin(data->peer_scalar, cruft, order_len, order_len);
 	eap_pwd_h_update(hash, cruft, order_len);
 
 	/* server element: x, y */
@@ -827,10 +811,7 @@ eap_pwd_process_confirm_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 	eap_pwd_h_update(hash, cruft, prime_len * 2);
 
 	/* server scalar */
-	if (crypto_bignum_to_bin(data->my_scalar, cruft, order_len,
-				 order_len) < 0)
-		goto fin;
-
+	crypto_bignum_to_bin(data->my_scalar, cruft, order_len, order_len);
 	eap_pwd_h_update(hash, cruft, order_len);
 
 	/* ciphersuite */

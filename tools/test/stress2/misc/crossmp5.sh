@@ -74,10 +74,8 @@ else
 		done
 	else
 		# The test: Parallel mount and unmount
-		i=0
 		m=$1
-		start=`date +%s`
-		while [ $((`date +%s`- start)) -lt 300 ]; do
+		for i in `jot 200`; do
 			mount /dev/md${m} ${mntpoint}$m
 			chmod 777 ${mntpoint}$m
 			l=`jot -r 1 65535`
@@ -90,7 +88,6 @@ else
 				    echo "-f")
 				umount $opt ${mntpoint}$m > /dev/null 2>&1
 			done
-			i=$((i + 1))
 		done
 		rm -f /tmp/crossmp.continue
 	fi

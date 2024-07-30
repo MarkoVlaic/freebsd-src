@@ -48,7 +48,6 @@
 #include <sys/spa_impl.h>
 #include <sys/dmu.h>
 #include <sys/zap.h>
-#include <sys/zap_impl.h>
 #include <sys/fs/zfs.h>
 #include <sys/zfs_znode.h>
 #include <sys/zfs_sa.h>
@@ -86,11 +85,9 @@
 #include <sys/brt_impl.h>
 #include <zfs_comutil.h>
 #include <sys/zstd/zstd.h>
-#include <sys/backtrace.h>
 
 #include <libnvpair.h>
 #include <libzutil.h>
-#include <libzfs_core.h>
 
 #include <libzdb.h>
 
@@ -123,9 +120,6 @@ static int flagbits[256];
 static uint64_t max_inflight_bytes = 256 * 1024 * 1024; /* 256MB */
 static int leaked_objects = 0;
 static range_tree_t *mos_refd_objs;
-static spa_t *spa;
-static objset_t *os;
-static boolean_t kernel_init_done;
 
 static void snprintf_blkptr_compact(char *, size_t, const blkptr_t *,
     boolean_t);
@@ -137,7 +131,6 @@ static int dump_bpobj_cb(void *arg, const blkptr_t *bp, boolean_t free,
 
 
 static void zdb_print_blkptr(const blkptr_t *bp, int flags);
-static void zdb_exit(int reason);
 
 typedef struct sublivelist_verify_block_refcnt {
 	/* block pointer entry in livelist being verified */
@@ -825,40 +818,17 @@ usage(void)
 	(void) fprintf(stderr, "Specify an option more than once (e.g. -bb) "
 	    "to make only that option verbose\n");
 	(void) fprintf(stderr, "Default is to dump everything non-verbosely\n");
-	zdb_exit(1);
+	exit(1);
 }
 
 static void
 dump_debug_buffer(void)
 {
-	ssize_t ret __attribute__((unused));
-
-	if (!dump_opt['G'])
-		return;
-	/*
-	 * We use write() instead of printf() so that this function
-	 * is safe to call from a signal handler.
-	 */
-	ret = write(STDERR_FILENO, "\n", 1);
-	zfs_dbgmsg_print(STDERR_FILENO, "zdb");
-}
-
-static void sig_handler(int signo)
-{
-	struct sigaction action;
-
-	libspl_backtrace(STDERR_FILENO);
-	dump_debug_buffer();
-
-	/*
-	 * Restore default action and re-raise signal so SIGSEGV and
-	 * SIGABRT can trigger a core dump.
-	 */
-	action.sa_handler = SIG_DFL;
-	sigemptyset(&action.sa_mask);
-	action.sa_flags = 0;
-	(void) sigaction(signo, &action, NULL);
-	raise(signo);
+	if (dump_opt['G']) {
+		(void) printf("\n");
+		(void) fflush(stdout);
+		zfs_dbgmsg_print("zdb");
+	}
 }
 
 /*
@@ -879,7 +849,7 @@ fatal(const char *fmt, ...)
 
 	dump_debug_buffer();
 
-	zdb_exit(1);
+	exit(1);
 }
 
 static void
@@ -1127,33 +1097,16 @@ dump_zap(objset_t *os, uint64_t object, void *data, size_t size)
 	for (zap_cursor_init(&zc, os, object);
 	    zap_cursor_retrieve(&zc, &attr) == 0;
 	    zap_cursor_advance(&zc)) {
-		boolean_t key64 =
-		    !!(zap_getflags(zc.zc_zap) & ZAP_FLAG_UINT64_KEY);
-
-		if (key64)
-			(void) printf("\t\t0x%010llx = ",
-			    (u_longlong_t)*(uint64_t *)attr.za_name);
-		else
-			(void) printf("\t\t%s = ", attr.za_name);
-
+		(void) printf("\t\t%s = ", attr.za_name);
 		if (attr.za_num_integers == 0) {
 			(void) printf("\n");
 			continue;
 		}
 		prop = umem_zalloc(attr.za_num_integers *
 		    attr.za_integer_length, UMEM_NOFAIL);
-
-		if (key64)
-			(void) zap_lookup_uint64(os, object,
-			    (const uint64_t *)attr.za_name, 1,
-			    attr.za_integer_length, attr.za_num_integers,
-			    prop);
-		else
-			(void) zap_lookup(os, object, attr.za_name,
-			    attr.za_integer_length, attr.za_num_integers,
-			    prop);
-
-		if (attr.za_integer_length == 1 && !key64) {
+		(void) zap_lookup(os, object, attr.za_name,
+		    attr.za_integer_length, attr.za_num_integers, prop);
+		if (attr.za_integer_length == 1) {
 			if (strcmp(attr.za_name,
 			    DSL_CRYPTO_KEY_MASTER_KEY) == 0 ||
 			    strcmp(attr.za_name,
@@ -1172,10 +1125,6 @@ dump_zap(objset_t *os, uint64_t object, void *data, size_t size)
 		} else {
 			for (i = 0; i < attr.za_num_integers; i++) {
 				switch (attr.za_integer_length) {
-				case 1:
-					(void) printf("%u ",
-					    ((uint8_t *)prop)[i]);
-					break;
 				case 2:
 					(void) printf("%u ",
 					    ((uint16_t *)prop)[i]);
@@ -2327,7 +2276,7 @@ snprintf_zstd_header(spa_t *spa, char *blkbuf, size_t buflen,
 		buf = malloc(SPA_MAXBLOCKSIZE);
 		if (buf == NULL) {
 			(void) fprintf(stderr, "out of memory\n");
-			zdb_exit(1);
+			exit(1);
 		}
 		decode_embedded_bp_compressed(bp, buf);
 		memcpy(&zstd_hdr, buf, sizeof (zstd_hdr));
@@ -3282,23 +3231,6 @@ fuid_table_destroy(void)
 	}
 }
 
-static void
-zdb_exit(int reason)
-{
-	if (os != NULL) {
-		close_objset(os, FTAG);
-	} else if (spa != NULL) {
-		spa_close(spa, FTAG);
-	}
-
-	fuid_table_destroy();
-
-	if (kernel_init_done)
-		kernel_fini();
-
-	exit(reason);
-}
-
 /*
  * print uid or gid information.
  * For normal POSIX id just the id is printed in decimal format.
@@ -4229,32 +4161,32 @@ dump_cachefile(const char *cachefile)
 	if ((fd = open64(cachefile, O_RDONLY)) < 0) {
 		(void) printf("cannot open '%s': %s\n", cachefile,
 		    strerror(errno));
-		zdb_exit(1);
+		exit(1);
 	}
 
 	if (fstat64(fd, &statbuf) != 0) {
 		(void) printf("failed to stat '%s': %s\n", cachefile,
 		    strerror(errno));
-		zdb_exit(1);
+		exit(1);
 	}
 
 	if ((buf = malloc(statbuf.st_size)) == NULL) {
 		(void) fprintf(stderr, "failed to allocate %llu bytes\n",
 		    (u_longlong_t)statbuf.st_size);
-		zdb_exit(1);
+		exit(1);
 	}
 
 	if (read(fd, buf, statbuf.st_size) != statbuf.st_size) {
 		(void) fprintf(stderr, "failed to read %llu bytes\n",
 		    (u_longlong_t)statbuf.st_size);
-		zdb_exit(1);
+		exit(1);
 	}
 
 	(void) close(fd);
 
 	if (nvlist_unpack(buf, statbuf.st_size, &config, 0) != 0) {
 		(void) fprintf(stderr, "failed to unpack nvlist\n");
-		zdb_exit(1);
+		exit(1);
 	}
 
 	free(buf);
@@ -5170,14 +5102,14 @@ dump_label(const char *dev)
 
 	if ((fd = open64(path, O_RDONLY)) < 0) {
 		(void) printf("cannot open '%s': %s\n", path, strerror(errno));
-		zdb_exit(1);
+		exit(1);
 	}
 
 	if (fstat64_blk(fd, &statbuf) != 0) {
 		(void) printf("failed to stat '%s': %s\n", path,
 		    strerror(errno));
 		(void) close(fd);
-		zdb_exit(1);
+		exit(1);
 	}
 
 	if (S_ISBLK(statbuf.st_mode) && zfs_dev_flush(fd) != 0)
@@ -5190,7 +5122,7 @@ dump_label(const char *dev)
 	    sizeof (cksum_record_t), offsetof(cksum_record_t, link));
 
 	psize = statbuf.st_size;
-	psize = P2ALIGN_TYPED(psize, sizeof (vdev_label_t), uint64_t);
+	psize = P2ALIGN(psize, (uint64_t)sizeof (vdev_label_t));
 	ashift = SPA_MINBLOCKSHIFT;
 
 	/*
@@ -8289,7 +8221,7 @@ dump_zpool(spa_t *spa)
 
 	if (rc != 0) {
 		dump_debug_buffer();
-		zdb_exit(rc);
+		exit(rc);
 	}
 }
 
@@ -8893,18 +8825,18 @@ zdb_embedded_block(char *thing)
 	    words + 12, words + 13, words + 14, words + 15);
 	if (err != 16) {
 		(void) fprintf(stderr, "invalid input format\n");
-		zdb_exit(1);
+		exit(1);
 	}
 	ASSERT3U(BPE_GET_LSIZE(&bp), <=, SPA_MAXBLOCKSIZE);
 	buf = malloc(SPA_MAXBLOCKSIZE);
 	if (buf == NULL) {
 		(void) fprintf(stderr, "out of memory\n");
-		zdb_exit(1);
+		exit(1);
 	}
 	err = decode_embedded_bp(&bp, buf, BPE_GET_LSIZE(&bp));
 	if (err != 0) {
 		(void) fprintf(stderr, "decode failed: %u\n", err);
-		zdb_exit(1);
+		exit(1);
 	}
 	zdb_dump_block_raw(buf, BPE_GET_LSIZE(&bp), 0);
 	free(buf);
@@ -8931,6 +8863,8 @@ int
 main(int argc, char **argv)
 {
 	int c;
+	spa_t *spa = NULL;
+	objset_t *os = NULL;
 	int dump_all = 1;
 	int verbose = 0;
 	int error = 0;
@@ -8946,29 +8880,8 @@ main(int argc, char **argv)
 	char *spa_config_path_env, *objset_str;
 	boolean_t target_is_spa = B_TRUE, dataset_lookup = B_FALSE;
 	nvlist_t *cfg = NULL;
-	struct sigaction action;
-	boolean_t force_import = B_FALSE;
-	boolean_t config_path_console = B_FALSE;
-	char pbuf[MAXPATHLEN];
 
 	dprintf_setup(&argc, argv);
-
-	/*
-	 * Set up signal handlers, so if we crash due to bad on-disk data we
-	 * can get more info. Unlike ztest, we don't bail out if we can't set
-	 * up signal handlers, because zdb is very useful without them.
-	 */
-	action.sa_handler = sig_handler;
-	sigemptyset(&action.sa_mask);
-	action.sa_flags = 0;
-	if (sigaction(SIGSEGV, &action, NULL) < 0) {
-		(void) fprintf(stderr, "zdb: cannot catch SIGSEGV: %s\n",
-		    strerror(errno));
-	}
-	if (sigaction(SIGABRT, &action, NULL) < 0) {
-		(void) fprintf(stderr, "zdb: cannot catch SIGABRT: %s\n",
-		    strerror(errno));
-	}
 
 	/*
 	 * If there is an environment variable SPA_CONFIG_PATH it overrides
@@ -9120,7 +9033,6 @@ main(int argc, char **argv)
 			}
 			break;
 		case 'U':
-			config_path_console = B_TRUE;
 			spa_config_path = optarg;
 			if (spa_config_path[0] != '/') {
 				(void) fprintf(stderr,
@@ -9180,6 +9092,8 @@ main(int argc, char **argv)
 	 */
 	spa_mode_readable_spacemaps = B_TRUE;
 
+	kernel_init(SPA_MODE_READ);
+
 	if (dump_all)
 		verbose = MAX(verbose, 1);
 
@@ -9198,74 +9112,23 @@ main(int argc, char **argv)
 	if (argc < 2 && dump_opt['R'])
 		usage();
 
-	target = argv[0];
-
-	/*
-	 * Automate cachefile
-	 */
-	if (!spa_config_path_env && !config_path_console && target &&
-	    libzfs_core_init() == 0) {
-		char *pname = strdup(target);
-		const char *value;
-		nvlist_t *pnvl = NULL;
-		nvlist_t *vnvl = NULL;
-
-		if (strpbrk(pname, "/@") != NULL)
-			*strpbrk(pname, "/@") = '\0';
-
-		if (pname && lzc_get_props(pname, &pnvl) == 0) {
-			if (nvlist_lookup_nvlist(pnvl, "cachefile",
-			    &vnvl) == 0) {
-				value = fnvlist_lookup_string(vnvl,
-				    ZPROP_VALUE);
-			} else {
-				value = "-";
-			}
-			strlcpy(pbuf, value, sizeof (pbuf));
-			if (pbuf[0] != '\0') {
-				if (pbuf[0] == '/') {
-					if (access(pbuf, F_OK) == 0)
-						spa_config_path = pbuf;
-					else
-						force_import = B_TRUE;
-				} else if ((strcmp(pbuf, "-") == 0 &&
-				    access(ZPOOL_CACHE, F_OK) != 0) ||
-				    strcmp(pbuf, "none") == 0) {
-					force_import = B_TRUE;
-				}
-			}
-			nvlist_free(vnvl);
-		}
-
-		free(pname);
-		nvlist_free(pnvl);
-		libzfs_core_fini();
-	}
-
-	kernel_init(SPA_MODE_READ);
-	kernel_init_done = B_TRUE;
-
 	if (dump_opt['E']) {
 		if (argc != 1)
 			usage();
 		zdb_embedded_block(argv[0]);
-		error = 0;
-		goto fini;
+		return (0);
 	}
 
 	if (argc < 1) {
 		if (!dump_opt['e'] && dump_opt['C']) {
 			dump_cachefile(spa_config_path);
-			error = 0;
-			goto fini;
+			return (0);
 		}
 		usage();
 	}
 
-	if (dump_opt['l']) {
-		error = dump_label(argv[0]);
-		goto fini;
-	}
+	if (dump_opt['l'])
+		return (dump_label(argv[0]));
 
 	if (dump_opt['X'] || dump_opt['F'])
 		rewind = ZPOOL_DO_REWIND |
@@ -9281,6 +9144,7 @@ main(int argc, char **argv)
 		fatal("internal error: %s", strerror(ENOMEM));
 
 	error = 0;
+	target = argv[0];
 
 	if (strpbrk(target, "/@") != NULL) {
 		size_t targetlen;
@@ -9319,23 +9183,14 @@ main(int argc, char **argv)
 		} else if (objset_str && !zdb_numeric(objset_str + 1) &&
 		    dump_opt['N']) {
 			printf("Supply a numeric objset ID with -N\n");
-			error = 1;
-			goto fini;
+			exit(1);
 		}
 	} else {
 		target_pool = target;
 	}
 
-	if (dump_opt['e'] || force_import) {
+	if (dump_opt['e']) {
 		importargs_t args = { 0 };
-
-		/*
-		 * If path is not provided, search in /dev
-		 */
-		if (searchdirs == NULL) {
-			searchdirs = umem_alloc(sizeof (char *), UMEM_NOFAIL);
-			searchdirs[nsearch++] = (char *)ZFS_DEVDIR;
-		}
 
 		args.paths = nsearch;
 		args.path = searchdirs;
@@ -9385,8 +9240,7 @@ main(int argc, char **argv)
 		if (argc != 2)
 			usage();
 		dump_opt['v'] = verbose + 3;
-		error = dump_path(argv[0], argv[1], NULL);
-		goto fini;
+		return (dump_path(argv[0], argv[1], NULL));
 	}
 
 	if (dump_opt['r']) {
@@ -9474,7 +9328,7 @@ main(int argc, char **argv)
 				fatal("can't dump '%s': %s", target,
 				    strerror(error));
 			}
-			goto fini;
+			return (error);
 		} else {
 			target_pool = strdup(target);
 			if (strpbrk(target, "/@") != NULL)
@@ -9604,10 +9458,9 @@ retry_lookup:
 			free(checkpoint_target);
 	}
 
-fini:
 	if (os != NULL) {
 		close_objset(os, FTAG);
-	} else if (spa != NULL) {
+	} else {
 		spa_close(spa, FTAG);
 	}
 
@@ -9615,8 +9468,7 @@ fini:
 
 	dump_debug_buffer();
 
-	if (kernel_init_done)
-		kernel_fini();
+	kernel_fini();
 
 	return (error);
 }

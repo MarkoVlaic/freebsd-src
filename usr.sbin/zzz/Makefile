@@ -1,3 +1,4 @@
+
 SCRIPTS=zzz.sh
 MAN=	zzz.8
 

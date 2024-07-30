@@ -1,3 +1,4 @@
+
 PROG_CXX=	llvm-modextract
 MAN=
 

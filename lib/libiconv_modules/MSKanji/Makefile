@@ -1,3 +1,4 @@
+
 SHLIB=	MSKanji
 SRCS+=	citrus_mskanji.c
 

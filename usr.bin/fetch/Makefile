@@ -1,3 +1,4 @@
+
 PACKAGE=	fetch
 PROG=		fetch
 LIBADD=		fetch

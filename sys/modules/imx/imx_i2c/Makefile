@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/arm/freescale/imx
 
 KMOD=	imx_i2c

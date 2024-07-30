@@ -126,7 +126,6 @@
 		compatible = "sff,sfp";
 		i2c-bus = <&i2c_sfp1>;
 		los-gpios = <&pio 46 GPIO_ACTIVE_HIGH>;
-		maximum-power-milliwatt = <3000>;
 		mod-def0-gpios = <&pio 49 GPIO_ACTIVE_LOW>;
 		tx-disable-gpios = <&pio 20 GPIO_ACTIVE_HIGH>;
 		tx-fault-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
@@ -138,7 +137,6 @@
 		i2c-bus = <&i2c_sfp2>;
 		los-gpios = <&pio 31 GPIO_ACTIVE_HIGH>;
 		mod-def0-gpios = <&pio 47 GPIO_ACTIVE_LOW>;
-		maximum-power-milliwatt = <3000>;
 		tx-disable-gpios = <&pio 15 GPIO_ACTIVE_HIGH>;
 		tx-fault-gpios = <&pio 48 GPIO_ACTIVE_HIGH>;
 	};
@@ -152,16 +150,16 @@
 			trip = <&cpu_trip_active_high>;
 		};
 
-		cpu-active-med {
+		cpu-active-low {
 			/* active: set fan to cooling level 1 */
 			cooling-device = <&fan 1 1>;
-			trip = <&cpu_trip_active_med>;
+			trip = <&cpu_trip_active_low>;
 		};
 
-		cpu-active-low {
-			/* active: set fan to cooling level 0 */
+		cpu-passive {
+			/* passive: set fan to cooling level 0 */
 			cooling-device = <&fan 0 0>;
-			trip = <&cpu_trip_active_low>;
+			trip = <&cpu_trip_passive>;
 		};
 	};
 };
@@ -205,7 +203,8 @@
 		reg = <31>;
 		interrupt-controller;
 		#interrupt-cells = <1>;
-		interrupts-extended = <&pio 66 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-parent = <&pio>;
+		interrupts = <66 IRQ_TYPE_LEVEL_HIGH>;
 		reset-gpios = <&pio 5 GPIO_ACTIVE_HIGH>;
 	};
 };

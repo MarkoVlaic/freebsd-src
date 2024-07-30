@@ -25,7 +25,7 @@ export {
   using ::system;
 
   // [c.malloc], C library memory allocation
-  using ::aligned_alloc _LIBCPP_USING_IF_EXISTS;
+  using ::aligned_alloc;
   using ::calloc;
   using ::free;
   using ::malloc;

@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 TESTSDIR=       ${TESTSBASE}/sys/netpfil/pf
@@ -6,7 +7,6 @@ TESTS_SUBDIRS+=	ioctl
 
 ATF_TESTS_SH+=	altq \
 		anchor \
-		debug \
 		divert-to \
 		dup \
 		ether \
@@ -16,8 +16,6 @@ ATF_TESTS_SH+=	altq \
 		fragmentation_no_reassembly \
 		get_state \
 		icmp \
-		if_enc \
-		limits \
 		loginterface \
 		killstate \
 		macro \
@@ -43,7 +41,6 @@ ATF_TESTS_SH+=	altq \
 		set_skip \
 		set_tos \
 		src_track \
-		status \
 		syncookie \
 		synproxy \
 		table \
@@ -54,9 +51,8 @@ ATF_TESTS_PYTEST+=	frag6.py
 ATF_TESTS_PYTEST+=	nat66.py
 ATF_TESTS_PYTEST+=	sctp.py
 
-# Allow tests to run in parallel in their own jails
-TEST_METADATA+= execenv="jail"
-TEST_METADATA+= execenv_jail_params="vnet allow.raw_sockets"
+# Tests reuse jail names and so cannot run in parallel.
+TEST_METADATA+=	is_exclusive=true
 
 PROGS=	divapp
 

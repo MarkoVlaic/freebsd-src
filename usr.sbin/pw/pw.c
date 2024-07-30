@@ -101,16 +101,13 @@ static int (*cmdfunc[W_NUM][M_NUM])(int argc, char **argv, char *_name) = {
 
 struct pwconf conf;
 
-static int	mode = -1;
-static int	which = -1;
-
 static int	getindex(const char *words[], const char *word);
 static void	cmdhelp(int mode, int which);
 
 int
 main(int argc, char *argv[])
 {
-	int		tmp;
+	int		mode = -1, which = -1, tmp;
 	struct stat	st;
 	char		arg, *arg1;
 	bool		relocated, nis;
@@ -378,11 +375,5 @@ cmdhelp(int mode, int which)
 
 		fprintf(stderr, "%s", help[which][mode]);
 	}
-	exit(EX_USAGE);
-}
-
-void
-usage(void)
-{
-	cmdhelp(mode, which);
+	exit(EXIT_FAILURE);
 }

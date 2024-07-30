@@ -754,7 +754,7 @@ try_load_dtb(caddr_t kmdp)
 		return;
 	}
 
-	if (!OF_install(OFW_FDT, 0))
+	if (OF_install(OFW_FDT, 0) == FALSE)
 		panic("Cannot install FDT");
 
 	if (OF_init((void *)dtbp) != 0)
@@ -996,7 +996,7 @@ initarm(struct arm64_bootparams *abp)
 
 	physmem_init_kernel_globals();
 
-	devmap_bootstrap();
+	devmap_bootstrap(0, NULL);
 
 	valid = bus_probe();
 

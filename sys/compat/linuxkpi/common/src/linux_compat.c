@@ -342,12 +342,13 @@ error:
 }
 
 struct class *
-lkpi_class_create(const char *name)
+class_create(struct module *owner, const char *name)
 {
 	struct class *class;
 	int error;
 
 	class = kzalloc(sizeof(*class), M_WAITOK);
+	class->owner = owner;
 	class->name = name;
 	class->class_release = linux_class_kfree;
 	error = class_register(class);
@@ -381,9 +382,9 @@ linux_kq_assert_lock(void *arg, int what)
 	spinlock_t *s = arg;
 
 	if (what == LA_LOCKED)
-		mtx_assert(s, MA_OWNED);
+		mtx_assert(&s->m, MA_OWNED);
 	else
-		mtx_assert(s, MA_NOTOWNED);
+		mtx_assert(&s->m, MA_NOTOWNED);
 #endif
 }
 
@@ -1093,7 +1094,7 @@ linux_file_kqfilter_read_event(struct knote *kn, long hint)
 {
 	struct linux_file *filp = kn->kn_hook;
 
-	mtx_assert(&filp->f_kqlock, MA_OWNED);
+	mtx_assert(&filp->f_kqlock.m, MA_OWNED);
 
 	return ((filp->f_kqflags & LINUX_KQ_FLAG_NEED_READ) ? 1 : 0);
 }
@@ -1103,7 +1104,7 @@ linux_file_kqfilter_write_event(struct knote *kn, long hint)
 {
 	struct linux_file *filp = kn->kn_hook;
 
-	mtx_assert(&filp->f_kqlock, MA_OWNED);
+	mtx_assert(&filp->f_kqlock.m, MA_OWNED);
 
 	return ((filp->f_kqflags & LINUX_KQ_FLAG_NEED_WRITE) ? 1 : 0);
 }
@@ -2594,54 +2595,6 @@ io_mapping_create_wc(resource_size_t base, unsigned long size)
 	if (mapping == NULL)
 		return (NULL);
 	return (io_mapping_init_wc(mapping, base, size));
-}
-
-/* We likely want a linuxkpi_device.c at some point. */
-bool
-device_can_wakeup(struct device *dev)
-{
-
-	if (dev == NULL)
-		return (false);
-	/*
-	 * XXX-BZ iwlwifi queries it as part of enabling WoWLAN.
-	 * Normally this would be based on a bool in dev->power.XXX.
-	 * Check such as PCI PCIM_PCAP_*PME.  We have no way to enable this yet.
-	 * We may get away by directly calling into bsddev for as long as
-	 * we can assume PCI only avoiding changing struct device breaking KBI.
-	 */
-	pr_debug("%s:%d: not enabled; see comment.\n", __func__, __LINE__);
-	return (false);
-}
-
-static void
-devm_device_group_remove(struct device *dev, void *p)
-{
-	const struct attribute_group **dr = p;
-	const struct attribute_group *group = *dr;
-
-	sysfs_remove_group(&dev->kobj, group);
-}
-
-int
-lkpi_devm_device_add_group(struct device *dev,
-    const struct attribute_group *group)
-{
-	const struct attribute_group **dr;
-	int ret;
-
-	dr = devres_alloc(devm_device_group_remove, sizeof(*dr), GFP_KERNEL);
-	if (dr == NULL)
-		return (-ENOMEM);
-
-	ret = sysfs_create_group(&dev->kobj, group);
-	if (ret == 0) {
-		*dr = group;
-		devres_add(dev, dr);
-	} else
-		devres_free(dr);
-
-	return (ret);
 }
 
 #if defined(__i386__) || defined(__amd64__)

@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/fb
 
 KMOD=	s3

@@ -1,3 +1,4 @@
+
 PACKAGE=	kerberos
 
 PROG=	string2key

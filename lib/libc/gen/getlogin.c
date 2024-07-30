@@ -37,7 +37,6 @@
 #include <unistd.h>
 #include "namespace.h"
 #include <pthread.h>
-#include <ssp/ssp.h>
 #include "un-namespace.h"
 
 #include "libc_private.h"
@@ -55,7 +54,7 @@ getlogin(void)
 }
 
 int
-__ssp_real(getlogin_r)(char *logname, size_t namelen)
+getlogin_r(char *logname, size_t namelen)
 {
 	char tmpname[MAXLOGNAME];
 	int	len;

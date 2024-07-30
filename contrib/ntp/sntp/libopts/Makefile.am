@@ -6,6 +6,7 @@ else
 noinst_LTLIBRARIES      = libopts.la
 endif
 libopts_la_SOURCES      = libopts.c
+libopts_la_CPPFLAGS     = -I$(srcdir)
 libopts_la_LDFLAGS      = -version-info  42:1:17
 
 EXTRA_DIST		=
@@ -13,7 +14,8 @@ BUILT_SOURCES		=
 MOSTLYCLEANFILES	=
 
 AM_CFLAGS	= $(NTP_HARD_CFLAGS) $(CC_NOFORMAT)
-AM_CPPFLAGS	= $(NTP_HARD_CPPFLAGS) -I$(top_srcdir)/../include
+AM_CPPFLAGS	= $(NTP_HARD_CPPFLAGS)
+AM_LDFLAGS	= $(NTP_HARD_LDFLAGS)
 
 libopts.c:		$(BUILT_SOURCES)
 	@: do-nothing rule to avoid default SCCS get

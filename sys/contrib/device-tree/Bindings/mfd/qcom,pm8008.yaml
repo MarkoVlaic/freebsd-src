@@ -7,7 +7,7 @@ $schema: http://devicetree.org/meta-schemas/core.yaml#
 title: Qualcomm Technologies, Inc. PM8008 PMIC
 
 maintainers:
-  - Guru Das Srinagesh <quic_gurus@quicinc.com>
+  - Guru Das Srinagesh <gurus@codeaurora.org>
 
 description: |
   Qualcomm Technologies, Inc. PM8008 is a dedicated camera PMIC that integrates
@@ -99,12 +99,10 @@ examples:
   - |
     #include <dt-bindings/mfd/qcom-pm8008.h>
     #include <dt-bindings/interrupt-controller/irq.h>
-
-    i2c {
+    qupv3_se13_i2c {
       #address-cells = <1>;
       #size-cells = <0>;
-
-      pmic@8 {
+      pm8008i@8 {
         compatible = "qcom,pm8008";
         reg = <0x8>;
         #address-cells = <1>;

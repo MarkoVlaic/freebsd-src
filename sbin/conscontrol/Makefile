@@ -1,3 +1,4 @@
+
 PACKAGE=runtime
 PROG=	conscontrol
 MAN=	conscontrol.8

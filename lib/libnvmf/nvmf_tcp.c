@@ -803,7 +803,7 @@ nvmf_tcp_validate_ic_pdu(struct nvmf_association *na, struct nvmf_tcp_qpair *qp,
 	/* Validate pdu_type. */
 
 	/* Controllers only receive PDUs with a PDU direction of 0. */
-	if (na->na_controller != ((ch->pdu_type & 0x01) == 0)) {
+	if (na->na_controller != (ch->pdu_type & 0x01) == 0) {
 		na_error(na, "NVMe/TCP: Invalid PDU type %u", ch->pdu_type);
 		nvmf_tcp_report_error(na, qp,
 		    NVME_TCP_TERM_REQ_FES_INVALID_HEADER_FIELD, 0, ch, pdu_len,
@@ -924,17 +924,10 @@ nvmf_tcp_read_ic_resp(struct nvmf_association *na, struct nvmf_tcp_qpair *qp,
 }
 
 static struct nvmf_association *
-tcp_allocate_association(bool controller,
-    const struct nvmf_association_params *params)
+tcp_allocate_association(bool controller __unused,
+    const struct nvmf_association_params *params __unused)
 {
 	struct nvmf_tcp_association *ta;
-
-	if (controller) {
-		/* 7.4.10.3 */
-		if (params->tcp.maxh2cdata < 4096 ||
-		    params->tcp.maxh2cdata % 4 != 0)
-			return (NULL);
-	}
 
 	ta = calloc(1, sizeof(*ta));
 
@@ -963,7 +956,6 @@ tcp_connect(struct nvmf_tcp_qpair *qp, struct nvmf_association *na, bool admin)
 	struct nvmf_tcp_association *ta = TASSOC(na);
 	struct nvme_tcp_ic_req ic_req;
 	struct nvme_tcp_ic_resp ic_resp;
-	uint32_t maxh2cdata;
 	int error;
 
 	if (!admin) {
@@ -1015,9 +1007,9 @@ tcp_connect(struct nvmf_tcp_qpair *qp, struct nvmf_association *na, bool admin)
 	 * some large value and report larger values as an unsupported
 	 * parameter?
 	 */
-	maxh2cdata = le32toh(ic_resp.maxh2cdata);
-	if (maxh2cdata < 4096 || maxh2cdata % 4 != 0) {
-		na_error(na, "Invalid MAXH2CDATA %u", maxh2cdata);
+	if (le32toh(ic_resp.maxh2cdata) < 4096) {
+		na_error(na, "Invalid MAXH2CDATA %u",
+		    le32toh(ic_resp.maxh2cdata));
 		nvmf_tcp_report_error(na, qp,
 		    NVME_TCP_TERM_REQ_FES_INVALID_HEADER_FIELD, 12, &ic_resp,
 		    sizeof(ic_resp), sizeof(ic_resp));
@@ -1029,7 +1021,7 @@ tcp_connect(struct nvmf_tcp_qpair *qp, struct nvmf_association *na, bool admin)
 	qp->header_digests = ic_resp.dgst.bits.hdgst_enable != 0;
 	qp->data_digests = ic_resp.dgst.bits.ddgst_enable != 0;
 	qp->maxr2t = params->tcp.maxr2t;
-	qp->maxh2cdata = maxh2cdata;
+	qp->maxh2cdata = le32toh(ic_resp.maxh2cdata);
 	if (admin)
 		/* 7.4.3 */
 		qp->max_icd = 8192;

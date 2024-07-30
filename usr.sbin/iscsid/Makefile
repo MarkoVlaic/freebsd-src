@@ -1,3 +1,4 @@
+
 PACKAGE=	iscsi
 PROG=		iscsid
 SRCS=		discovery.c iscsid.c login.c

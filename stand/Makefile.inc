@@ -1,6 +1,4 @@
-SUBDIR_PARALLEL=	yes
 
-# Firmware may not be able to handle branch protection failures
-MK_BRANCH_PROTECTION=	no
+SUBDIR_PARALLEL=	yes
 
 .include "defs.mk"

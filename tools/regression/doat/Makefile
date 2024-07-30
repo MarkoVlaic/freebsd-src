@@ -1,3 +1,4 @@
+
 PROG=	doat
 
 MAN=

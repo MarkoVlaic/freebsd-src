@@ -156,7 +156,9 @@ codel_bridge_body()
 {
 	altq_init
 	is_altq_supported codel
-	vnet_init_bridge
+	if ! kldstat -q -m if_bridge; then
+		atf_skip "This test requires if_bridge"
+	fi
 
 	epair=$(vnet_mkepair)
 	ifconfig ${epair}a 192.0.2.1/24 up
@@ -212,7 +214,7 @@ prioritise_body()
 	ifconfig ${epair}a 192.0.2.1/24 up
 	jexec altq_prioritise ifconfig ${epair}b 192.0.2.2/24 up
 
-	jexec altq_prioritise /usr/sbin/inetd -p ${PWD}/inetd-altq.pid \
+	jexec altq_prioritise /usr/sbin/inetd -p inetd-altq.pid \
 	    $(atf_get_srcdir)/../pf/echo_inetd.conf
 
 	# Sanity check

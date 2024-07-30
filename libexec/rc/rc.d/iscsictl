@@ -17,8 +17,4 @@ command_args="${iscsictl_flags}"
 required_modules="iscsi"
 
 load_rc_config $name
-
-# doesn't make sense to run in a svcj: config setting
-iscsictl_svcj="NO"
-
 run_rc_command "$1"

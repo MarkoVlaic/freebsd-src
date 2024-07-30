@@ -1039,5 +1039,5 @@ irig_gain(
 
 
 #else
-NONEMPTY_TRANSLATION_UNIT
+int refclock_irig_bs;
 #endif /* REFCLOCK */

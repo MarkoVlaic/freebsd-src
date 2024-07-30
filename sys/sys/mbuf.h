@@ -65,7 +65,6 @@ SDT_PROBE_DECLARE(sdt, , , m__cljget);
 SDT_PROBE_DECLARE(sdt, , , m__cljset);
 SDT_PROBE_DECLARE(sdt, , , m__free);
 SDT_PROBE_DECLARE(sdt, , , m__freem);
-SDT_PROBE_DECLARE(sdt, , , m__freemp);
 
 #endif /* _KERNEL */
 
@@ -844,7 +843,6 @@ void		 m_extadd(struct mbuf *, char *, u_int, m_ext_free_t,
 u_int		 m_fixhdr(struct mbuf *);
 struct mbuf	*m_fragment(struct mbuf *, int, int);
 void		 m_freem(struct mbuf *);
-void		 m_freemp(struct mbuf *);
 void		 m_free_raw(struct mbuf *);
 struct mbuf	*m_get2(int, int, short, int);
 struct mbuf	*m_get3(int, int, short, int);
@@ -1386,8 +1384,6 @@ extern bool		mb_use_ext_pgs;	/* Use ext_pgs for sendfile */
 #define	PACKET_TAG_IPSEC_NAT_T_PORTS		29 /* two uint16_t */
 #define	PACKET_TAG_ND_OUTGOING			30 /* ND outgoing */
 #define	PACKET_TAG_PF_REASSEMBLED		31
-#define	PACKET_TAG_IPSEC_ACCEL_OUT		32  /* IPSEC accel out */
-#define	PACKET_TAG_IPSEC_ACCEL_IN		33  /* IPSEC accel in */
 
 /* Specific cookies and tags. */
 

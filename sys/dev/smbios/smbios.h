@@ -80,13 +80,11 @@ struct smbios_structure_header {
 typedef void (*smbios_callback_t)(struct smbios_structure_header *, void *);
 
 static inline void
-smbios_walk_table(uint8_t *p, int entries, vm_size_t len,
-    smbios_callback_t cb, void *arg)
+smbios_walk_table(uint8_t *p, int entries, smbios_callback_t cb, void *arg)
 {
 	struct smbios_structure_header *s;
-	uint8_t *endp = p + len;
 
-	while (entries-- && p < endp) {
+	while (entries--) {
 		s = (struct smbios_structure_header *)p;
 		cb(s, arg);
 
@@ -95,7 +93,7 @@ smbios_walk_table(uint8_t *p, int entries, vm_size_t len,
 		 * formatted area of this structure.
 		 */
 		p += s->length;
-		while (p + 1 < endp && !(p[0] == 0 && p[1] == 0))
+		while (!(p[0] == 0 && p[1] == 0))
 			p++;
 
 		/*

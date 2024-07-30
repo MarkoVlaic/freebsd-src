@@ -1,3 +1,4 @@
+
 FILESDIR=	${SHAREDIR}/doc/pjdfstest
 FILES=		README
 

@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/sbni
 
 KMOD=	if_sbni

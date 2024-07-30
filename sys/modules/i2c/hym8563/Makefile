@@ -1,3 +1,4 @@
+
 .PATH:	${SRCTOP}/sys/dev/iicbus/rtc
 KMOD=	hym8563
 SRCS=	hym8563.c

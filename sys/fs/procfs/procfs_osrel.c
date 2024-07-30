@@ -45,11 +45,9 @@ procfs_doosrel(PFS_FILL_ARGS)
 
 	if (uio == NULL)
 		return (EOPNOTSUPP);
-	switch (uio->uio_rw) {
-	case UIO_READ:
+	if (uio->uio_rw == UIO_READ) {
 		sbuf_printf(sb, "%d\n", p->p_osrel);
-		break;
-	case UIO_WRITE:
+	} else {
 		sbuf_trim(sb);
 		sbuf_finish(sb);
 		pp = sbuf_data(sb);
@@ -64,7 +62,6 @@ procfs_doosrel(PFS_FILL_ARGS)
 			osrel = ov;
 		}
 		p->p_osrel = osrel;
-		break;
 	}
 	return (0);
 }

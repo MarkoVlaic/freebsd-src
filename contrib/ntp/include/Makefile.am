@@ -8,7 +8,6 @@ noinst_HEADERS =	\
 	ascii.h		\
 	audio.h		\
 	binio.h		\
-	c99_snprintf.h	\
 	declcond.h	\
 	gps.h		\
 	hopf6039.h	\

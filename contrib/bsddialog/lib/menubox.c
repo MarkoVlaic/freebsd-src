@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2021-2024 Alfonso Sabato Siciliano
+ * Copyright (c) 2021-2023 Alfonso Sabato Siciliano
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -183,7 +183,7 @@ set_return_on(struct privatemenu *m, struct bsddialog_menugroup *groups)
 	int i;
 	struct privateitem *pritem;
 
-	for (i = 0; i < m->nitems; i++) {
+	for(i = 0; i < m->nitems; i++) {
 		if (m->pritems[i].type == SEPARATORMODE)
 			continue;
 		pritem = &m->pritems[i];
@@ -298,7 +298,7 @@ getnextshortcut(int npritems, struct privateitem *pritems, int abs, wint_t key)
 
 static void drawseparators(struct bsddialog_conf *conf, struct privatemenu *m)
 {
-	int i, realw, labellen;
+	int i, linech, realw, labellen;
 	const char *desc, *name;
 
 	for (i = 0; i < m->nitems; i++) {
@@ -306,10 +306,8 @@ static void drawseparators(struct bsddialog_conf *conf, struct privatemenu *m)
 			continue;
 		if (conf->no_lines == false) {
 			wattron(m->pad, t.menu.desccolor);
-			if (conf->ascii_lines)
-				mvwhline(m->pad, i, 0, '-', m->line);
-			else
-				mvwhline_set(m->pad, i, 0, WACS_HLINE, m->line);
+			linech = conf->ascii_lines ? '-' : ACS_HLINE;
+			mvwhline(m->pad, i, 0, linech, m->line);
 			wattroff(m->pad, t.menu.desccolor);
 		}
 		name = m->pritems[i].name;
@@ -406,10 +404,12 @@ static void update_menubox(struct bsddialog_conf *conf, struct privatemenu *m)
 	if (m->nitems > (int)m->menurows) {
 		wattron(m->box, t.dialog.arrowcolor);
 		if (m->ypad > 0)
-			mvwhline(m->box, 0, 2, UARROW(conf), 3);
+			mvwhline(m->box, 0, 2,
+			    conf->ascii_lines ? '^' : ACS_UARROW, 3);
 
 		if ((m->ypad + (int)m->menurows) < m->nitems)
-			mvwhline(m->box, h-1, 2, DARROW(conf), 3);
+			mvwhline(m->box, h-1, 2,
+			    conf->ascii_lines ? 'v' : ACS_DARROW, 3);
 
 		mvwprintw(m->box, h-1, w-6, "%3d%%",
 		    100 * (m->ypad + m->menurows) / m->nitems);
@@ -578,7 +578,6 @@ do_mixedlist(struct bsddialog_conf *conf, const char *text, int rows, int cols,
 			if (mixedlist_redraw(&d, &m) != 0)
 				return (BSDDIALOG_ERROR);
 			break;
-		case KEY_CTRL('l'):
 		case KEY_RESIZE:
 			if (mixedlist_redraw(&d, &m) != 0)
 				return (BSDDIALOG_ERROR);
@@ -592,8 +591,6 @@ do_mixedlist(struct bsddialog_conf *conf, const char *text, int rows, int cols,
 			next = getnext(m.nitems, m.pritems, -1);
 			changeitem = next != m.sel;
 			break;
-		case '-':
-		case KEY_CTRL('p'):
 		case KEY_UP:
 			next = getprev(m.pritems, m.sel);
 			changeitem = next != m.sel;
@@ -606,8 +603,6 @@ do_mixedlist(struct bsddialog_conf *conf, const char *text, int rows, int cols,
 			next = getprev(m.pritems, m.nitems);
 			changeitem = next != m.sel;
 			break;
-		case '+':
-		case KEY_CTRL('n'):
 		case KEY_DOWN:
 			next = getnext(m.nitems, m.pritems, m.sel);
 			changeitem = next != m.sel;
@@ -670,7 +665,7 @@ do_mixedlist(struct bsddialog_conf *conf, const char *text, int rows, int cols,
 			pnoutrefresh(m.pad, m.ypad, 0, m.ys, m.xs, m.ye, m.xe);
 			changeitem = false;
 		}
-	} /* end while (loop) */
+	} /* end while(loop) */
 
 	set_return_on(&m, groups);
 

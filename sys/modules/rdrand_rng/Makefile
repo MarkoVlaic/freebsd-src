@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/random
 
 KMOD=	rdrand_rng

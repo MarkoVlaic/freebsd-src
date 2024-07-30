@@ -27,7 +27,6 @@
 
 #include <sys/param.h>
 #include <sys/systm.h>
-#include <sys/dtrace_impl.h>
 #include <sys/kernel.h>
 #include <sys/stack.h>
 #include <sys/pcpu.h>
@@ -429,7 +428,7 @@ dtrace_getarg(int arg, int aframes)
 	for (i = 1; i <= aframes; i++) {
 		fp = fp->f_frame;
 
-		if (roundup2(fp->f_retaddr, 4) ==
+		if (P2ROUNDUP(fp->f_retaddr, 4) ==
 		    (long)dtrace_invop_callsite) {
 			/*
 			 * If we pass through the invalid op handler, we will

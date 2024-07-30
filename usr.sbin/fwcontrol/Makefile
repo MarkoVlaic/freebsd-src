@@ -1,3 +1,4 @@
+
 PROG=	fwcontrol
 SRCS=	fwcontrol.c fwcrom.c fwdv.c fwmpegts.c
 MAN=	fwcontrol.8

@@ -1,3 +1,4 @@
+
 .include <bsd.init.mk>
 
 TESTSDIR=	${TESTSBASE}/lib/atf/test-programs

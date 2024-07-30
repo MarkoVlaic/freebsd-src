@@ -1164,11 +1164,8 @@ displaysock(struct sock *s, int pos)
 					f = RB_FIND(files_t, &ftree,
 					    &(struct file){ .xf_data =
 					    p->socket });
-					if (f != NULL) {
-						pos += xprintf("[%lu %d]",
-						    (u_long)f->xf_pid,
-						    f->xf_fd);
-					}
+					pos += xprintf("[%lu %d]",
+					    (u_long)f->xf_pid, f->xf_fd);
 				} else
 					pos += printaddr(&p->laddr->address);
 			}
@@ -1186,12 +1183,9 @@ displaysock(struct sock *s, int pos)
 					f = RB_FIND(files_t, &ftree,
 					    &(struct file){ .xf_data =
 					    p->socket });
-					if (f != NULL) {
-						pos += xprintf("%s[%lu %d]",
-						    fref ? "" : ",",
-						    (u_long)f->xf_pid,
-						    f->xf_fd);
-					}
+					pos += xprintf("%s[%lu %d]",
+					    fref ? "" : ",",
+					    (u_long)f->xf_pid, f->xf_fd);
 					ref = p->faddr->nextref;
 					fref = false;
 				}

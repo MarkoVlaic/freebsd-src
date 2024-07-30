@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/amd_ecc_inject
 
 KMOD=	amd_ecc_inject

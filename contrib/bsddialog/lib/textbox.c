@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2021-2024 Alfonso Sabato Siciliano
+ * Copyright (c) 2021-2023 Alfonso Sabato Siciliano
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,33 +47,32 @@ struct scrolltext {
 
 static void updateborders(struct dialog *d, struct scrolltext *st)
 {
-	chtype arrowch;
-	cchar_t borderch;
+	chtype arrowch, borderch;
 
 	if (d->conf->no_lines)
-		setcchar(&borderch, L" ", 0, 0, NULL);
+		borderch = ' ';
 	else if (d->conf->ascii_lines)
-		setcchar(&borderch, L"|", 0, 0, NULL);
+		borderch = '|';
 	else
-		borderch = *WACS_VLINE;
+		borderch = ACS_VLINE;
 
 	if (st->xpad > 0) {
-		arrowch = LARROW(d->conf) | t.dialog.arrowcolor;
-		mvwvline(d->widget, (d->h / 2) - 2, 0, arrowch, 4);
+		arrowch = d->conf->ascii_lines ? '<' : ACS_LARROW;
+		arrowch |= t.dialog.arrowcolor;
 	} else {
-		wattron(d->widget, t.dialog.lineraisecolor);
-		mvwvline_set(d->widget, (d->h / 2) - 2, 0, &borderch, 4);
-		wattroff(d->widget, t.dialog.lineraisecolor);
+		arrowch = borderch;
+		arrowch |= t.dialog.lineraisecolor;
 	}
+	mvwvline(d->widget, (d->h / 2) - 2, 0, arrowch, 4);
 
 	if (st->xpad + d->w - 2 - st->margin < st->wpad) {
-		arrowch = RARROW(d->conf) | t.dialog.arrowcolor;
-		mvwvline(d->widget, (d->h / 2) - 2, d->w - 1, arrowch, 4);
+		arrowch = d->conf->ascii_lines ? '>' : ACS_RARROW;
+		arrowch |= t.dialog.arrowcolor;
 	} else {
-		wattron(d->widget, t.dialog.linelowercolor);
-		mvwvline_set(d->widget, (d->h / 2) - 2, d->w - 1, &borderch, 4);
-		wattroff(d->widget, t.dialog.linelowercolor);
+		arrowch = borderch;
+		arrowch |= t.dialog.linelowercolor;
 	}
+	mvwvline(d->widget, (d->h / 2) - 2, d->w - 1, arrowch, 4);
 
 	if (st->hpad > d->h - 4) {
 		wattron(d->widget, t.dialog.arrowcolor);
@@ -182,7 +181,7 @@ bsddialog_textbox(struct bsddialog_conf *conf, const char *file, int rows,
 	while (loop) {
 		updateborders(&d, &st);
 		/*
-		 * Trick, overflow multicolumn charchter right border:
+		 * Overflow multicolumn charchter right border:
 		 * wnoutrefresh(widget);
 		 * pnoutrefresh(pad, ypad, xpad, ys, xs, ye, xe);
 		 * doupdate();
@@ -257,7 +256,6 @@ bsddialog_textbox(struct bsddialog_conf *conf, const char *file, int rows,
 			if (textbox_draw(&d, &st) != 0)
 				return (BSDDIALOG_ERROR);
 			break;
-		case KEY_CTRL('l'):
 		case KEY_RESIZE:
 			if (textbox_draw(&d, &st) != 0)
 				return (BSDDIALOG_ERROR);

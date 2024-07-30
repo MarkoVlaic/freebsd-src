@@ -61,13 +61,14 @@ SYSCTL_INT(_hw_vmm_topology, OID_AUTO, cpuid_leaf_b, CTLFLAG_RDTUN,
     &cpuid_leaf_b, 0, NULL);
 
 /*
- * Compute ceil(log2(x)).  Returns -1 if x is zero.
+ * Round up to the next power of two, if necessary, and then take log2.
+ * Returns -1 if argument is zero.
  */
 static __inline int
 log2(u_int x)
 {
 
-	return (x == 0 ? -1 : order_base_2(x));
+	return (fls(x << (1 - powerof2(x))) - 1);
 }
 
 int

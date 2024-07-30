@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 ATF_TESTS_SH=	col_test

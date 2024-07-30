@@ -1,3 +1,4 @@
+
 PROG=	banner
 MAN=	banner.6
 

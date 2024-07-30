@@ -366,8 +366,9 @@ readpid (const char* file)
 /** write pid to file. 
  * @param pidfile: file name of pid file.
  * @param pid: pid to write to file.
+ * @return false on failure
  */
-static void
+static int
 writepid (const char* pidfile, pid_t pid)
 {
 	int fd;
@@ -382,7 +383,7 @@ writepid (const char* pidfile, pid_t pid)
 		, 0644)) == -1) {
 		log_err("cannot open pidfile %s: %s", 
 			pidfile, strerror(errno));
-		return;
+		return 0;
 	}
 	while(count < strlen(pidbuf)) {
 		ssize_t r = write(fd, pidbuf+count, strlen(pidbuf)-count);
@@ -392,16 +393,17 @@ writepid (const char* pidfile, pid_t pid)
 			log_err("cannot write to pidfile %s: %s",
 				pidfile, strerror(errno));
 			close(fd);
-			return;
+			return 0;
 		} else if(r == 0) {
 			log_err("cannot write any bytes to pidfile %s: "
 				"write returns 0 bytes written", pidfile);
 			close(fd);
-			return;
+			return 0;
 		}
 		count += r;
 	}
 	close(fd);
+	return 1;
 }
 
 /**
@@ -543,15 +545,7 @@ perform_setup(struct daemon* daemon, struct config_file* cfg, int debug_mode,
 				cfg, 1);
 		if(!daemon->pidfile)
 			fatal_exit("pidfile alloc: out of memory");
-		/* Check old pid if there is no username configured.
-		 * With a username, the assumption is that the privilege
-		 * drop makes a pidfile not removed when the server stopped
-		 * last time. The server does not chown the pidfile for it,
-		 * because that creates privilege escape problems, with the
-		 * pidfile writable by unprivileged users, but used by
-		 * privileged users. */
-		if(cfg->username && cfg->username[0])
-			checkoldpid(daemon->pidfile, pidinchroot);
+		checkoldpid(daemon->pidfile, pidinchroot);
 	}
 #endif
 
@@ -563,7 +557,18 @@ perform_setup(struct daemon* daemon, struct config_file* cfg, int debug_mode,
 	/* write new pidfile (while still root, so can be outside chroot) */
 #ifdef HAVE_KILL
 	if(cfg->pidfile && cfg->pidfile[0] && need_pidfile) {
-		writepid(daemon->pidfile, getpid());
+		if(writepid(daemon->pidfile, getpid())) {
+			if(cfg->username && cfg->username[0] && cfg_uid != (uid_t)-1 &&
+				pidinchroot) {
+#  ifdef HAVE_CHOWN
+				if(chown(daemon->pidfile, cfg_uid, cfg_gid) == -1) {
+					verbose(VERB_QUERY, "cannot chown %u.%u %s: %s",
+						(unsigned)cfg_uid, (unsigned)cfg_gid,
+						daemon->pidfile, strerror(errno));
+				}
+#  endif /* HAVE_CHOWN */
+			}
+		}
 	}
 #else
 	(void)daemon;
@@ -741,11 +746,7 @@ run_daemon(const char* cfgfile, int cmdline_verbose, int debug_mode, int need_pi
 	if(daemon->pidfile) {
 		int fd;
 		/* truncate pidfile */
-		fd = open(daemon->pidfile, O_WRONLY | O_TRUNC
-#ifdef O_NOFOLLOW
-			| O_NOFOLLOW
-#endif
-			, 0644);
+		fd = open(daemon->pidfile, O_WRONLY | O_TRUNC, 0644);
 		if(fd != -1)
 			close(fd);
 		/* delete pidfile */

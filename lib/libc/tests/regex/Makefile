@@ -1,3 +1,4 @@
+
 PACKAGE=	tests
 
 # local test cases

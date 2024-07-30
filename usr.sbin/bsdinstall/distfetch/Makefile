@@ -1,3 +1,4 @@
+
 BINDIR= ${LIBEXECDIR}/bsdinstall
 PROG=	distfetch
 LIBADD=	fetch bsddialog

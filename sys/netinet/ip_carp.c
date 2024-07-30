@@ -37,7 +37,6 @@
 #include <sys/systm.h>
 #include <sys/devctl.h>
 #include <sys/jail.h>
-#include <sys/kassert.h>
 #include <sys/kernel.h>
 #include <sys/limits.h>
 #include <sys/malloc.h>
@@ -96,8 +95,7 @@ static MALLOC_DEFINE(M_CARP, "CARP", "CARP addresses");
 struct carp_softc {
 	struct ifnet		*sc_carpdev;	/* Pointer to parent ifnet. */
 	struct ifaddr		**sc_ifas;	/* Our ifaddrs. */
-	carp_version_t		sc_version;	/* carp or VRRPv3 */
-	uint8_t			sc_addr[ETHER_ADDR_LEN];	/* Our link level address. */
+	struct sockaddr_dl	sc_addr;	/* Our link level address. */
 	struct callout		sc_ad_tmo;	/* Advertising timeout. */
 #ifdef INET
 	struct callout		sc_md_tmo;	/* Master down timeout. */
@@ -108,25 +106,11 @@ struct carp_softc {
 	struct mtx		sc_mtx;
 
 	int			sc_vhid;
-	union {
-		struct { /* sc_version == CARP_VERSION_CARP */
-			int		sc_advskew;
-			int		sc_advbase;
-			struct in_addr	sc_carpaddr;
-			struct in6_addr	sc_carpaddr6;
-			uint64_t	sc_counter;
-			bool		sc_init_counter;
-#define	CARP_HMAC_PAD	64
-			unsigned char sc_key[CARP_KEY_LEN];
-			unsigned char sc_pad[CARP_HMAC_PAD];
-			SHA1_CTX sc_sha1;
-		};
-		struct { /* sc_version == CARP_VERSION_VRRPv3 */
-			uint8_t		sc_vrrp_prio;
-			uint16_t	sc_vrrp_adv_inter;
-			uint16_t	sc_vrrp_master_inter;
-		};
-	};
+	int			sc_advskew;
+	int			sc_advbase;
+	struct in_addr		sc_carpaddr;
+	struct in6_addr		sc_carpaddr6;
+
 	int			sc_naddrs;
 	int			sc_naddrs6;
 	int			sc_ifasiz;
@@ -136,6 +120,15 @@ struct carp_softc {
 #define	CARP_SENDAD_MAX_ERRORS	3
 	int			sc_sendad_success;
 #define	CARP_SENDAD_MIN_SUCCESS 3
+
+	int			sc_init_counter;
+	uint64_t		sc_counter;
+
+	/* authentication */
+#define	CARP_HMAC_PAD	64
+	unsigned char sc_key[CARP_KEY_LEN];
+	unsigned char sc_pad[CARP_HMAC_PAD];
+	SHA1_CTX sc_sha1;
 
 	TAILQ_ENTRY(carp_softc)	sc_list;	/* On the carp_if list. */
 	LIST_ENTRY(carp_softc)	sc_next;	/* On the global list. */
@@ -173,9 +166,6 @@ struct carpkreq {
 	/* Everything above this is identical to carpreq */
 	struct in_addr	carpr_addr;
 	struct in6_addr	carpr_addr6;
-	carp_version_t	carpr_version;
-	uint8_t		carpr_vrrp_priority;
-	uint16_t	carpr_vrrp_adv_inter;
 };
 
 /*
@@ -335,9 +325,8 @@ SYSCTL_VNET_PCPUSTAT(_net_inet_carp, OID_AUTO, stats, struct carpstats,
         0 : ((sc)->sc_advskew + V_carp_demotion)))
 
 static void	carp_input_c(struct mbuf *, struct carp_header *, sa_family_t, int);
-static void	vrrp_input_c(struct mbuf *, int, sa_family_t, int, int, uint16_t);
 static struct carp_softc
-		*carp_alloc(struct ifnet *, carp_version_t, int);
+		*carp_alloc(struct ifnet *);
 static void	carp_destroy(struct carp_softc *);
 static struct carp_if
 		*carp_alloc_if(struct ifnet *);
@@ -348,8 +337,8 @@ static void	carp_setrun(struct carp_softc *, sa_family_t);
 static void	carp_master_down(void *);
 static void	carp_master_down_locked(struct carp_softc *,
     		    const char* reason);
+static void	carp_send_ad(void *);
 static void	carp_send_ad_locked(struct carp_softc *);
-static void	vrrp_send_ad_locked(struct carp_softc *);
 static void	carp_addroute(struct carp_softc *);
 static void	carp_ifa_addroute(struct ifaddr *);
 static void	carp_delroute(struct carp_softc *);
@@ -384,7 +373,7 @@ carp_is_supported_if(if_t ifp)
 static void
 carp_hmac_prepare(struct carp_softc *sc)
 {
-	uint8_t version = CARP_VERSION_CARP, type = CARP_ADVERTISEMENT;
+	uint8_t version = CARP_VERSION, type = CARP_ADVERTISEMENT;
 	uint8_t vhid = sc->sc_vhid & 0xff;
 	struct ifaddr *ifa;
 	int i, found;
@@ -396,7 +385,6 @@ carp_hmac_prepare(struct carp_softc *sc)
 #endif
 
 	CARP_LOCK_ASSERT(sc);
-	MPASS(sc->sc_version == CARP_VERSION_CARP);
 
 	/* Compute ipad from key. */
 	bzero(sc->sc_pad, sizeof(sc->sc_pad));
@@ -490,22 +478,6 @@ carp_hmac_verify(struct carp_softc *sc, uint32_t counter[2],
 	return (bcmp(md, md2, sizeof(md2)));
 }
 
-static int
-vrrp_checksum_verify(struct mbuf *m, int off, int len, uint16_t phdrcksum)
-{
-	uint16_t cksum;
-
-	/*
-	 * Note that VRRPv3 checksums are different from CARP checksums.
-	 * Carp just calculates the checksum over the packet.
-	 * VRRPv3 includes the pseudo-header checksum as well.
-	 */
-	cksum = in_cksum_skip(m, off + len, off);
-	cksum -= phdrcksum;
-
-	return (cksum);
-}
-
 /*
  * process input packet.
  * we have rearranged checks order compared to the rfc,
@@ -517,10 +489,8 @@ carp_input(struct mbuf **mp, int *offp, int proto)
 {
 	struct mbuf *m = *mp;
 	struct ip *ip = mtod(m, struct ip *);
-	struct vrrpv3_header *vh;
-	int iplen;
-	int minlen;
-	int totlen;
+	struct carp_header *ch;
+	int iplen, len;
 
 	iplen = *offp;
 	*mp = NULL;
@@ -533,95 +503,59 @@ carp_input(struct mbuf **mp, int *offp, int proto)
 	}
 
 	iplen = ip->ip_hl << 2;
-	totlen = ntohs(ip->ip_len);
 
-	/* Ensure we have enough header to figure out the version. */
-	if (m->m_pkthdr.len < iplen + sizeof(*vh)) {
+	if (m->m_pkthdr.len < iplen + sizeof(*ch)) {
 		CARPSTATS_INC(carps_badlen);
-		CARP_DEBUG("%s: received len %zd < sizeof(struct vrrpv3_header) "
+		CARP_DEBUG("%s: received len %zd < sizeof(struct carp_header) "
 		    "on %s\n", __func__, m->m_len - sizeof(struct ip),
 		    if_name(m->m_pkthdr.rcvif));
 		m_freem(m);
 		return (IPPROTO_DONE);
 	}
 
-	if (iplen + sizeof(*vh) < m->m_len) {
-		if ((m = m_pullup(m, iplen + sizeof(*vh))) == NULL) {
+	if (iplen + sizeof(*ch) < m->m_len) {
+		if ((m = m_pullup(m, iplen + sizeof(*ch))) == NULL) {
 			CARPSTATS_INC(carps_hdrops);
-			CARP_DEBUG("%s():%d: pullup failed\n", __func__, __LINE__);
+			CARP_DEBUG("%s: pullup failed\n", __func__);
 			return (IPPROTO_DONE);
 		}
 		ip = mtod(m, struct ip *);
 	}
-	vh = (struct vrrpv3_header *)((char *)ip + iplen);
+	ch = (struct carp_header *)((char *)ip + iplen);
 
-	switch (vh->vrrp_version) {
-	case CARP_VERSION_CARP:
-		minlen = sizeof(struct carp_header);
-		break;
-	case CARP_VERSION_VRRPv3:
-		minlen = sizeof(struct vrrpv3_header);
-		break;
-	default:
-		CARPSTATS_INC(carps_badver);
-		CARP_DEBUG("%s: unsupported version %d on %s\n", __func__,
-		    vh->vrrp_version, if_name(m->m_pkthdr.rcvif));
-		m_freem(m);
-		return (IPPROTO_DONE);
-	}
-
-	/* And now check the length again but with the real minimal length. */
-	if (m->m_pkthdr.len < iplen + minlen) {
+	/*
+	 * verify that the received packet length is
+	 * equal to the CARP header
+	 */
+	len = iplen + sizeof(*ch);
+	if (len > m->m_pkthdr.len) {
 		CARPSTATS_INC(carps_badlen);
-		CARP_DEBUG("%s: received len %zd < %d "
-		    "on %s\n", __func__, m->m_len - sizeof(struct ip),
-		    iplen + minlen,
+		CARP_DEBUG("%s: packet too short %d on %s\n", __func__,
+		    m->m_pkthdr.len,
 		    if_name(m->m_pkthdr.rcvif));
 		m_freem(m);
 		return (IPPROTO_DONE);
 	}
 
-	if (iplen + minlen < m->m_len) {
-		if ((m = m_pullup(m, iplen + minlen)) == NULL) {
-			CARPSTATS_INC(carps_hdrops);
-			CARP_DEBUG("%s():%d: pullup failed\n", __func__, __LINE__);
-			return (IPPROTO_DONE);
-		}
-		ip = mtod(m, struct ip *);
-		vh = (struct vrrpv3_header *)((char *)ip + iplen);
+	if ((m = m_pullup(m, len)) == NULL) {
+		CARPSTATS_INC(carps_hdrops);
+		return (IPPROTO_DONE);
 	}
+	ip = mtod(m, struct ip *);
+	ch = (struct carp_header *)((char *)ip + iplen);
 
-	switch (vh->vrrp_version) {
-	case CARP_VERSION_CARP: {
-		struct carp_header *ch;
-
-		/* verify the CARP checksum */
-		m->m_data += iplen;
-		if (in_cksum(m, totlen - iplen)) {
-			CARPSTATS_INC(carps_badsum);
-			CARP_DEBUG("%s: checksum failed on %s\n", __func__,
-			    if_name(m->m_pkthdr.rcvif));
-			m_freem(m);
-			break;
-		}
-		m->m_data -= iplen;
-		ch = (struct carp_header *)((char *)ip + iplen);
-		carp_input_c(m, ch, AF_INET, ip->ip_ttl);
-		break;
+	/* verify the CARP checksum */
+	m->m_data += iplen;
+	if (in_cksum(m, len - iplen)) {
+		CARPSTATS_INC(carps_badsum);
+		CARP_DEBUG("%s: checksum failed on %s\n", __func__,
+		    if_name(m->m_pkthdr.rcvif));
+		m_freem(m);
+		return (IPPROTO_DONE);
 	}
-	case CARP_VERSION_VRRPv3: {
-		uint16_t phdrcksum;
+	m->m_data -= iplen;
 
-		phdrcksum = in_pseudo(ip->ip_src.s_addr, ip->ip_dst.s_addr,
-		    htonl((u_short)(totlen - iplen) + ip->ip_p));
-		vrrp_input_c(m, iplen, AF_INET, ip->ip_ttl, totlen - iplen,
-		    phdrcksum);
-		break;
-	}
-	default:
-		KASSERT(false, ("Unsupported version %d", vh->vrrp_version));
-	}
-
+	carp_input_c(m, ch, AF_INET, ip->ip_ttl);
 	return (IPPROTO_DONE);
 }
 #endif
@@ -632,8 +566,8 @@ carp6_input(struct mbuf **mp, int *offp, int proto)
 {
 	struct mbuf *m = *mp;
 	struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
-	struct vrrpv3_header *vh;
-	u_int len, minlen;
+	struct carp_header *ch;
+	u_int len;
 
 	CARPSTATS_INC(carps_ipackets6);
 
@@ -651,9 +585,10 @@ carp6_input(struct mbuf **mp, int *offp, int proto)
 		return (IPPROTO_DONE);
 	}
 
-	if (m->m_len < *offp + sizeof(*vh)) {
+	/* verify that we have a complete carp packet */
+	if (m->m_len < *offp + sizeof(*ch)) {
 		len = m->m_len;
-		m = m_pullup(m, *offp + sizeof(*vh));
+		m = m_pullup(m, *offp + sizeof(*ch));
 		if (m == NULL) {
 			CARPSTATS_INC(carps_badlen);
 			CARP_DEBUG("%s: packet size %u too small\n", __func__, len);
@@ -661,74 +596,20 @@ carp6_input(struct mbuf **mp, int *offp, int proto)
 		}
 		ip6 = mtod(m, struct ip6_hdr *);
 	}
-	vh = (struct vrrpv3_header *)(mtod(m, char *) + *offp);
+	ch = (struct carp_header *)(mtod(m, char *) + *offp);
 
-	switch (vh->vrrp_version) {
-	case CARP_VERSION_CARP:
-		minlen = sizeof(struct carp_header);
-		break;
-	case CARP_VERSION_VRRPv3:
-		minlen = sizeof(struct vrrpv3_header);
-		break;
-	default:
-		CARPSTATS_INC(carps_badver);
-		CARP_DEBUG("%s: unsupported version %d on %s\n", __func__,
-		    vh->vrrp_version, if_name(m->m_pkthdr.rcvif));
-		m_freem(m);
-		return (IPPROTO_DONE);
-	}
-
-	/* And now check the length again but with the real minimal length. */
-	if (m->m_pkthdr.len < sizeof(*ip6) + minlen) {
-		CARPSTATS_INC(carps_badlen);
-		CARP_DEBUG("%s: received len %zd < %zd "
-		    "on %s\n", __func__, m->m_len - sizeof(struct ip),
-		    sizeof(*ip6) + minlen,
+	/* verify the CARP checksum */
+	m->m_data += *offp;
+	if (in_cksum(m, sizeof(*ch))) {
+		CARPSTATS_INC(carps_badsum);
+		CARP_DEBUG("%s: checksum failed, on %s\n", __func__,
 		    if_name(m->m_pkthdr.rcvif));
 		m_freem(m);
 		return (IPPROTO_DONE);
 	}
+	m->m_data -= *offp;
 
-	if (sizeof (*ip6) + minlen < m->m_len) {
-		if ((m = m_pullup(m, sizeof(*ip6) + minlen)) == NULL) {
-			CARPSTATS_INC(carps_hdrops);
-			CARP_DEBUG("%s():%d: pullup failed\n", __func__, __LINE__);
-			return (IPPROTO_DONE);
-		}
-		ip6 = mtod(m, struct ip6_hdr *);
-		vh = (struct vrrpv3_header *)mtodo(m, sizeof(*ip6));
-	}
-
-	switch (vh->vrrp_version) {
-	case CARP_VERSION_CARP: {
-		struct carp_header *ch;
-
-		/* verify the CARP checksum */
-		m->m_data += *offp;
-		if (in_cksum(m, sizeof(struct carp_header))) {
-			CARPSTATS_INC(carps_badsum);
-			CARP_DEBUG("%s: checksum failed, on %s\n", __func__,
-			    if_name(m->m_pkthdr.rcvif));
-			m_freem(m);
-			break;
-		}
-		m->m_data -= *offp;
-		ch = (struct carp_header *)((char *)ip6 + sizeof(*ip6));
-		carp_input_c(m, ch, AF_INET6, ip6->ip6_hlim);
-		break;
-	}
-	case CARP_VERSION_VRRPv3: {
-		uint16_t phdrcksum;
-
-		phdrcksum = in6_cksum_pseudo(ip6, ntohs(ip6->ip6_plen),
-		    ip6->ip6_nxt, 0);
-		vrrp_input_c(m, sizeof(*ip6), AF_INET6, ip6->ip6_hlim,
-		    ntohs(ip6->ip6_plen), phdrcksum);
-		break;
-	}
-	default:
-		KASSERT(false, ("Unsupported version %d", vh->vrrp_version));
-	}
+	carp_input_c(m, ch, AF_INET6, ip6->ip6_hlim);
 	return (IPPROTO_DONE);
 }
 #endif /* INET6 */
@@ -748,7 +629,7 @@ carp6_input(struct mbuf **mp, int *offp, int proto)
  * The VHID test is outside this mini-function.
  */
 static int
-carp_source_is_self(const struct mbuf *m, struct ifaddr *ifa, sa_family_t af)
+carp_source_is_self(struct mbuf *m, struct ifaddr *ifa, sa_family_t af)
 {
 #ifdef INET
 	struct ip *ip4;
@@ -778,12 +659,16 @@ carp_source_is_self(const struct mbuf *m, struct ifaddr *ifa, sa_family_t af)
 	return (0);
 }
 
-static struct ifaddr *
-carp_find_ifa(const struct mbuf *m, sa_family_t af, uint8_t vhid)
+static void
+carp_input_c(struct mbuf *m, struct carp_header *ch, sa_family_t af, int ttl)
 {
 	struct ifnet *ifp = m->m_pkthdr.rcvif;
 	struct ifaddr *ifa, *match;
+	struct carp_softc *sc;
+	uint64_t tmp_counter;
+	struct timeval sc_tv, ch_tv;
 	int error;
+	bool multicast = false;
 
 	NET_EPOCH_ASSERT();
 
@@ -803,9 +688,9 @@ carp_find_ifa(const struct mbuf *m, sa_family_t af, uint8_t vhid)
 	IFNET_FOREACH_IFA(ifp, ifa) {
 		if (match == NULL && ifa->ifa_carp != NULL &&
 		    ifa->ifa_addr->sa_family == af &&
-		    ifa->ifa_carp->sc_vhid == vhid)
+		    ifa->ifa_carp->sc_vhid == ch->carp_vhid)
 			match = ifa;
-		if (vhid == 0 && carp_source_is_self(m, ifa, af))
+		if (ch->carp_vhid == 0 && carp_source_is_self(m, ifa, af))
 			error = ELOOP;
 	}
 	ifa = error ? NULL : match;
@@ -820,37 +705,12 @@ carp_find_ifa(const struct mbuf *m, sa_family_t af, uint8_t vhid)
 		} else {
 			CARPSTATS_INC(carps_badvhid);
 		}
-	}
-
-	return (ifa);
-}
-
-static void
-carp_input_c(struct mbuf *m, struct carp_header *ch, sa_family_t af, int ttl)
-{
-	struct ifnet *ifp = m->m_pkthdr.rcvif;
-	struct ifaddr *ifa;
-	struct carp_softc *sc;
-	uint64_t tmp_counter;
-	struct timeval sc_tv, ch_tv;
-	bool multicast = false;
-
-	NET_EPOCH_ASSERT();
-	MPASS(ch->carp_version == CARP_VERSION_CARP);
-
-	ifa = carp_find_ifa(m, af, ch->carp_vhid);
-	if (ifa == NULL) {
 		m_freem(m);
 		return;
 	}
 
-	sc = ifa->ifa_carp;
-	CARP_LOCK(sc);
-
 	/* verify the CARP version. */
-	if (sc->sc_version != CARP_VERSION_CARP) {
-		CARP_UNLOCK(sc);
-
+	if (ch->carp_version != CARP_VERSION) {
 		CARPSTATS_INC(carps_badver);
 		CARP_DEBUG("%s: invalid version %d\n", if_name(ifp),
 		    ch->carp_version);
@@ -859,6 +719,8 @@ carp_input_c(struct mbuf *m, struct carp_header *ch, sa_family_t af, int ttl)
 		return;
 	}
 
+	sc = ifa->ifa_carp;
+	CARP_LOCK(sc);
 	if (ifa->ifa_addr->sa_family == AF_INET) {
 		multicast = IN_MULTICAST(sc->sc_carpaddr.s_addr);
 	} else {
@@ -887,7 +749,7 @@ carp_input_c(struct mbuf *m, struct carp_header *ch, sa_family_t af, int ttl)
 
 	/* XXX Replay protection goes here */
 
-	sc->sc_init_counter = false;
+	sc->sc_init_counter = 0;
 	sc->sc_counter = tmp_counter;
 
 	sc_tv.tv_sec = sc->sc_advbase;
@@ -947,132 +809,10 @@ out:
 	m_freem(m);
 }
 
-static void
-vrrp_input_c(struct mbuf *m, int off, sa_family_t af, int ttl,
-    int len, uint16_t phdrcksum)
-{
-	struct vrrpv3_header *vh = mtodo(m, off);
-	struct ifnet *ifp = m->m_pkthdr.rcvif;
-	struct ifaddr *ifa;
-	struct carp_softc *sc;
-
-	NET_EPOCH_ASSERT();
-	MPASS(vh->vrrp_version == CARP_VERSION_VRRPv3);
-
-	ifa = carp_find_ifa(m, af, vh->vrrp_vrtid);
-	if (ifa == NULL) {
-		m_freem(m);
-		return;
-	}
-
-	sc = ifa->ifa_carp;
-	CARP_LOCK(sc);
-
-	ifa_free(ifa);
-
-	/* verify the CARP version. */
-	if (sc->sc_version != CARP_VERSION_VRRPv3) {
-		CARP_UNLOCK(sc);
-
-		CARPSTATS_INC(carps_badver);
-		CARP_DEBUG("%s: invalid version %d\n", if_name(ifp),
-		    vh->vrrp_version);
-		m_freem(m);
-		return;
-	}
-
-	/* verify that the IP TTL is 255. */
-	if (ttl != CARP_DFLTTL) {
-		CARPSTATS_INC(carps_badttl);
-		CARP_DEBUG("%s: received ttl %d != 255 on %s\n", __func__,
-		    ttl, if_name(m->m_pkthdr.rcvif));
-		goto out;
-	}
-
-	if (vrrp_checksum_verify(m, off, len, phdrcksum)) {
-		CARPSTATS_INC(carps_badsum);
-		CARP_DEBUG("%s: incorrect checksum for VRID %u@%s\n", __func__,
-		    sc->sc_vhid, if_name(ifp));
-		goto out;
-	}
-
-	/* RFC9568, 7.1 Receiving VRRP packets. */
-	if (sc->sc_vrrp_prio == 255) {
-		CARP_DEBUG("%s: our priority is 255. Ignore peer announcement.\n",
-		    __func__);
-		goto out;
-	}
-
-	/* XXX TODO Check IP address payload. */
-
-	sc->sc_vrrp_master_inter = ntohs(vh->vrrp_max_adver_int);
-
-	switch (sc->sc_state) {
-	case INIT:
-		break;
-	case MASTER:
-		/*
-		 * If we receive an advertisement from a master who's going to
-		 * be more frequent than us, go into BACKUP state.
-		 * Same if the peer has a higher priority than us.
-		 */
-		if (ntohs(vh->vrrp_max_adver_int) < sc->sc_vrrp_adv_inter ||
-		    vh->vrrp_priority > sc->sc_vrrp_prio) {
-			callout_stop(&sc->sc_ad_tmo);
-			carp_set_state(sc, BACKUP,
-			    "more frequent advertisement received");
-			carp_setrun(sc, 0);
-			carp_delroute(sc);
-		}
-		break;
-	case BACKUP:
-		/*
-		 * If we're pre-empting masters who advertise slower than us,
-		 * and this one claims to be slower, treat him as down.
-		 */
-		if (V_carp_preempt && (ntohs(vh->vrrp_max_adver_int) > sc->sc_vrrp_adv_inter
-		    || vh->vrrp_priority < sc->sc_vrrp_prio)) {
-			carp_master_down_locked(sc,
-			    "preempting a slower master");
-			break;
-		}
-
-		/*
-		 * Otherwise, we reset the counter and wait for the next
-		 * advertisement.
-		 */
-		carp_setrun(sc, af);
-		break;
-	}
-
-out:
-	CARP_UNLOCK(sc);
-	m_freem(m);
-}
-
 static int
-carp_tag(struct carp_softc *sc, struct mbuf *m)
-{
-	struct m_tag *mtag;
-
-	/* Tag packet for carp_output */
-	if ((mtag = m_tag_get(PACKET_TAG_CARP, sizeof(sc->sc_vhid),
-	    M_NOWAIT)) == NULL) {
-		m_freem(m);
-		CARPSTATS_INC(carps_onomem);
-		return (ENOMEM);
-	}
-	bcopy(&sc->sc_vhid, mtag + 1, sizeof(sc->sc_vhid));
-	m_tag_prepend(m, mtag);
-
-	return (0);
-}
-
-static void
 carp_prepare_ad(struct mbuf *m, struct carp_softc *sc, struct carp_header *ch)
 {
-
-	MPASS(sc->sc_version == CARP_VERSION_CARP);
+	struct m_tag *mtag;
 
 	if (sc->sc_init_counter) {
 		/* this could also be seconds since unix epoch */
@@ -1086,19 +826,18 @@ carp_prepare_ad(struct mbuf *m, struct carp_softc *sc, struct carp_header *ch)
 	ch->carp_counter[1] = htonl(sc->sc_counter&0xffffffff);
 
 	carp_hmac_generate(sc, ch->carp_counter, ch->carp_md);
-}
 
-static inline void
-send_ad_locked(struct carp_softc *sc)
-{
-	switch (sc->sc_version) {
-	case CARP_VERSION_CARP:
-		carp_send_ad_locked(sc);
-		break;
-	case CARP_VERSION_VRRPv3:
-		vrrp_send_ad_locked(sc);
-		break;
+	/* Tag packet for carp_output */
+	if ((mtag = m_tag_get(PACKET_TAG_CARP, sizeof(struct carp_softc *),
+	    M_NOWAIT)) == NULL) {
+		m_freem(m);
+		CARPSTATS_INC(carps_onomem);
+		return (ENOMEM);
 	}
+	bcopy(&sc, mtag + 1, sizeof(sc));
+	m_tag_prepend(m, mtag);
+
+	return (0);
 }
 
 /*
@@ -1117,7 +856,7 @@ carp_send_ad_all(void *ctx __unused, int pending __unused)
 		if (sc->sc_state == MASTER) {
 			CARP_LOCK(sc);
 			CURVNET_SET(sc->sc_carpdev->if_vnet);
-			send_ad_locked(sc);
+			carp_send_ad_locked(sc);
 			CURVNET_RESTORE();
 			CARP_UNLOCK(sc);
 		}
@@ -1127,7 +866,7 @@ carp_send_ad_all(void *ctx __unused, int pending __unused)
 
 /* Send a periodic advertisement, executed in callout context. */
 static void
-carp_callout(void *v)
+carp_send_ad(void *v)
 {
 	struct carp_softc *sc = v;
 	struct epoch_tracker et;
@@ -1135,7 +874,7 @@ carp_callout(void *v)
 	NET_EPOCH_ENTER(et);
 	CARP_LOCK_ASSERT(sc);
 	CURVNET_SET(sc->sc_carpdev->if_vnet);
-	send_ad_locked(sc);
+	carp_send_ad_locked(sc);
 	CURVNET_RESTORE();
 	CARP_UNLOCK(sc);
 	NET_EPOCH_EXIT(et);
@@ -1219,13 +958,12 @@ carp_send_ad_locked(struct carp_softc *sc)
 
 	NET_EPOCH_ASSERT();
 	CARP_LOCK_ASSERT(sc);
-	MPASS(sc->sc_version == CARP_VERSION_CARP);
 
 	advskew = DEMOTE_ADVSKEW(sc);
 	tv.tv_sec = sc->sc_advbase;
 	tv.tv_usec = advskew * 1000000 / 256;
 
-	ch.carp_version = CARP_VERSION_CARP;
+	ch.carp_version = CARP_VERSION;
 	ch.carp_type = CARP_ADVERTISEMENT;
 	ch.carp_vhid = sc->sc_vhid;
 	ch.carp_advbase = sc->sc_advbase;
@@ -1274,9 +1012,7 @@ carp_send_ad_locked(struct carp_softc *sc)
 
 		ch_ptr = (struct carp_header *)(&ip[1]);
 		bcopy(&ch, ch_ptr, sizeof(ch));
-		carp_prepare_ad(m, sc, ch_ptr);
-		if (IN_MULTICAST(ntohl(sc->sc_carpaddr.s_addr)) &&
-		    carp_tag(sc, m) != 0)
+		if (carp_prepare_ad(m, sc, ch_ptr))
 			goto resched;
 
 		m->m_data += sizeof(*ip);
@@ -1336,9 +1072,7 @@ carp_send_ad_locked(struct carp_softc *sc)
 
 		ch_ptr = (struct carp_header *)(&ip6[1]);
 		bcopy(&ch, ch_ptr, sizeof(ch));
-		carp_prepare_ad(m, sc, ch_ptr);
-		if (IN6_IS_ADDR_MULTICAST(&sc->sc_carpaddr6) &&
-		    carp_tag(sc, m) != 0)
+		if (carp_prepare_ad(m, sc, ch_ptr))
 			goto resched;
 
 		m->m_data += sizeof(*ip6);
@@ -1353,188 +1087,7 @@ carp_send_ad_locked(struct carp_softc *sc)
 #endif /* INET6 */
 
 resched:
-	callout_reset(&sc->sc_ad_tmo, tvtohz(&tv), carp_callout, sc);
-}
-
-static void
-vrrp_send_ad_locked(struct carp_softc *sc)
-{
-	struct vrrpv3_header *vh_ptr;
-	struct ifaddr *ifa;
-	struct mbuf *m;
-	int len;
-	struct vrrpv3_header vh = {
-	    .vrrp_version = CARP_VERSION_VRRPv3,
-	    .vrrp_type = VRRP_TYPE_ADVERTISEMENT,
-	    .vrrp_vrtid = sc->sc_vhid,
-	    .vrrp_priority = sc->sc_vrrp_prio,
-	    .vrrp_count_addr = 0,
-	    .vrrp_max_adver_int = htons(sc->sc_vrrp_adv_inter),
-	    .vrrp_checksum = 0,
-	};
-
-	NET_EPOCH_ASSERT();
-	CARP_LOCK_ASSERT(sc);
-	MPASS(sc->sc_version == CARP_VERSION_VRRPv3);
-
-#ifdef INET
-	if (sc->sc_naddrs) {
-		struct ip *ip;
-
-		m = m_gethdr(M_NOWAIT, MT_DATA);
-		if (m == NULL) {
-			CARPSTATS_INC(carps_onomem);
-			goto resched;
-		}
-		len = sizeof(*ip) + sizeof(vh);
-		m->m_pkthdr.len = len;
-		m->m_pkthdr.rcvif = NULL;
-		m->m_len = len;
-		M_ALIGN(m, m->m_len);
-		m->m_flags |= M_MCAST;
-		ip = mtod(m, struct ip *);
-		ip->ip_v = IPVERSION;
-		ip->ip_hl = sizeof(*ip) >> 2;
-		ip->ip_tos = V_carp_dscp << IPTOS_DSCP_OFFSET;
-		ip->ip_off = htons(IP_DF);
-		ip->ip_ttl = CARP_DFLTTL;
-		ip->ip_p = IPPROTO_CARP;
-		ip->ip_sum = 0;
-		ip_fillid(ip);
-
-		ifa = carp_best_ifa(AF_INET, sc->sc_carpdev);
-		if (ifa != NULL) {
-			ip->ip_src.s_addr =
-			    ifatoia(ifa)->ia_addr.sin_addr.s_addr;
-			ifa_free(ifa);
-		} else
-			ip->ip_src.s_addr = 0;
-		ip->ip_dst.s_addr = htonl(INADDR_CARP_GROUP);
-
-		/* Include the IP addresses in the announcement. */
-		for (int i = 0; i < (sc->sc_naddrs + sc->sc_naddrs6); i++) {
-			struct sockaddr_in *in;
-
-			MPASS(sc->sc_ifas[i] != NULL);
-			if (sc->sc_ifas[i]->ifa_addr->sa_family != AF_INET)
-				continue;
-
-			in = (struct sockaddr_in *)sc->sc_ifas[i]->ifa_addr;
-
-			if (m_append(m, sizeof(in->sin_addr),
-			    (caddr_t)&in->sin_addr) != 1) {
-				m_freem(m);
-				goto resched;
-			}
-
-			vh.vrrp_count_addr++;
-			len += sizeof(in->sin_addr);
-		}
-		ip->ip_len = htons(len);
-
-		vh_ptr = (struct vrrpv3_header *)mtodo(m, sizeof(*ip));
-		bcopy(&vh, vh_ptr, sizeof(vh));
-
-		vh_ptr->vrrp_checksum = in_pseudo(ip->ip_src.s_addr,
-		    ip->ip_dst.s_addr,
-		    htonl((uint16_t)(len - sizeof(*ip)) + ip->ip_p));
-		vh_ptr->vrrp_checksum = in_cksum_skip(m, len, sizeof(*ip));
-
-		if (carp_tag(sc, m))
-			goto resched;
-
-		CARPSTATS_INC(carps_opackets);
-
-		carp_send_ad_error(sc, ip_output(m, NULL, NULL, IP_RAWOUTPUT,
-		    &sc->sc_carpdev->if_carp->cif_imo, NULL));
-	}
-#endif
-#ifdef INET6
-	if (sc->sc_naddrs6) {
-		struct ip6_hdr *ip6;
-
-		m = m_gethdr(M_NOWAIT, MT_DATA);
-		if (m == NULL) {
-			CARPSTATS_INC(carps_onomem);
-			goto resched;
-		}
-		len = sizeof(*ip6) + sizeof(vh);
-		m->m_pkthdr.len = len;
-		m->m_pkthdr.rcvif = NULL;
-		m->m_len = len;
-		M_ALIGN(m, m->m_len);
-		m->m_flags |= M_MCAST;
-		ip6 = mtod(m, struct ip6_hdr *);
-		bzero(ip6, sizeof(*ip6));
-		ip6->ip6_vfc |= IPV6_VERSION;
-		/* Traffic class isn't defined in ip6 struct instead
-		 * it gets offset into flowid field */
-		ip6->ip6_flow |= htonl(V_carp_dscp << (IPV6_FLOWLABEL_LEN +
-		    IPTOS_DSCP_OFFSET));
-		ip6->ip6_hlim = CARP_DFLTTL;
-		ip6->ip6_nxt = IPPROTO_CARP;
-
-		/* set the source address */
-		ifa = carp_best_ifa(AF_INET6, sc->sc_carpdev);
-		if (ifa != NULL) {
-			bcopy(IFA_IN6(ifa), &ip6->ip6_src,
-			    sizeof(struct in6_addr));
-			ifa_free(ifa);
-		} else
-			/* This should never happen with IPv6. */
-			bzero(&ip6->ip6_src, sizeof(struct in6_addr));
-
-		/* Set the multicast destination. */
-		bzero(&ip6->ip6_dst, sizeof(ip6->ip6_dst));
-		ip6->ip6_dst.s6_addr16[0] = IPV6_ADDR_INT16_MLL;
-		ip6->ip6_dst.s6_addr8[15] = 0x12;
-
-		/* Include the IP addresses in the announcement. */
-		len = sizeof(vh);
-		for (int i = 0; i < (sc->sc_naddrs + sc->sc_naddrs6); i++) {
-			struct sockaddr_in6 *in6;
-
-			MPASS(sc->sc_ifas[i] != NULL);
-			if (sc->sc_ifas[i]->ifa_addr->sa_family != AF_INET6)
-				continue;
-
-			in6 = (struct sockaddr_in6 *)sc->sc_ifas[i]->ifa_addr;
-
-			if (m_append(m, sizeof(in6->sin6_addr),
-			    (char *)&in6->sin6_addr) != 1) {
-				m_freem(m);
-				goto resched;
-			}
-
-			vh.vrrp_count_addr++;
-			len += sizeof(in6->sin6_addr);
-		}
-		ip6->ip6_plen = htonl(len);
-
-		vh_ptr = (struct vrrpv3_header *)mtodo(m, sizeof(*ip6));
-		bcopy(&vh, vh_ptr, sizeof(vh));
-
-		vh_ptr->vrrp_checksum = in6_cksum_pseudo(ip6, len, ip6->ip6_nxt, 0);
-		vh_ptr->vrrp_checksum = in_cksum_skip(m, len + sizeof(*ip6), sizeof(*ip6));
-
-		if (in6_setscope(&ip6->ip6_dst, sc->sc_carpdev, NULL) != 0) {
-			m_freem(m);
-			CARP_DEBUG("%s: in6_setscope failed\n", __func__);
-			goto resched;
-		}
-
-		if (carp_tag(sc, m))
-			goto resched;
-		CARPSTATS_INC(carps_opackets6);
-
-		carp_send_ad_error(sc, ip6_output(m, NULL, NULL, 0,
-		    &sc->sc_carpdev->if_carp->cif_im6o, NULL, NULL));
-	}
-#endif
-
-resched:
-	callout_reset(&sc->sc_ad_tmo, sc->sc_vrrp_adv_inter * hz / 100,
-	    carp_callout, sc);
+	callout_reset(&sc->sc_ad_tmo, tvtohz(&tv), carp_send_ad, sc);
 }
 
 static void
@@ -1625,7 +1178,7 @@ carp_send_arp(struct carp_softc *sc)
 		if (ifa->ifa_addr->sa_family != AF_INET)
 			continue;
 		addr = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-		arp_announce_ifaddr(sc->sc_carpdev, addr, sc->sc_addr);
+		arp_announce_ifaddr(sc->sc_carpdev, addr, LLADDR(&sc->sc_addr));
 	}
 }
 
@@ -1635,7 +1188,7 @@ carp_iamatch(struct ifaddr *ifa, uint8_t **enaddr)
 	struct carp_softc *sc = ifa->ifa_carp;
 
 	if (sc->sc_state == MASTER) {
-		*enaddr = sc->sc_addr;
+		*enaddr = LLADDR(&sc->sc_addr);
 		return (1);
 	}
 
@@ -1706,12 +1259,12 @@ carp_macmatch6(struct ifnet *ifp, struct mbuf *m, const struct in6_addr *taddr)
 			    sizeof(struct carp_softc *), M_NOWAIT);
 			if (mtag == NULL)
 				/* Better a bit than nothing. */
-				return (sc->sc_addr);
+				return (LLADDR(&sc->sc_addr));
 
 			bcopy(&sc, mtag + 1, sizeof(sc));
 			m_tag_prepend(m, mtag);
 
-			return (sc->sc_addr);
+			return (LLADDR(&sc->sc_addr));
 		}
 
 	return (NULL);
@@ -1733,7 +1286,7 @@ carp_forus(struct ifnet *ifp, u_char *dhost)
 		 * CARP_LOCK() is not here, since would protect nothing, but
 		 * cause deadlock with if_bridge, calling this under its lock.
 		 */
-		if (sc->sc_state == MASTER && !bcmp(dhost, sc->sc_addr,
+		if (sc->sc_state == MASTER && !bcmp(dhost, LLADDR(&sc->sc_addr),
 		    ETHER_ADDR_LEN)) {
 			CIF_UNLOCK(ifp->if_carp);
 			return (1);
@@ -1774,7 +1327,7 @@ carp_master_down_locked(struct carp_softc *sc, const char *reason)
 	switch (sc->sc_state) {
 	case BACKUP:
 		carp_set_state(sc, MASTER, reason);
-		send_ad_locked(sc);
+		carp_send_ad_locked(sc);
 #ifdef INET
 		carp_send_arp(sc);
 #endif
@@ -1804,7 +1357,6 @@ static void
 carp_setrun(struct carp_softc *sc, sa_family_t af)
 {
 	struct timeval tv;
-	int timeout;
 
 	CARP_LOCK_ASSERT(sc);
 
@@ -1821,63 +1373,40 @@ carp_setrun(struct carp_softc *sc, sa_family_t af)
 		break;
 	case BACKUP:
 		callout_stop(&sc->sc_ad_tmo);
-
-		switch (sc->sc_version) {
-		case CARP_VERSION_CARP:
-			tv.tv_sec = 3 * sc->sc_advbase;
-			tv.tv_usec = sc->sc_advskew * 1000000 / 256;
-			timeout = tvtohz(&tv);
-			break;
-		case CARP_VERSION_VRRPv3:
-			/* skew time */
-			timeout = (256 - sc->sc_vrrp_prio) *
-			    sc->sc_vrrp_master_inter / 256;
-			timeout += (3 * sc->sc_vrrp_master_inter);
-			timeout *= hz;
-			timeout /= 100; /* master interval is in centiseconds */
-			break;
-		}
+		tv.tv_sec = 3 * sc->sc_advbase;
+		tv.tv_usec = sc->sc_advskew * 1000000 / 256;
 		switch (af) {
 #ifdef INET
 		case AF_INET:
-			callout_reset(&sc->sc_md_tmo, timeout,
+			callout_reset(&sc->sc_md_tmo, tvtohz(&tv),
 			    carp_master_down, sc);
 			break;
 #endif
 #ifdef INET6
 		case AF_INET6:
-			callout_reset(&sc->sc_md6_tmo, timeout,
+			callout_reset(&sc->sc_md6_tmo, tvtohz(&tv),
 			    carp_master_down, sc);
 			break;
 #endif
 		default:
 #ifdef INET
 			if (sc->sc_naddrs)
-				callout_reset(&sc->sc_md_tmo, timeout,
+				callout_reset(&sc->sc_md_tmo, tvtohz(&tv),
 				    carp_master_down, sc);
 #endif
 #ifdef INET6
 			if (sc->sc_naddrs6)
-				callout_reset(&sc->sc_md6_tmo, timeout,
+				callout_reset(&sc->sc_md6_tmo, tvtohz(&tv),
 				    carp_master_down, sc);
 #endif
 			break;
 		}
 		break;
 	case MASTER:
-		switch (sc->sc_version) {
-		case CARP_VERSION_CARP:
-			tv.tv_sec = sc->sc_advbase;
-			tv.tv_usec = sc->sc_advskew * 1000000 / 256;
-			callout_reset(&sc->sc_ad_tmo, tvtohz(&tv),
-			    carp_callout, sc);
-			break;
-		case CARP_VERSION_VRRPv3:
-			callout_reset(&sc->sc_ad_tmo,
-			    sc->sc_vrrp_adv_inter * hz / 100,
-			    carp_callout, sc);
-			break;
-		}
+		tv.tv_sec = sc->sc_advbase;
+		tv.tv_usec = sc->sc_advskew * 1000000 / 256;
+		callout_reset(&sc->sc_ad_tmo, tvtohz(&tv),
+		    carp_send_ad, sc);
 		break;
 	}
 }
@@ -2030,7 +1559,7 @@ int
 carp_output(struct ifnet *ifp, struct mbuf *m, const struct sockaddr *sa)
 {
 	struct m_tag *mtag;
-	int vhid;
+	struct carp_softc *sc;
 
 	if (!sa)
 		return (0);
@@ -2052,7 +1581,20 @@ carp_output(struct ifnet *ifp, struct mbuf *m, const struct sockaddr *sa)
 	if (mtag == NULL)
 		return (0);
 
-	bcopy(mtag + 1, &vhid, sizeof(vhid));
+	bcopy(mtag + 1, &sc, sizeof(sc));
+
+	switch (sa->sa_family) {
+	case AF_INET:
+		if (! IN_MULTICAST(ntohl(sc->sc_carpaddr.s_addr)))
+			return (0);
+		break;
+	case AF_INET6:
+		if (! IN6_IS_ADDR_MULTICAST(&sc->sc_carpaddr6))
+			return (0);
+		break;
+	default:
+		panic("Unknown af");
+	}
 
 	/* Set the source MAC address to the Virtual Router MAC Address. */
 	switch (ifp->if_type) {
@@ -2067,7 +1609,7 @@ carp_output(struct ifnet *ifp, struct mbuf *m, const struct sockaddr *sa)
 			eh->ether_shost[2] = 0x5e;
 			eh->ether_shost[3] = 0;
 			eh->ether_shost[4] = 1;
-			eh->ether_shost[5] = vhid;
+			eh->ether_shost[5] = sc->sc_vhid;
 		}
 		break;
 	default:
@@ -2080,7 +1622,7 @@ carp_output(struct ifnet *ifp, struct mbuf *m, const struct sockaddr *sa)
 }
 
 static struct carp_softc*
-carp_alloc(struct ifnet *ifp, carp_version_t version, int vhid)
+carp_alloc(struct ifnet *ifp)
 {
 	struct carp_softc *sc;
 	struct carp_if *cif;
@@ -2090,31 +1632,20 @@ carp_alloc(struct ifnet *ifp, carp_version_t version, int vhid)
 	if ((cif = ifp->if_carp) == NULL)
 		cif = carp_alloc_if(ifp);
 
-	sc = malloc(sizeof(*sc), M_CARP, M_WAITOK);
-	*sc = (struct carp_softc ){
-		.sc_vhid = vhid,
-		.sc_version = version,
-		.sc_state = INIT,
-		.sc_carpdev = ifp,
-		.sc_ifasiz = sizeof(struct ifaddr *),
-		.sc_addr = { 0, 0, 0x5e, 0, 1, vhid },
-	};
-	sc->sc_ifas = malloc(sc->sc_ifasiz, M_CARP, M_WAITOK|M_ZERO);
+	sc = malloc(sizeof(*sc), M_CARP, M_WAITOK|M_ZERO);
 
-	switch (version) {
-	case CARP_VERSION_CARP:
-		sc->sc_advbase = CARP_DFLTINTV;
-		sc->sc_init_counter = true;
-		sc->sc_carpaddr.s_addr = htonl(INADDR_CARP_GROUP);
-		sc->sc_carpaddr6.s6_addr16[0] = IPV6_ADDR_INT16_MLL;
-		sc->sc_carpaddr6.s6_addr8[15] = 0x12;
-		break;
-	case CARP_VERSION_VRRPv3:
-		sc->sc_vrrp_adv_inter = 100;
-		sc->sc_vrrp_master_inter = sc->sc_vrrp_adv_inter;
-		sc->sc_vrrp_prio = 100;
-		break;
-	}
+	sc->sc_advbase = CARP_DFLTINTV;
+	sc->sc_vhid = -1;	/* required setting */
+	sc->sc_init_counter = 1;
+	sc->sc_state = INIT;
+
+	sc->sc_ifasiz = sizeof(struct ifaddr *);
+	sc->sc_ifas = malloc(sc->sc_ifasiz, M_CARP, M_WAITOK|M_ZERO);
+	sc->sc_carpdev = ifp;
+
+	sc->sc_carpaddr.s_addr = htonl(INADDR_CARP_GROUP);
+	sc->sc_carpaddr6.s6_addr16[0] = IPV6_ADDR_INT16_MLL;
+	sc->sc_carpaddr6.s6_addr8[15] = 0x12;
 
 	CARP_LOCK_INIT(sc);
 #ifdef INET
@@ -2239,19 +1770,12 @@ carp_carprcp(void *arg, struct carp_softc *sc, int priv)
 	CARP_LOCK(sc);
 	carpr->carpr_state = sc->sc_state;
 	carpr->carpr_vhid = sc->sc_vhid;
-	switch (sc->sc_version) {
-	case CARP_VERSION_CARP:
-		carpr->carpr_advbase = sc->sc_advbase;
-		carpr->carpr_advskew = sc->sc_advskew;
-		if (priv)
-			bcopy(sc->sc_key, carpr->carpr_key,
-			    sizeof(carpr->carpr_key));
-		else
-			bzero(carpr->carpr_key, sizeof(carpr->carpr_key));
-		break;
-	case CARP_VERSION_VRRPv3:
-		break;
-	}
+	carpr->carpr_advbase = sc->sc_advbase;
+	carpr->carpr_advskew = sc->sc_advskew;
+	if (priv)
+		bcopy(sc->sc_key, carpr->carpr_key, sizeof(carpr->carpr_key));
+	else
+		bzero(carpr->carpr_key, sizeof(carpr->carpr_key));
 	CARP_UNLOCK(sc);
 
 	return (true);
@@ -2264,21 +1788,9 @@ carp_ioctl_set(if_t ifp, struct carpkreq *carpr)
 	struct carp_softc *sc = NULL;
 	int error = 0;
 
-	if (carpr->carpr_vhid <= 0 || carpr->carpr_vhid > CARP_MAXVHID)
-		return (EINVAL);
 
-	switch (carpr->carpr_version) {
-	case CARP_VERSION_CARP:
-		if (carpr->carpr_advbase != 0 && (carpr->carpr_advbase > 255 ||
-		    carpr->carpr_advbase < CARP_DFLTINTV))
-			return (EINVAL);
-		if (carpr->carpr_advskew < 0 || carpr->carpr_advskew >= 255)
-			return (EINVAL);
-		break;
-	case CARP_VERSION_VRRPv3:
-		/* XXXGL: shouldn't we check anything? */
-		break;
-	default:
+	if (carpr->carpr_vhid <= 0 || carpr->carpr_vhid > CARP_MAXVHID ||
+	    carpr->carpr_advbase < 0 || carpr->carpr_advskew < 0) {
 		return (EINVAL);
 	}
 
@@ -2287,37 +1799,41 @@ carp_ioctl_set(if_t ifp, struct carpkreq *carpr)
 			if (sc->sc_vhid == carpr->carpr_vhid)
 				break;
 	}
-
-	if (sc == NULL)
-		sc = carp_alloc(ifp, carpr->carpr_version, carpr->carpr_vhid);
-	else if (sc->sc_version != carpr->carpr_version)
-		return (EINVAL);
-
-	CARP_LOCK(sc);
-	switch (sc->sc_version) {
-	case CARP_VERSION_CARP:
-		if (carpr->carpr_advbase != 0)
-			sc->sc_advbase = carpr->carpr_advbase;
-		sc->sc_advskew = carpr->carpr_advskew;
-		if (carpr->carpr_addr.s_addr != INADDR_ANY)
-			sc->sc_carpaddr = carpr->carpr_addr;
-		if (!IN6_IS_ADDR_UNSPECIFIED(&carpr->carpr_addr6)) {
-			memcpy(&sc->sc_carpaddr6, &carpr->carpr_addr6,
-			    sizeof(sc->sc_carpaddr6));
+	if (sc == NULL) {
+		sc = carp_alloc(ifp);
+		CARP_LOCK(sc);
+		sc->sc_vhid = carpr->carpr_vhid;
+		LLADDR(&sc->sc_addr)[0] = 0;
+		LLADDR(&sc->sc_addr)[1] = 0;
+		LLADDR(&sc->sc_addr)[2] = 0x5e;
+		LLADDR(&sc->sc_addr)[3] = 0;
+		LLADDR(&sc->sc_addr)[4] = 1;
+		LLADDR(&sc->sc_addr)[5] = sc->sc_vhid;
+	} else
+		CARP_LOCK(sc);
+	if (carpr->carpr_advbase > 0) {
+		if (carpr->carpr_advbase > 255 ||
+		    carpr->carpr_advbase < CARP_DFLTINTV) {
+			error = EINVAL;
+			goto out;
 		}
-		if (carpr->carpr_key[0] != '\0') {
-			bcopy(carpr->carpr_key, sc->sc_key, sizeof(sc->sc_key));
-			carp_hmac_prepare(sc);
-		}
-		break;
-	case CARP_VERSION_VRRPv3:
-		if (carpr->carpr_vrrp_priority != 0)
-			sc->sc_vrrp_prio = carpr->carpr_vrrp_priority;
-		if (carpr->carpr_vrrp_adv_inter)
-			sc->sc_vrrp_adv_inter = carpr->carpr_vrrp_adv_inter;
-		break;
+		sc->sc_advbase = carpr->carpr_advbase;
 	}
-
+	if (carpr->carpr_advskew >= 255) {
+		error = EINVAL;
+		goto out;
+	}
+	sc->sc_advskew = carpr->carpr_advskew;
+	if (carpr->carpr_addr.s_addr != INADDR_ANY)
+		sc->sc_carpaddr = carpr->carpr_addr;
+	if (! IN6_IS_ADDR_UNSPECIFIED(&carpr->carpr_addr6)) {
+		memcpy(&sc->sc_carpaddr6, &carpr->carpr_addr6,
+		    sizeof(sc->sc_carpaddr6));
+	}
+	if (carpr->carpr_key[0] != '\0') {
+		bcopy(carpr->carpr_key, sc->sc_key, sizeof(sc->sc_key));
+		carp_hmac_prepare(sc);
+	}
 	if (sc->sc_state != INIT &&
 	    carpr->carpr_state != sc->sc_state) {
 		switch (carpr->carpr_state) {
@@ -2338,6 +1854,8 @@ carp_ioctl_set(if_t ifp, struct carpkreq *carpr)
 			break;
 		}
 	}
+
+out:
 	CARP_UNLOCK(sc);
 
 	return (error);
@@ -2392,9 +1910,7 @@ int
 carp_ioctl(struct ifreq *ifr, u_long cmd, struct thread *td)
 {
 	struct carpreq carpr;
-	struct carpkreq carprk = {
-		.carpr_version = CARP_VERSION_CARP,
-	};
+	struct carpkreq carprk = { };
 	struct ifnet *ifp;
 	int error = 0;
 
@@ -2518,8 +2034,7 @@ carp_attach(struct ifaddr *ifa, int vhid)
 	CARP_LOCK(sc);
 	sc->sc_ifas[index - 1] = ifa;
 	ifa->ifa_carp = sc;
-	if (sc->sc_version == CARP_VERSION_CARP)
-		carp_hmac_prepare(sc);
+	carp_hmac_prepare(sc);
 	carp_sc_state(sc);
 	CARP_UNLOCK(sc);
 
@@ -2572,8 +2087,7 @@ carp_detach(struct ifaddr *ifa, bool keep_cif)
 	ifa->ifa_carp = NULL;
 	ifa_free(ifa);
 
-	if (sc->sc_version == CARP_VERSION_CARP)
-		carp_hmac_prepare(sc);
+	carp_hmac_prepare(sc);
 	carp_sc_state(sc);
 
 	if (!keep_cif && sc->sc_naddrs == 0 && sc->sc_naddrs6 == 0)
@@ -2765,23 +2279,13 @@ carp_nl_send(void *arg, struct carp_softc *sc, int priv)
 
 	nlattr_add_u32(nw, CARP_NL_VHID, sc->sc_vhid);
 	nlattr_add_u32(nw, CARP_NL_STATE, sc->sc_state);
-	nlattr_add_u8(nw, CARP_NL_VERSION, sc->sc_version);
-	switch (sc->sc_version) {
-	case CARP_VERSION_CARP:
-		nlattr_add_s32(nw, CARP_NL_ADVBASE, sc->sc_advbase);
-		nlattr_add_s32(nw, CARP_NL_ADVSKEW, sc->sc_advskew);
-		nlattr_add_in_addr(nw, CARP_NL_ADDR, &sc->sc_carpaddr);
-		nlattr_add_in6_addr(nw, CARP_NL_ADDR6, &sc->sc_carpaddr6);
-		if (priv)
-			nlattr_add(nw, CARP_NL_KEY, sizeof(sc->sc_key),
-			    sc->sc_key);
-		break;
-	case CARP_VERSION_VRRPv3:
-		nlattr_add_u8(nw, CARP_NL_VRRP_PRIORITY, sc->sc_vrrp_prio);
-		nlattr_add_u16(nw, CARP_NL_VRRP_ADV_INTER,
-		    sc->sc_vrrp_adv_inter);
-		break;
-	}
+	nlattr_add_s32(nw, CARP_NL_ADVBASE, sc->sc_advbase);
+	nlattr_add_s32(nw, CARP_NL_ADVSKEW, sc->sc_advskew);
+	nlattr_add_in_addr(nw, CARP_NL_ADDR, &sc->sc_carpaddr);
+	nlattr_add_in6_addr(nw, CARP_NL_ADDR6, &sc->sc_carpaddr6);
+
+	if (priv)
+		nlattr_add(nw, CARP_NL_KEY, sizeof(sc->sc_key), sc->sc_key);
 
 	CARP_UNLOCK(sc);
 
@@ -2803,9 +2307,6 @@ struct nl_carp_parsed {
 	char		key[CARP_KEY_LEN];
 	struct in_addr	addr;
 	struct in6_addr	addr6;
-	carp_version_t	version;
-	uint8_t		vrrp_prio;
-	uint16_t	vrrp_adv_inter;
 };
 
 #define	_IN(_field)	offsetof(struct genlmsghdr, _field)
@@ -2821,9 +2322,6 @@ static const struct nlattr_parser nla_p_set[] = {
 	{ .type = CARP_NL_ADDR, .off = _OUT(addr), .cb = nlattr_get_in_addr },
 	{ .type = CARP_NL_ADDR6, .off = _OUT(addr6), .cb = nlattr_get_in6_addr },
 	{ .type = CARP_NL_IFNAME, .off = _OUT(ifname), .cb = nlattr_get_string },
-	{ .type = CARP_NL_VERSION, .off = _OUT(version), .cb = nlattr_get_uint8 },
-	{ .type = CARP_NL_VRRP_PRIORITY, .off = _OUT(vrrp_prio), .cb = nlattr_get_uint8 },
-	{ .type = CARP_NL_VRRP_ADV_INTER, .off = _OUT(vrrp_adv_inter), .cb = nlattr_get_uint16 },
 };
 static const struct nlfield_parser nlf_p_set[] = {
 };
@@ -2895,24 +2393,12 @@ carp_nl_set(struct nlmsghdr *hdr, struct nl_pstate *npt)
 		return (EINVAL);
 	if (attrs.state > CARP_MAXSTATE)
 		return (EINVAL);
-	if (attrs.version == 0)	/* compat with pre-VRRPv3 */
-		attrs.version = CARP_VERSION_CARP;
-	switch (attrs.version) {
-	case CARP_VERSION_CARP:
-		if (attrs.advbase < 0 || attrs.advskew < 0)
-			return (EINVAL);
-		if (attrs.advbase > 255)
-			return (EINVAL);
-		if (attrs.advskew >= 255)
-			return (EINVAL);
-		break;
-	case CARP_VERSION_VRRPv3:
-		if (attrs.vrrp_adv_inter > VRRP_MAX_INTERVAL)
-			return (EINVAL);
-		break;
-	default:
+	if (attrs.advbase < 0 || attrs.advskew < 0)
 		return (EINVAL);
-	}
+	if (attrs.advbase > 255)
+		return (EINVAL);
+	if (attrs.advskew >= 255)
+		return (EINVAL);
 
 	NET_EPOCH_ENTER(et);
 	if (attrs.ifname != NULL)
@@ -2932,20 +2418,12 @@ carp_nl_set(struct nlmsghdr *hdr, struct nl_pstate *npt)
 	carpr.carpr_count = 1;
 	carpr.carpr_vhid = attrs.vhid;
 	carpr.carpr_state = attrs.state;
-	carpr.carpr_version = attrs.version;
-	switch (attrs.version) {
-	case CARP_VERSION_CARP:
-		carpr.carpr_advbase = attrs.advbase;
-		carpr.carpr_advskew = attrs.advskew;
-		carpr.carpr_addr = attrs.addr;
-		carpr.carpr_addr6 = attrs.addr6;
-		memcpy(&carpr.carpr_key, &attrs.key, sizeof(attrs.key));
-		break;
-	case CARP_VERSION_VRRPv3:
-		carpr.carpr_vrrp_priority = attrs.vrrp_prio;
-		carpr.carpr_vrrp_adv_inter = attrs.vrrp_adv_inter;
-		break;
-	}
+	carpr.carpr_advbase = attrs.advbase;
+	carpr.carpr_advskew = attrs.advskew;
+	carpr.carpr_addr = attrs.addr;
+	carpr.carpr_addr6 = attrs.addr6;
+
+	memcpy(&carpr.carpr_key, &attrs.key, sizeof(attrs.key));
 
 	sx_xlock(&carp_sx);
 	error = carp_ioctl_set(ifp, &carpr);

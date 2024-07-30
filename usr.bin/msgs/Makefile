@@ -1,3 +1,4 @@
+
 PROG=	msgs
 
 LIBADD=	tinfow

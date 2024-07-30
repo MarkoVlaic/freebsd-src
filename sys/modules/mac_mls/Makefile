@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/security/mac_mls
 
 KMOD=	mac_mls

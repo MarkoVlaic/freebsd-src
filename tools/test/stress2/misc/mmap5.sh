@@ -52,16 +52,15 @@ rm -f /tmp/mmap5  /tmp/mmap5.inputfile
 exit
 
 EOF
-#include <sys/param.h>
-#include <sys/fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <err.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <time.h>
+#include <sys/fcntl.h>
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 const char *file;
@@ -114,14 +113,13 @@ test(void)
 int
 main(int argc, char *argv[])
 {
-	time_t start;
+	int i;
 
 	if (argc != 2)
 		errx(1, "Usage: %s <file>", argv[0]);
 	file = argv[1];
 
-	start = time(NULL);
-	while (time(NULL) - start < 120) {
+	for (i = 0; i < 30000; i++) {
 		if (fork() == 0)
 			test();
 		wait(NULL);

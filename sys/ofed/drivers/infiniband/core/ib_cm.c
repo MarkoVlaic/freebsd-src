@@ -4008,6 +4008,7 @@ static char *cm_devnode(struct device *dev, umode_t *mode)
 }
 
 struct class cm_class = {
+	.owner   = THIS_MODULE,
 	.name    = "infiniband_cm",
 	.devnode = cm_devnode,
 };
@@ -4056,7 +4057,7 @@ static void cm_add_one(struct ib_device *ib_device)
 	struct ib_port_modify port_modify = {
 		.set_port_cap_mask = IB_PORT_CM_SUP
 	};
-	unsigned long flags __writeonly;
+	unsigned long flags;
 	int ret;
 	int count = 0;
 	u8 i;
@@ -4149,7 +4150,7 @@ static void cm_remove_one(struct ib_device *ib_device, void *client_data)
 	struct ib_port_modify port_modify = {
 		.clr_port_cap_mask = IB_PORT_CM_SUP
 	};
-	unsigned long flags __writeonly;
+	unsigned long flags;
 	int i;
 
 	if (!cm_dev)

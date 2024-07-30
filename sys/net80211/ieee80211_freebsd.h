@@ -417,7 +417,8 @@ MODULE_DEPEND(wlan_##name, wlan, 1, 1, 1)
 /*
  * Crypto modules implement cipher support.
  */
-#define	IEEE80211_CRYPTO_MODULE_ADD(name)				\
+#define	IEEE80211_CRYPTO_MODULE(name, version)				\
+_IEEE80211_POLICY_MODULE(crypto, name, version);			\
 static void								\
 name##_modevent(int type)						\
 {									\
@@ -427,10 +428,6 @@ name##_modevent(int type)						\
 		ieee80211_crypto_unregister(&name);			\
 }									\
 TEXT_SET(crypto##_set, name##_modevent)
-
-#define	IEEE80211_CRYPTO_MODULE(name, version)				\
-	_IEEE80211_POLICY_MODULE(crypto, name, version);		\
-	IEEE80211_CRYPTO_MODULE_ADD(name)
 
 /*
  * Scanner modules provide scanning policy.

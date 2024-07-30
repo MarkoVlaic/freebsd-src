@@ -1,3 +1,4 @@
+
 PACKAGE=runtime
 PROG=	mknod
 MAN=	mknod.8

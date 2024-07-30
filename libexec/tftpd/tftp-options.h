@@ -25,6 +25,7 @@
  * SUCH DAMAGE.
  */
 
+#include <sys/cdefs.h>
 /*
  * Options
  */

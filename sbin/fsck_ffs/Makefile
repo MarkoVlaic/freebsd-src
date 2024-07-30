@@ -1,3 +1,4 @@
+
 PACKAGE=ufs
 PROG=	fsck_ffs
 LINKS+=	${BINDIR}/fsck_ffs ${BINDIR}/fsck_ufs

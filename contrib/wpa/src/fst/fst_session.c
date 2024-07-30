@@ -238,8 +238,10 @@ fst_find_session_in_progress(const u8 *peer_addr, struct fst_group *g)
 
 	foreach_fst_session(s) {
 		if (s->group == g &&
-		    (ether_addr_equal(s->data.old_peer_addr, peer_addr) ||
-		     ether_addr_equal(s->data.new_peer_addr, peer_addr)) &&
+		    (os_memcmp(s->data.old_peer_addr, peer_addr,
+			       ETH_ALEN) == 0 ||
+		     os_memcmp(s->data.new_peer_addr, peer_addr,
+			       ETH_ALEN) == 0) &&
 		    fst_session_is_in_progress(s))
 			return s;
 	}

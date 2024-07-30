@@ -1,3 +1,4 @@
+
 .PATH: ${SRCTOP}/sys/dev/age
 
 KMOD=	if_age

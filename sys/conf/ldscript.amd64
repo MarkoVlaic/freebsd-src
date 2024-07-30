@@ -165,6 +165,12 @@ SECTIONS
   }
   .data1          : { *(.data1) }
   _edata = .; PROVIDE (edata = .);
+  __zcond_table_start = .;
+  __zcond_table :
+  {
+    * (__zcond__table)
+  }
+  __zcond_table_end = .;
   __bss_start = .;
   .bss            :
   {

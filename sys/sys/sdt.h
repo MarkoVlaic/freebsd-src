@@ -177,6 +177,7 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 		    .mod = #_mod,					\
 		    .func = #_func,					\
 		    .name = #_name,					\
+            .enabled = ZCOND_INIT(false)    \
 		},							\
 	};								\
 	DATA_SET(sdt_probes_set, _SDT_PROBE_NAME(_prov, _mod, _func, _name))
@@ -452,6 +453,7 @@ struct sdt_probe {
 	id_t		id;		/* DTrace probe ID. */
 	int		n_args;		/* Number of arguments. */
 	struct linker_file *sdtp_lf;	/* Module in which we're defined. */
+    struct zcond_false enabled;
 };
 
 struct sdt_provider {

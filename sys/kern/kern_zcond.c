@@ -30,6 +30,7 @@ MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 struct pmap zcond_patching_pmap;
 
+
 static void
 zcond_load_ins_points(linker_file_t lf)
 {
@@ -63,15 +64,15 @@ zcond_load_ins_points(linker_file_t lf)
 static void
 zcond_kld_load(void *arg __unused, struct linker_file *lf)
 {
-	printf("kldload zcond\n");
-	zcond_load_ins_points(lf);
+    printf("kldload zcond\n");
+    zcond_load_ins_points(lf);
 }
 
 static int
 zcond_load_ins_points_cb(linker_file_t lf, void *arg __unused)
 {
-	zcond_load_ins_points(lf);
-	return (0);
+    zcond_load_ins_points(lf);
+    return (0);
 }
 
 /*
@@ -93,11 +94,13 @@ zcond_init(const void *unused)
 	pmap_pinit(&zcond_patching_pmap);
 	kern_start = vm_map_max(kernel_map);
 	kern_end = vm_map_min(kernel_map);
-	printf("kern start %#08lx | kern end %#08lx ", kern_start, kern_end);
+	printf("kern start %#08lx | kern end %#08lx ",
+	    kern_start, kern_end);
 	pmap_copy(&zcond_patching_pmap, kernel_pmap, kern_start,
 	    kern_end - kern_start, kern_start);
 }
-SYSINIT(zcond, SI_SUB_KLD + 1, SI_ORDER_SECOND, zcond_init, NULL);
+SYSINIT(zcond, SI_SUB_KLD + 1, SI_ORDER_SECOND, zcond_init,
+    NULL);
 
 struct rendezvous_data {
 	int patching_cpu;
@@ -126,8 +129,9 @@ zcond_patch(struct zcond *cond, bool new_state)
 		printf("\n");
 
 		zcond_before_patch();
-		memcpy((void *)(p->mirror_addr + (p->patch_addr & PAGE_MASK)),
-		    &insn[0], insn_size);
+		memcpy((void *)(p->mirror_addr +
+			   (p->patch_addr & PAGE_MASK)),
+                &insn[0], insn_size);
 		zcond_after_patch();
 	}
 	cond->enabled = new_state;

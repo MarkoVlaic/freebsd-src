@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/queue.h>
+#include <sys/cdefs.h>
 
 #include <machine/zcond.h>
 
@@ -53,18 +54,18 @@ struct zcond_false {
  * all the data related to the zcond mechanism.
  * A single entry describes a single ins_point.
  */
-#define ZCOND_TABLE_ENTRY                                 \
-	".pushsection " ZCOND_ELF_SECTION ", \"aw\" \n\t" \
-	".quad 1b \n\t"                                   \
-	".quad %l[l_true] \n\t"                           \
-	".quad %c0 \n\t"                                  \
-	".quad 0 \n\t"                                    \
-	".quad 0 \n\t"                                    \
+#define ZCOND_TABLE_ENTRY                         \
+    ".pushsection " ZCOND_ELF_SECTION ", \"aw\" \n\t" \
+	".quad 1b \n\t"                           \
+	".quad %l[l_true] \n\t"                   \
+	".quad %c0 \n\t"                          \
+	".quad 0 \n\t"                            \
+	".quad 0 \n\t"                            \
 	".popsection \n\t"
 
-#define ZCOND_SET_START_STOP                              \
-	__WEAK(__CONCAT(__start_set_, ZCOND_LINKER_SET)); \
-	__WEAK(__CONCAT(__stop_set_, ZCOND_LINKER_SET));
+#define ZCOND_SET_START_STOP \
+    __WEAK(__CONCAT(__start_set_, ZCOND_LINKER_SET)); \
+    __WEAK(__CONCAT(__stop_set_, ZCOND_LINKER_SET)); \
 
 /*
  * Emits a __zcond_table entry, describing one ins_point.
@@ -124,6 +125,12 @@ l_true:
 #define DECLARE_ZCOND_TRUE(name)  struct zcond_true name;
 
 #define DECLARE_ZCOND_FALSE(name) struct zcond_false name;
+
+#define DECLARE_ZCOND_TRUE(name) \
+    struct zcond_true name;
+
+#define DECLARE_ZCOND_FALSE(name) \
+    struct zcond_false name;
 
 /*
  * These macros inspect the state of a zcond (is it true or false)

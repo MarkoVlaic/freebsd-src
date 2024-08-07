@@ -8,6 +8,7 @@
 #include <sys/linker.h>
 #include <sys/linker_set.h>
 #include <sys/lock.h>
+#include <sys/malloc.h>
 #include <sys/mutex.h>
 #include <sys/sbuf.h>
 #include <sys/smp.h>
@@ -24,39 +25,53 @@
 #include <machine/atomic.h>
 #include <machine/cpufunc.h>
 
-#include <sys/malloc.h>
-
 MALLOC_DECLARE(M_ZCOND);
 MALLOC_DEFINE(M_ZCOND, "zcond", "malloc for the zcond subsystem");
 
 struct pmap zcond_patching_pmap;
 
 static void
-zcond_load_ins_point(struct ins_point *ins_p) 
+zcond_load_ins_points(linker_file_t lf)
 {
+	struct ins_point *begin, *end;
+	struct ins_point *ins_p;
 	struct zcond *owning_zcond;
-    
-    owning_zcond = ins_p->zcond;
 
-    if (owning_zcond->ins_points.slh_first == NULL) {
-        SLIST_INIT(&owning_zcond->ins_points);
-    }
+	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
+		&end, NULL) == 0) {
+		printf("being %#08lx end %#08lx\n", (unsigned long)begin,
+		    (unsigned long)end);
+		for (ins_p = begin; ins_p < end; ins_p++) {
+			owning_zcond = ins_p->zcond;
+			// printf("ins_p %#08lx zcond %#08lx\n",(unsigned long)
+			// ins_p, (unsigned long) owning_zcond);
 
-    SLIST_INSERT_HEAD(&owning_zcond->ins_points, ins_p, next);
+			if (owning_zcond->ins_points.slh_first == NULL) {
+				printf(
+				    "init list %#08lx | inspection point at %#08lx\n",
+				    (unsigned long)owning_zcond,
+				    (unsigned long)ins_p);
+				SLIST_INIT(&owning_zcond->ins_points);
+			}
+
+			SLIST_INSERT_HEAD(&owning_zcond->ins_points, ins_p,
+			    next);
+		}
+	}
 }
 
 static void
 zcond_kld_load(void *arg __unused, struct linker_file *lf)
 {
-    struct ins_point **begin, **end;
-    struct ins_point **ins_p;
+	printf("kldload zcond\n");
+	zcond_load_ins_points(lf);
+}
 
-    if(linker_file_lookup_set(lf, "__zcond_table", &begin, &end, NULL) == 0) {
-        printf("loading ins points from modules\n");
-        for(ins_p = begin; ins_p < end; ins_p++) {
-            zcond_load_ins_point(*ins_p);
-        }
-    }
+static int
+zcond_load_ins_points_cb(linker_file_t lf, void *arg __unused)
+{
+	zcond_load_ins_points(lf);
+	return (0);
 }
 
 /*
@@ -67,35 +82,22 @@ zcond_kld_load(void *arg __unused, struct linker_file *lf)
 static void
 zcond_init(const void *unused)
 {
-	extern char __zcond_table_start, __zcond_table_end;
-	struct ins_point *entry;
-	char *entry_addr;
-	size_t entry_size;
-	extern char kernload, end;
 	vm_offset_t kern_start, kern_end;
 
-	entry_size = sizeof(struct ins_point);
-
-	for (entry_addr = &__zcond_table_start; entry_addr < &__zcond_table_end;
-	     entry_addr += entry_size) {
-		entry = (struct ins_point *)entry_addr;
-        zcond_load_ins_point(entry);
-	}
-
-    EVENTHANDLER_REGISTER(kld_load, zcond_kld_load, NULL, EVENTHANDLER_PRI_ANY);
+	EVENTHANDLER_REGISTER(kld_load, zcond_kld_load, NULL,
+	    EVENTHANDLER_PRI_ANY);
+	linker_file_foreach(zcond_load_ins_points_cb, NULL);
 
 	memset(&zcond_patching_pmap, 0, sizeof(zcond_patching_pmap));
 	PMAP_LOCK_INIT(&zcond_patching_pmap);
 	pmap_pinit(&zcond_patching_pmap);
 	kern_start = vm_map_max(kernel_map);
 	kern_end = vm_map_min(kernel_map);
-	printf("kern start %#08lx | kern end %#08lx | linker end %#08lx\n",
-	    kern_start, kern_end, (vm_offset_t)&end);
+	printf("kern start %#08lx | kern end %#08lx ", kern_start, kern_end);
 	pmap_copy(&zcond_patching_pmap, kernel_pmap, kern_start,
 	    kern_end - kern_start, kern_start);
 }
-SYSINIT(zcond, SI_SUB_KLD - 1, SI_ORDER_ANY, zcond_init,
-    NULL);
+SYSINIT(zcond, SI_SUB_KLD + 1, SI_ORDER_SECOND, zcond_init, NULL);
 
 struct rendezvous_data {
 	int patching_cpu;
@@ -124,8 +126,7 @@ zcond_patch(struct zcond *cond, bool new_state)
 		printf("\n");
 
 		zcond_before_patch();
-		memcpy((void *)(p->mirror_address +
-			   (p->patch_addr & PAGE_MASK)),
+		memcpy((void *)(p->mirror_addr + (p->patch_addr & PAGE_MASK)),
 		    &insn[0], insn_size);
 		zcond_after_patch();
 	}
@@ -146,7 +147,7 @@ rendezvous_cb(void *arg)
 void
 __zcond_set_enabled(struct zcond *cond, bool new_state)
 {
-    printf("zcond_set_enabled\n");
+	printf("zcond_set_enabled\n");
 	if (cond->enabled == new_state) {
 		return;
 	}
@@ -162,24 +163,26 @@ __zcond_set_enabled(struct zcond *cond, bool new_state)
 	 * into a new virtual address range in the CPU private pmap.
 	 */
 	SLIST_FOREACH(p, &cond->ins_points, next) {
-        //KASSERT(INKERNEL(p->patch_addr), ("inspection point patch address outside of kernel: %#08lx", p->patch_addr));
-		p->mirror_address = kva_alloc(PAGE_SIZE);
+		// KASSERT(INKERNEL(p->patch_addr), ("inspection point patch
+		// address outside of kernel: %#08lx", p->patch_addr));
+		p->mirror_addr = kva_alloc(PAGE_SIZE);
 		patch_page = PHYS_TO_VM_PAGE(vtophys(p->patch_addr));
-	        KASSERT(patch_page != NULL, ("patch page is NULL"));
+		KASSERT(patch_page != NULL, ("patch page is NULL"));
 
-	        pmap_qenter_zcond(&zcond_patching_pmap, patch_page, p->mirror_address);
-	        pmap_invalidate_page(kernel_pmap, p->patch_addr & (~PAGE_MASK));
-			printf("patch_point %#08lx mapped to %#08lx\n", p->patch_addr,
-			    p->mirror_address);
+		pmap_qenter_zcond(&zcond_patching_pmap, patch_page,
+		    p->mirror_addr);
+		pmap_invalidate_page(kernel_pmap, p->patch_addr & (~PAGE_MASK));
+		printf("patch_point %#08lx mapped to %#08lx\n", p->patch_addr,
+		    p->mirror_addr);
 	}
 
 	zcond_before_rendezvous();
 	smp_rendezvous(NULL, rendezvous_cb, NULL, &arg);
 	zcond_after_rendezvous();
-    
+
 	SLIST_FOREACH(p, &cond->ins_points, next) {
-		pmap_qremove_zcond(&zcond_patching_pmap, p->mirror_address);
-		kva_free(p->mirror_address, PAGE_SIZE);
+		pmap_qremove_zcond(&zcond_patching_pmap, p->mirror_addr);
+		kva_free(p->mirror_addr, PAGE_SIZE);
 	}
 }
 
@@ -265,6 +268,9 @@ zcond_list_inspection_points(SYSCTL_HANDLER_ARGS)
 {
 	struct sbuf buf;
 	sbuf_new_for_sysctl(&buf, NULL, 1024, req);
+
+	printf("&cond1 = %#08lx | &cond2 = %#08lx\n", (unsigned long)&cond1,
+	    (unsigned long)&cond2);
 
 	sbuf_printf(&buf, "inspection points for cond1:\n");
 	struct ins_point *p;

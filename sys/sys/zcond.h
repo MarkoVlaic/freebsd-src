@@ -2,6 +2,7 @@
 #ifndef _SYS_ZCOND_H
 #define _SYS_ZCOND_H
 
+#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/queue.h>
@@ -22,7 +23,7 @@ struct ins_point {
 	    zcond; /* pointer to the zcond inspected by this inspection point */
 	SLIST_ENTRY(ins_point) next;
 	vm_offset_t
-	    mirror_address; /* virtual address used to perform a safe patch */
+	    mirror_addr; /* virtual address used to perform a safe patch */
 } __attribute__((packed));
 
 /*
@@ -44,19 +45,26 @@ struct zcond_false {
 	struct zcond cond;
 };
 
+#define ZCOND_ELF_SECTION "set_zcond_ins_points_set"
+#define ZCOND_LINKER_SET  zcond_ins_points_set
+
 /*
  * __zcond_table is an ELF section which keeps
  * all the data related to the zcond mechanism.
  * A single entry describes a single ins_point.
  */
-#define ZCOND_TABLE_ENTRY                         \
-	".pushsection __zcond_table, \"aw\" \n\t" \
-	".quad 1b \n\t"                           \
-	".quad %l[l_true] \n\t"                   \
-	".quad %c0 \n\t"                          \
-	".quad 0 \n\t"                            \
-	".quad 0 \n\t"                            \
+#define ZCOND_TABLE_ENTRY                                 \
+	".pushsection " ZCOND_ELF_SECTION ", \"aw\" \n\t" \
+	".quad 1b \n\t"                                   \
+	".quad %l[l_true] \n\t"                           \
+	".quad %c0 \n\t"                                  \
+	".quad 0 \n\t"                                    \
+	".quad 0 \n\t"                                    \
 	".popsection \n\t"
+
+#define ZCOND_SET_START_STOP                              \
+	__WEAK(__CONCAT(__start_set_, ZCOND_LINKER_SET)); \
+	__WEAK(__CONCAT(__stop_set_, ZCOND_LINKER_SET));
 
 /*
  * Emits a __zcond_table entry, describing one ins_point.
@@ -66,6 +74,7 @@ struct zcond_false {
 static __attribute__((always_inline)) bool
 zcond_nop(struct zcond *const zcond_p)
 {
+	ZCOND_SET_START_STOP
 	asm goto("1: " ZCOND_NOP_ASM ZCOND_TABLE_ENTRY
 		 :
 		 : "i"(zcond_p)
@@ -85,6 +94,7 @@ l_true:
 static __attribute__((always_inline)) bool
 zcond_jmp(struct zcond *const zcond_p)
 {
+	ZCOND_SET_START_STOP
 	asm goto("1:" ZCOND_JMP_ASM " %[l_true] \n\t" ZCOND_TABLE_ENTRY
 		 :
 		 : "i"(zcond_p)
@@ -99,14 +109,21 @@ l_true:
  * These macros declare and initialize a new zcond.
  */
 
-#define ZCOND_INIT(state)  { { .enabled = (state), \
-	    .ins_points = SLIST_HEAD_INITIALIZER() } }
+#define ZCOND_INIT(state)                                      \
+	{                                                      \
+		{                                              \
+			.enabled = (state),                    \
+			.ins_points = SLIST_HEAD_INITIALIZER() \
+		}                                              \
+	}
 
-#define DEFINE_ZCOND_TRUE(name)                       \
-	struct zcond_true name = ZCOND_INIT(true)
+#define DEFINE_ZCOND_TRUE(name)	  struct zcond_true name = ZCOND_INIT(true)
 
-#define DEFINE_ZCOND_FALSE(name)                        \
-	struct zcond_false name = ZCOND_INIT(false)
+#define DEFINE_ZCOND_FALSE(name)  struct zcond_false name = ZCOND_INIT(false)
+
+#define DECLARE_ZCOND_TRUE(name)  struct zcond_true name;
+
+#define DECLARE_ZCOND_FALSE(name) struct zcond_false name;
 
 /*
  * These macros inspect the state of a zcond (is it true or false)

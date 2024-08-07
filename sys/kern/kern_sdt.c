@@ -11,7 +11,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -38,7 +38,7 @@ SDT_PROVIDER_DEFINE(sdt);
  * dtrace_probe() when it loads.
  */
 sdt_probe_func_t sdt_probe_func = sdt_probe_stub;
-sdt_probe6_func_t sdt_probe6_func = (sdt_probe6_func_t) sdt_probe_stub;
+sdt_probe6_func_t sdt_probe6_func = (sdt_probe6_func_t)sdt_probe_stub;
 volatile bool __read_frequently sdt_probes_enabled;
 
 /*
@@ -56,15 +56,15 @@ sdt_probe_stub(uint32_t id __unused, uintptr_t arg0 __unused,
 }
 
 void
-sdt_probe(uint32_t id, uintptr_t arg0, uintptr_t arg1,
-    uintptr_t arg2, uintptr_t arg3, uintptr_t arg4)
+sdt_probe(uint32_t id, uintptr_t arg0, uintptr_t arg1, uintptr_t arg2,
+    uintptr_t arg3, uintptr_t arg4)
 {
 	sdt_probe_func(id, arg0, arg1, arg2, arg3, arg4);
 }
 
 void
-sdt_probe6(uint32_t id, uintptr_t arg0, uintptr_t arg1,
-    uintptr_t arg2, uintptr_t arg3, uintptr_t arg4, uintptr_t arg5)
+sdt_probe6(uint32_t id, uintptr_t arg0, uintptr_t arg1, uintptr_t arg2,
+    uintptr_t arg3, uintptr_t arg4, uintptr_t arg5)
 {
 	sdt_probe6_func(id, arg0, arg1, arg2, arg3, arg4, arg5);
 }

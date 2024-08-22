@@ -50,6 +50,7 @@ SECTIONS
     KEEP (*(.init))
   } =0xCCCCCCCC
   .plt            : { *(.plt) }
+  PROVIDE (stext = .)
   .text           :
   {
     *(.text .stub .text.* .gnu.linkonce.t.*)

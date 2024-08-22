@@ -50,6 +50,10 @@ __patch(void *arg) {
 		va = data->vas[i];
 		insn = data->insns[i];
 		size = data->sizes[i];
+		
+		if(!kpatch_va_in_text(va)) {
+			panic("%s: va %lx not inside .text section", __func__, va);
+		}
 
 		patch_page = PHYS_TO_VM_PAGE(vtophys(va));
 		before_patch(patch_page, data->md_ctxt);
@@ -72,7 +76,13 @@ rendezvous_action(void *arg)
 }
 
 void
-patch_many(vm_offset_t *vas, uint8_t **insns, size_t *sizes, size_t cnt)
+kpatch_text_single(vm_offset va, uint8_t *insn, size_t size)
+{
+	kpatch_text_batch(&va, &insn, &size, 1);
+}
+
+void
+kpatch_text_batch(vm_offset_t *vas, uint8_t **insns, size_t *sizes, size_t cnt)
 {
 	struct patch_md_ctxt ctxt;
 	struct patch_arg arg = {

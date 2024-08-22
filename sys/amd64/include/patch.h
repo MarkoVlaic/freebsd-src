@@ -17,5 +17,8 @@ void before_patch(vm_page_t, struct patch_md_ctxt *);
 void after_patch(struct patch_md_ctxt *);
 
 vm_offset_t patch_get_va(void);
+
+bool kpatch_va_in_text(vm_offset_t va);
+
 #endif /* _MACHINE_ZCOND_H */
 #endif /* _KERNEL */

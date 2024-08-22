@@ -148,3 +148,15 @@ after_patch(struct patch_md_ctxt *ctxt)
 	pte_clear(patch_pte);
 	invltlb();
 }
+
+bool
+kpatch_va_in_text(vm_offset_t va)
+{
+	extern char stext, etext;
+	vm_offset_t start, end;
+
+	start = &stext;
+	end = &etext;
+
+	return (va >= start && va <= end);
+}

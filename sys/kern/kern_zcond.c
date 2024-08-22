@@ -157,7 +157,7 @@ __zcond_toggle(struct zcond *cond, bool enable)
 		i++;
 	}
 
-	patch_many(vas, insns, sizes, cnt);
+	kpatch_text_batch(vas, insns, sizes, cnt);
 
 	i = 0;
 	SLIST_FOREACH(p, &cond->patch_points, next) {

@@ -9,7 +9,8 @@
 
 struct patch_md_ctxt;
 
-void patch_many(vm_offset_t *vas, uint8_t **insns, size_t *sizes, size_t cnt);
+void kpatch_text_single(vm_offset_t va, uint8_t *insn, size_t size);
+void kpatch_text_batch(vm_offset_t *vas, uint8_t **insns, size_t *sizes, size_t cnt);
 
 #endif
 #endif

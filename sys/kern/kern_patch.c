@@ -76,7 +76,7 @@ rendezvous_action(void *arg)
 }
 
 void
-kpatch_text_single(vm_offset va, uint8_t *insn, size_t size)
+kpatch_text_single(vm_offset_t va, uint8_t *insn, size_t size)
 {
 	kpatch_text_batch(&va, &insn, &size, 1);
 }

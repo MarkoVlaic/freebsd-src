@@ -38,10 +38,11 @@ SYSINIT(patch, SI_SUB_PATCH, SI_ORDER_SECOND, patch_init, NULL);
 static void
 __patch(void *arg) {
 	struct patch_arg *data;
-	vm_offset_t va;
+	vm_offset_t va, pva;
 	vm_page_t patch_page;
 	uint8_t *insn;
 	size_t size;
+	size_t page_overflow;
 	int i;
 
 	data = (struct patch_arg *)arg;
@@ -54,11 +55,30 @@ __patch(void *arg) {
 			panic("%s: va %lx not inside .text section", __func__, va);
 		}
 
+		if(va & (~PAGE_MASK) != (va + size) & (~PAGE_MASK)) {
+			page_overflow = (va + size) & PAGE_MASK;
+		} else {
+			page_overflow = 0;
+		}
+
+		KASSERT((page_overflow < PAGE_SIZE && page_overflow > 0), ("%s: patching instruction over more than 2 pages", __func__));
+		
 		patch_page = PHYS_TO_VM_PAGE(vtophys(va));
 		kpatch_setup(patch_page, &data->md_ctxt);
 		memcpy((void *)(patch_addr + (va & PAGE_MASK)), insn,
-		    size);
+		    size - page_overflow);
 		kpatch_teardown(&data->md_ctxt);
+
+		if(page_overflow != 0) {
+			va += size - page_overflow;
+			insn += size - page_overflow;
+			patch_page = PHYS_TO_VM_PAGE(vtophys(va));
+
+			kpatch_setup(patch_page, &data->md_ctxt);
+			memcpy((void *)(patch_addr + (va & PAGE_MASK)), insn, page_overflow);
+			kpatch_teardown(&data->md_ctxt);
+		}
+
 	}
 }
 

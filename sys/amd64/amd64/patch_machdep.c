@@ -96,12 +96,16 @@ patch_init_pte(void)
 static void
 patch_pmap_init(const void *unused)
 {
-	printf("kernel addr | ptr = %p | offset = %lx | size = %zu\n", linker_kernel_file->address, (vm_offset_t) linker_kernel_file->address, linker_kernel_file->size);
+	extern char stext;
+	vm_offset_t text_start;
+
+	text_start = (vm_offset_t) &stext;
+	printf("kernel addr offset = %lx | text start = %lx | size = %zu\n", (vm_offset_t) linker_kernel_file->address, text_start, linker_kernel_file->size);
 	memset(&patch_pmap, 0, sizeof(patch_pmap));
 	PMAP_LOCK_INIT(&patch_pmap);
 	pmap_pinit(&patch_pmap);
-	pmap_copy(&patch_pmap, kernel_pmap, (vm_offset_t) linker_kernel_file->address, linker_kernel_file->size,
-	    (vm_offset_t) linker_kernel_file->address);
+	pmap_copy(&patch_pmap, kernel_pmap, text_start, linker_kernel_file->size,
+	    text_start);
 
 	patch_pte = patch_init_pte();
 }

@@ -107,7 +107,7 @@ patch_pmap_init(const void *unused)
 	memset(&patch_pmap, 0, sizeof(patch_pmap));
 	PMAP_LOCK_INIT(&patch_pmap);
 	pmap_pinit(&patch_pmap);
-	pmap_copy(&patch_pmap, kernel_pmap, text_start, copy_size,
+	pmap_copy(&patch_pmap, kernel_pmap, text_start, PAGE_SIZE,
 	    text_start);
 
 	patch_pte = patch_init_pte();

@@ -1,6 +1,6 @@
 #ifdef _KERNEL
-#ifndef PATCH_H
-#define PATCH_H
+#ifndef SYS_PATCH_H
+#define SYS_PATCH_H
 
 /*
  * Forward declaration of a struct, defined separately for each architecture in

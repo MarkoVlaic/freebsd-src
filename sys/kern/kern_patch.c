@@ -22,7 +22,7 @@ struct patch_arg {
 	uint8_t **insns;
 	size_t *sizes;
 	size_t cnt;
-	struct patch_md_ctxt *md_ctxt;
+	struct patch_md_ctxt md_ctxt;
 };
 
 static vm_offset_t patch_addr;
@@ -37,7 +37,6 @@ SYSINIT(patch, SI_SUB_PATCH, SI_ORDER_SECOND, patch_init, NULL);
 
 static void
 __patch(void *arg) {
-	printf("patch start\n");
 	struct patch_arg *data;
 	vm_offset_t va;
 	vm_page_t patch_page;
@@ -51,15 +50,15 @@ __patch(void *arg) {
 		insn = data->insns[i];
 		size = data->sizes[i];
 		
-		if(!kpatch_va_in_text(va)) {
+		if(!kpatch_va_valid(va)) {
 			panic("%s: va %lx not inside .text section", __func__, va);
 		}
 
 		patch_page = PHYS_TO_VM_PAGE(vtophys(va));
-		before_patch(patch_page, data->md_ctxt);
+		kern_patch_setup(patch_page, &data->md_ctxt);
 		memcpy((void *)(patch_addr + (va & PAGE_MASK)), insn,
 		    size);
-		after_patch(data->md_ctxt);
+		kern_patch_teardown(&data->md_ctxt);
 	}
 }
 
@@ -84,14 +83,13 @@ kpatch_text_single(vm_offset_t va, uint8_t *insn, size_t size)
 void
 kpatch_text_batch(vm_offset_t *vas, uint8_t **insns, size_t *sizes, size_t cnt)
 {
-	struct patch_md_ctxt ctxt;
 	struct patch_arg arg = {
 		.patching_cpu = curcpu,
 		.vas = vas,
 		.insns = insns,
 		.sizes = sizes,
-		.cnt = cnt,
-		.md_ctxt = &ctxt
+		.cnt = cnt
 	};
+
 	smp_rendezvous(NULL, rendezvous_action, NULL, &arg);
 }

@@ -38,7 +38,7 @@ SYSINIT(patch, SI_SUB_PATCH, SI_ORDER_SECOND, patch_init, NULL);
 static void
 __patch(void *arg) {
 	struct patch_arg *data;
-	vm_offset_t va, pva;
+	vm_offset_t va;
 	vm_page_t patch_page;
 	uint8_t *insn;
 	size_t size;
@@ -55,7 +55,7 @@ __patch(void *arg) {
 			panic("%s: va %lx not inside .text section", __func__, va);
 		}
 
-		if(va & (~PAGE_MASK) != (va + size) & (~PAGE_MASK)) {
+		if((va & (~PAGE_MASK)) != ((va + size) & (~PAGE_MASK))) {
 			page_overflow = (va + size) & PAGE_MASK;
 		} else {
 			page_overflow = 0;

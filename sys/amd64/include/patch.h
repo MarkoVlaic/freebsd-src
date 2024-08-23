@@ -9,16 +9,16 @@ struct kpatch_md_ctxt {
 /*
  * Called before a single patch_point is patched.
  */
-void kpatch_setup(vm_page_t, struct patch_md_ctxt *);
+void kpatch_setup(vm_page_t, struct kpatch_md_ctxt *);
 
 /*
  * Called after a single patch_point was patched.
  */
-void kpatch_teardown(struct patch_md_ctxt *);
+void kpatch_teardown(struct kpatch_md_ctxt *);
 
 vm_offset_t kpatch_get_va(void);
 
-bool kpatch_va_in_text(vm_offset_t va);
+bool kpatch_va_valid(vm_offset_t va);
 
 #endif /* _MACHINE_PATCH_H */
 #endif /* _KERNEL */

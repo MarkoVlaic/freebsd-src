@@ -30,7 +30,7 @@ static vm_offset_t patch_addr;
 static void
 patch_init(void *arg)
 {
-	patch_addr = patch_get_va();
+	patch_addr = kpatch_get_va();
 }
 
 SYSINIT(patch, SI_SUB_PATCH, SI_ORDER_SECOND, patch_init, NULL);
@@ -55,10 +55,10 @@ __patch(void *arg) {
 		}
 
 		patch_page = PHYS_TO_VM_PAGE(vtophys(va));
-		kern_patch_setup(patch_page, &data->md_ctxt);
+		kpatch_setup(patch_page, &data->md_ctxt);
 		memcpy((void *)(patch_addr + (va & PAGE_MASK)), insn,
 		    size);
-		kern_patch_teardown(&data->md_ctxt);
+		kpatch_teardown(&data->md_ctxt);
 	}
 }
 

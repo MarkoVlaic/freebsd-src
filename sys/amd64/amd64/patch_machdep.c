@@ -96,16 +96,11 @@ patch_init_pte(void)
 static void
 patch_pmap_init(const void *unused)
 {
-	vm_offset_t kern_start, kern_end;
-
-	kern_start = virtual_avail;
-	kern_end = kernel_vm_end;
-
 	memset(&patch_pmap, 0, sizeof(patch_pmap));
 	PMAP_LOCK_INIT(&patch_pmap);
 	pmap_pinit(&patch_pmap);
-	pmap_copy(&patch_pmap, kernel_pmap, linker_kernel_file->address, linker_kernel_file->size,
-	    linker_kernel_file->address);
+	pmap_copy(&patch_pmap, kernel_pmap, (vm_offset_t) linker_kernel_file->address, linker_kernel_file->size,
+	    (vm_offset_t) linker_kernel_file->address);
 
 	patch_pte = patch_init_pte();
 }
@@ -134,7 +129,7 @@ kpatch_get_va(void)
 }
 
 void
-kpatch_setup(vm_page_t patch_page, struct patch_md_ctxt *ctxt)
+kpatch_setup(vm_page_t patch_page, struct kpatch_md_ctxt *ctxt)
 {
 	patch_qenter(patch_page);
 	ctxt->cr3 = rcr3();
@@ -142,7 +137,7 @@ kpatch_setup(vm_page_t patch_page, struct patch_md_ctxt *ctxt)
 }
 
 void
-kpatch_teardown(struct patch_md_ctxt *ctxt)
+kpatch_teardown(struct kpatch_md_ctxt *ctxt)
 {
 	mfence();
 	load_cr3(ctxt->cr3);

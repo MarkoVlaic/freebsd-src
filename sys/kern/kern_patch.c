@@ -22,7 +22,7 @@ struct patch_arg {
 	uint8_t **insns;
 	size_t *sizes;
 	size_t cnt;
-	struct patch_md_ctxt md_ctxt;
+	struct kpatch_md_ctxt md_ctxt;
 };
 
 static vm_offset_t patch_addr;

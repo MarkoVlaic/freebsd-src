@@ -55,6 +55,7 @@
 #include <sys/mutex.h>
 #include <sys/queue.h>
 #include <sys/sdt.h>
+#include <sys/zcond.h>
 
 #include <sys/dtrace.h>
 #include <sys/dtrace_bsd.h>
@@ -216,6 +217,8 @@ sdt_enable(void *arg __unused, dtrace_id_t id, void *parg)
 	sdt_probes_enabled_count++;
 	if (sdt_probes_enabled_count == 1)
 		sdt_probes_enabled = true;
+	
+	zcond_enable(probe->enabled);
 }
 
 static void
@@ -224,6 +227,8 @@ sdt_disable(void *arg __unused, dtrace_id_t id, void *parg)
 	struct sdt_probe *probe = parg;
 
 	KASSERT(probe->sdtp_lf->nenabled > 0, ("no probes enabled"));
+
+	zcond_disable(probe->enabled);
 
 	sdt_probes_enabled_count--;
 	if (sdt_probes_enabled_count == 0)

@@ -124,6 +124,7 @@ struct zcond_false {
  * Bakes in a nop instruction instruction, so the return value is initially
  * false.
  */
+ 
 static __always_inline bool
 zcond_nop(struct zcond *const zcond_p)
 {
@@ -162,24 +163,32 @@ l_true:
  * These macros declare and initialize a new zcond.
  */
 
-#define ZCOND_INIT(enabled)                                      \
-	{                                                            \
+#define ZCOND_INIT_TRUE                                      \
+	(struct zcond_true){                                                           \
 		{                                                        \
 			.patch_points = SLIST_HEAD_INITIALIZER(),            \
-			.refcnt = (enabled)                                  \
+			.refcnt = 1                                  \
+		}                                                        \
+	}
+
+#define ZCOND_INIT_FALSE                                      \
+	(struct zcond_false){                                                           \
+		{                                                        \
+			.patch_points = SLIST_HEAD_INITIALIZER(),            \
+			.refcnt = 0                                  \
 		}                                                        \
 	}
 
 #define ZCOND_ENABLED 1
 #define ZCOND_DISABLED 0
 
-#define DEFINE_ZCOND_TRUE(name)	  struct zcond_true name = ZCOND_INIT(ZCOND_ENABLED)
+#define DEFINE_ZCOND_TRUE(name)	  struct zcond_true name = ZCOND_INIT_TRUE
 
-#define DEFINE_ZCOND_FALSE(name)  struct zcond_false name = ZCOND_INIT(ZCOND_DISABLED)
+#define DEFINE_ZCOND_FALSE(name)  struct zcond_false name = ZCOND_INIT_FALSE
 
-#define DECLARE_ZCOND_TRUE(name)  struct zcond_true name;
+#define DECLARE_ZCOND_TRUE(name)  struct zcond_true name
 
-#define DECLARE_ZCOND_FALSE(name) struct zcond_false name;
+#define DECLARE_ZCOND_FALSE(name) struct zcond_false name
 
 #define zcond_likely(x) (__builtin_expect((x), 1))
 #define zcond_unlikely(x) (__builtin_expect((x), 0))

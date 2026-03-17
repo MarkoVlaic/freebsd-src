@@ -74,6 +74,7 @@ arm/arm/undefined.c		standard
 arm/arm/unwind.c		optional	ddb | kdtrace_hooks | stack
 arm/arm/vm_machdep.c		standard
 arm/arm/vfp.c			optional	vfp
+arm/arm/zcond_machdep.c standard
 cddl/dev/dtrace/arm/dtrace_asm.S			optional dtrace compile-with "${DTRACE_S}"
 cddl/dev/dtrace/arm/dtrace_isa.c			optional dtrace compile-with "${DTRACE_C}"
 cddl/dev/dtrace/arm/dtrace_subr.c			optional dtrace compile-with "${DTRACE_C}"

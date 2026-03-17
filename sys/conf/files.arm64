@@ -94,6 +94,7 @@ arm64/arm64/unwind.c				optional ddb | kdtrace_hooks | stack \
 	compile-with "${NOSAN_C}"
 arm64/arm64/vfp.c				standard
 arm64/arm64/vm_machdep.c			standard
+arm64/arm64/zcond_machdep.c             standard
 
 arm64/coresight/coresight.c			standard
 arm64/coresight/coresight_acpi.c		optional acpi

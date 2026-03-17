@@ -29,7 +29,6 @@
  */
 
 #include <sys/types.h>
-#include <sys/zcond.h>
 #include <sys/pcpu.h>
 #include <sys/kassert.h>
 
@@ -38,7 +37,19 @@
 #include <machine/md_var.h>
 #include <machine/vmparam.h>
 
-static uint8_t insn[ZCOND_MAX_INSN_SIZE];
+#define INSN_SHORT_SIZE  2
+#define INSN_LONG_SIZE   5
+#define INSN_MAX_SIZE 5
+
+#define JMP_SHORT_OPCODE 0xeb
+#define JMP_LONG_OPCODE  0xe9
+
+/* from Intel® 64 and IA-32 Architectures Software Developer’s Manual, Volume 2B
+ * 4-165 */
+static const uint8_t nop_short_bytes[INSN_SHORT_SIZE] = { 0x66, 0x90 };
+static const uint8_t nop_long_bytes[INSN_LONG_SIZE] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
+
+static uint8_t insn[INSN_MAX_SIZE];
 
 static size_t
 insn_size(uintptr_t addr)
@@ -49,15 +60,15 @@ insn_size(uintptr_t addr)
 	paddr = (uint8_t *)patch_addr;
 	if (*paddr == nop_short_bytes[0]) {
 		/* two byte nop */
-		return (ZCOND_INSN_SHORT_SIZE);
+		return (INSN_SHORT_SIZE);
 	} else if (*paddr == nop_long_bytes[0]) {
-		return (ZCOND_INSN_LONG_SIZE);
-	} else if (*paddr == ZCOND_JMP_SHORT_OPCODE) {
+		return (INSN_LONG_SIZE);
+	} else if (*paddr == JMP_SHORT_OPCODE) {
 		/* two byte jump */
-		return (ZCOND_INSN_SHORT_SIZE);
-	} else if (*paddr == ZCOND_JMP_LONG_OPCODE) {
+		return (INSN_SHORT_SIZE);
+	} else if (*paddr == JMP_LONG_OPCODE) {
 		/* five byte jump */
-		return (ZCOND_INSN_LONG_SIZE);
+		return (INSN_LONG_SIZE);
 	}
 
     panic("%s: unexpected opcode: %02hhx", __func__, *pa);
@@ -66,7 +77,7 @@ insn_size(uintptr_t addr)
 static uint8_t *
 insn_nop(size_t size)
 {
-	if (size == ZCOND_INSN_SHORT_SIZE) {
+	if (size == INSN_SHORT_SIZE) {
 		return &nop_short_bytes[0];
 	}
 	return &nop_long_bytes[0];
@@ -80,12 +91,12 @@ insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t lbl_true_addr)
 
 	offset = lbl_true_addr - patch_addr - size;
 
-	if (size == ZCOND_INSN_SHORT_SIZE) {
-		insn[0] = ZCOND_JMP_SHORT_OPCODE;
+	if (size == INSN_SHORT_SIZE) {
+		insn[0] = JMP_SHORT_OPCODE;
 		insn[1] = offset;
 	} else {
-		insn[0] = ZCOND_JMP_LONG_OPCODE;
-		for (i = 0; i < ZCOND_INSN_LONG_SIZE - 1; i++) {
+		insn[0] = JMP_LONG_OPCODE;
+		for (i = 0; i < INSN_LONG_SIZE - 1; i++) {
 			insn[i + 1] = (offset >> (i * 8)) & 0xFF;
 		}
 	}
@@ -93,20 +104,8 @@ insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t lbl_true_addr)
 	return &insn[0];
 }
 
-void
-zcond_before_patch(struct zcond_md_ctxt *ctxt)
-{
-	ctxt->wp = disable_wp();
-}
-
-void
-zcond_after_patch(struct zcond_md_ctxt *ctxt)
-{
-	restore_wp(ctxt->wp);
-}
-
-uint8_t *
-zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
+static uint8_t *
+get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
     size_t *size)
 {
 	uint8_t *pa;
@@ -118,10 +117,10 @@ zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 		return insn_jmp(*size, patch_addr, lbl_true_addr);
 	} else if (*pa == nop_long_bytes[0]) {
 		return insn_jmp(*size, patch_addr, lbl_true_addr);
-	} else if (*pa == ZCOND_JMP_SHORT_OPCODE) {
+	} else if (*pa == JMP_SHORT_OPCODE) {
 		/* two byte jump */
 		return insn_nop(*size);
-	} else if (*pa == ZCOND_JMP_LONG_OPCODE) {
+	} else if (*pa == JMP_LONG_OPCODE) {
 		/* five byte jump */
 		return insn_nop(*size);
 	} else {
@@ -129,8 +128,8 @@ zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 	}
 }
 
-bool
-zcond_patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
+static bool
+patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
     if(patch_addr < KERNSTART || lbl_true_addr < KERN_START)
       return (false);
@@ -144,4 +143,22 @@ zcond_patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
       return (false);
 
     return (true);
+}
+
+void
+zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
+{
+
+    KASSERT(patchpoint_valid(patch_addr, lbl_true_addr),
+        ("%s: invalid zcond patchpoint %#jx -> %#jx",
+        __func, (uintmax_t)patch_addr, lbl_true_addr));
+
+    size_t size;
+    uint8_t *insn;
+    bool wp;
+
+    insn = get_patch_insn(patch_addr, lbl_true_addr, &size);
+    wp = disable_wp();
+    memcpy((void *)patch_addr, insn, size);
+    restore_wp(wp);
 }

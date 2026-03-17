@@ -1,6 +1,6 @@
 #ifdef _KERNEL
-#ifndef ZCOND_H_
-#define ZCOND_H_
+#ifndef _MACHINE_ZCOND_H
+#define _MACHINE_ZCOND_H
 
 #include <sys/types.h>
 
@@ -10,5 +10,5 @@
 void
 zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr);
 
-#endif /* ZCOND_H_ */
+#endif /* _MACHINE_ZCOND_H */
 #endif /* _KERNEL  */

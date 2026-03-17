@@ -65,10 +65,6 @@ zcond_load_patch_points(linker_file_t lf)
 	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
 		&end, NULL) == 0) {
 		for (ins_p = begin; ins_p < end; ins_p++) {
-            KASSERT(zcond_patchpoint_valid(ins_p->patch_addr, ins_p->lbl_true_addr),
-                ("invalid zcond patchpoint %#jx -> %#jx",
-                (uintmax_t)ins_p->patch_addr, ins_p->lbl_true_addr));
-
             owning_zcond = ins_p->zcond;
 			// owning_zcond->refcnt = 1;
 
@@ -120,18 +116,7 @@ zcond_patch(struct zcond *cond, struct zcond_md_ctxt *ctxt)
 	size_t insn_size;
 
 	SLIST_FOREACH(p, &cond->patch_points, next) {
-		insn = zcond_get_patch_insn(p->patch_addr, p->lbl_true_addr,
-		    &insn_size);
-
-		printf("patch addr: %lx with bytes:\n", p->patch_addr);
-		for(int i=0;i<insn_size;i++) {
-			printf("%x ", insn[i]);
-		}
-		printf("\n");
-
-		zcond_before_patch(ctxt);
-		memcpy((void *)p->patch_addr, insn, insn_size);
-		zcond_after_patch(ctxt);
+      zcond_patchpoint_patch(p->patch_addr, p->lbl_true_addr);
 	}
 }
 

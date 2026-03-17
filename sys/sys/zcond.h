@@ -234,26 +234,5 @@ struct zcond_md_ctxt;
  */
 void __zcond_toggle(struct zcond *cond, bool enable);
 
-/*
- * Called before a single patch_point is patched.
- */
-void zcond_before_patch(struct zcond_md_ctxt *);
-
-/*
- * Called after a single patch_point was patched.
- */
-void zcond_after_patch(struct zcond_md_ctxt *);
-
-/*
- * Calculates the bytes of instruction with which the ins_p inspection point is
- * to be patched with. insn[] is populated with the instruction bytes and size
- * is set to the number of instruction bytes.
- */
-uint8_t *zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
-    size_t *size);
-
-bool
-zcond_patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr);
-
 #endif
 #endif

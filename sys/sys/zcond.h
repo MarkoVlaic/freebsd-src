@@ -252,5 +252,8 @@ void zcond_after_patch(struct zcond_md_ctxt *);
 uint8_t *zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
     size_t *size);
 
+bool
+zcond_patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr);
+
 #endif
 #endif

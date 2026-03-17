@@ -65,7 +65,11 @@ zcond_load_patch_points(linker_file_t lf)
 	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
 		&end, NULL) == 0) {
 		for (ins_p = begin; ins_p < end; ins_p++) {
-			owning_zcond = ins_p->zcond;
+            KASSERT(zcond_patchpoint_valid(ins_p->patch_addr, ins_p->lbl_true_addr),
+                ("invalid zcond patchpoint %#jx -> %#jx",
+                (uintmax_t)ins_p->patch_addr, ins_p->lbl_true_addr));
+
+            owning_zcond = ins_p->zcond;
 			// owning_zcond->refcnt = 1;
 
 			if (owning_zcond->patch_points.slh_first == NULL) {

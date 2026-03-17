@@ -223,12 +223,6 @@ l_true:
 #define zcond_disable(cond_wrapped) __zcond_toggle(&cond_wrapped.cond, false)
 
 /*
- * Forward declaration of a struct, defined separately for each architecture in
- * <machine/zcond.h>
- */
-struct zcond_md_ctxt;
-
-/*
  * Change the state of a zcond by safely patching all of its
  * inspection points with appropriate instructions.
  */

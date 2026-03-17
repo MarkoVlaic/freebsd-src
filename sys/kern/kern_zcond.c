@@ -52,7 +52,6 @@ struct patch_point {
 struct zcond_patch_arg {
 	int patching_cpu;
 	struct zcond *cond;
-	struct zcond_md_ctxt *md_ctxt;
 };
 
 static void
@@ -109,14 +108,11 @@ SYSINIT(zcond, SI_SUB_ZCOND, SI_ORDER_SECOND, zcond_init, NULL);
  * Patch all patch_points belonging to cond.
  */
 static void
-zcond_patch(struct zcond *cond, struct zcond_md_ctxt *ctxt)
+zcond_patch(struct zcond *cond)
 {
-	struct patch_point *p;
-	uint8_t *insn;
-	size_t insn_size;
-
+        struct patch_point *p;
 	SLIST_FOREACH(p, &cond->patch_points, next) {
-      zcond_patchpoint_patch(p->patch_addr, p->lbl_true_addr);
+	  zcond_patchpoint_patch(p->patch_addr, p->lbl_true_addr);
 	}
 }
 
@@ -128,15 +124,13 @@ rendezvous_action(void *arg)
 	data = (struct zcond_patch_arg *)arg;
 
 	if (data->patching_cpu == curcpu) {
-		zcond_patch(data->cond, data->md_ctxt);
+		zcond_patch(data->cond);
 	}
 }
 
 void
 __zcond_toggle(struct zcond *cond, bool enable)
 {
-	struct zcond_md_ctxt ctxt;
-
 	if(enable && refcount_acquire(&cond->refcnt) > 0) {
 		// cond is already enabled
 		return;
@@ -158,7 +152,6 @@ __zcond_toggle(struct zcond *cond, bool enable)
 	struct zcond_patch_arg arg = {
 		.patching_cpu = curcpu,
 		.cond = cond,
-		.md_ctxt = &ctxt,
 	};
 
 	smp_rendezvous(NULL, rendezvous_action, NULL, &arg);

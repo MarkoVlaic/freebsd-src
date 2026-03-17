@@ -31,6 +31,10 @@
 #include <sys/types.h>
 #include <sys/pcpu.h>
 #include <sys/kassert.h>
+#include <sys/systm.h>
+
+#include <vm/vm.h>
+#include <vm/pmap.h>
 
 #include <machine/cpufunc.h>
 #include <machine/zcond.h>
@@ -57,7 +61,7 @@ insn_size(uintptr_t addr)
 
 	uint8_t *paddr;
 
-	paddr = (uint8_t *)patch_addr;
+	paddr = (uint8_t *)addr;
 	if (*paddr == nop_short_bytes[0]) {
 		/* two byte nop */
 		return (INSN_SHORT_SIZE);
@@ -71,10 +75,10 @@ insn_size(uintptr_t addr)
 		return (INSN_LONG_SIZE);
 	}
 
-    panic("%s: unexpected opcode: %02hhx", __func__, *pa);
+    panic("%s: unexpected opcode: %02hhx", __func__, *paddr);
 }
 
-static uint8_t *
+static const uint8_t *
 insn_nop(size_t size)
 {
 	if (size == INSN_SHORT_SIZE) {
@@ -83,7 +87,7 @@ insn_nop(size_t size)
 	return &nop_long_bytes[0];
 }
 
-static uint8_t *
+static const uint8_t *
 insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
 	int i;
@@ -104,13 +108,13 @@ insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t lbl_true_addr)
 	return &insn[0];
 }
 
-static uint8_t *
+static const uint8_t *
 get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
     size_t *size)
 {
-	uint8_t *pa;
+        const uint8_t *pa;
 
-    *size = insn_get_size(patch_addr);
+        *size = insn_size(patch_addr);
 	pa = (uint8_t *)patch_addr;
 	if (*pa == nop_short_bytes[0]) {
 		/* two byte nop */
@@ -131,7 +135,7 @@ get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 static bool
 patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
-    if(patch_addr < KERNSTART || lbl_true_addr < KERN_START)
+    if(patch_addr < KERNSTART || lbl_true_addr < KERNSTART)
       return (false);
 
     size_t size = insn_size(patch_addr);
@@ -151,10 +155,10 @@ zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 
     KASSERT(patchpoint_valid(patch_addr, lbl_true_addr),
         ("%s: invalid zcond patchpoint %#jx -> %#jx",
-        __func, (uintmax_t)patch_addr, lbl_true_addr));
+        __func__, (uintmax_t)patch_addr, lbl_true_addr));
 
     size_t size;
-    uint8_t *insn;
+    const uint8_t *insn;
     bool wp;
 
     insn = get_patch_insn(patch_addr, lbl_true_addr, &size);

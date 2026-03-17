@@ -36,8 +36,32 @@
 #include <machine/cpufunc.h>
 #include <machine/zcond.h>
 #include <machine/md_var.h>
+#include <machine/vmparam.h>
 
 static uint8_t insn[ZCOND_MAX_INSN_SIZE];
+
+static size_t
+insn_size(uintptr_t addr)
+{
+
+	uint8_t *paddr;
+
+	paddr = (uint8_t *)patch_addr;
+	if (*paddr == nop_short_bytes[0]) {
+		/* two byte nop */
+		return (ZCOND_INSN_SHORT_SIZE);
+	} else if (*paddr == nop_long_bytes[0]) {
+		return (ZCOND_INSN_LONG_SIZE);
+	} else if (*paddr == ZCOND_JMP_SHORT_OPCODE) {
+		/* two byte jump */
+		return (ZCOND_INSN_SHORT_SIZE);
+	} else if (*paddr == ZCOND_JMP_LONG_OPCODE) {
+		/* five byte jump */
+		return (ZCOND_INSN_LONG_SIZE);
+	}
+
+    panic("%s: unexpected opcode: %02hhx", __func__, *pa);
+}
 
 static uint8_t *
 insn_nop(size_t size)
@@ -87,23 +111,37 @@ zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 {
 	uint8_t *pa;
 
+    *size = insn_get_size(patch_addr);
 	pa = (uint8_t *)patch_addr;
 	if (*pa == nop_short_bytes[0]) {
 		/* two byte nop */
-		*size = ZCOND_INSN_SHORT_SIZE;
 		return insn_jmp(*size, patch_addr, lbl_true_addr);
 	} else if (*pa == nop_long_bytes[0]) {
-		*size = ZCOND_INSN_LONG_SIZE;
 		return insn_jmp(*size, patch_addr, lbl_true_addr);
 	} else if (*pa == ZCOND_JMP_SHORT_OPCODE) {
 		/* two byte jump */
-		*size = ZCOND_INSN_SHORT_SIZE;
 		return insn_nop(*size);
 	} else if (*pa == ZCOND_JMP_LONG_OPCODE) {
 		/* five byte jump */
-		*size = ZCOND_INSN_LONG_SIZE;
 		return insn_nop(*size);
 	} else {
 		panic("%s: unexpected opcode: %02hhx", __func__, *pa);
 	}
+}
+
+bool
+zcond_patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
+{
+    if(patch_addr < KERNSTART || lbl_true_addr < KERN_START)
+      return (false);
+
+    size_t size = insn_size(patch_addr);
+    if(patch_addr == lbl_true_addr || patch_addr + size < patch_addr)
+      return (false);
+
+	uintptr_t offset = lbl_true_addr - patch_addr - size;
+    if(offset < -(1l << 31) || offset > (1l << 31))
+      return (false);
+
+    return (true);
 }

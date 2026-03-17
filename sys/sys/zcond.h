@@ -249,7 +249,7 @@ void zcond_after_patch(struct zcond_md_ctxt *);
  * to be patched with. insn[] is populated with the instruction bytes and size
  * is set to the number of instruction bytes.
  */
-uint8_t *zcond_get_patch_insn(vm_offset_t patch_addr, vm_offset_t lbl_true_addr,
+uint8_t *zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
     size_t *size);
 
 #endif

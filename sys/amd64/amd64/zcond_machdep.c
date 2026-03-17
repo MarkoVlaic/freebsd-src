@@ -49,10 +49,10 @@ insn_nop(size_t size)
 }
 
 static uint8_t *
-insn_jmp(size_t size, vm_offset_t patch_addr, vm_offset_t lbl_true_addr)
+insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
 	int i;
-	vm_offset_t offset;
+	uintptr_t offset;
 
 	offset = lbl_true_addr - patch_addr - size;
 
@@ -82,7 +82,7 @@ zcond_after_patch(struct zcond_md_ctxt *ctxt)
 }
 
 uint8_t *
-zcond_get_patch_insn(vm_offset_t patch_addr, vm_offset_t lbl_true_addr,
+zcond_get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
     size_t *size)
 {
 	uint8_t *pa;

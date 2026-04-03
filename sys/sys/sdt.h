@@ -79,6 +79,7 @@
 
 #include <sys/linker_set.h>
 #include <machine/sdt_machdep.h>
+#include <sys/zcond.h>
 
 extern volatile bool sdt_probes_enabled;
 
@@ -142,13 +143,6 @@ void sdt_probe(uint32_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
 void sdt_probe6(uint32_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
     uintptr_t, uintptr_t);
 
-#define	_SDT_TRACEPOINT_SET		sdt_tracepoint_set
-#define	_SDT_TRACEPOINT_SECTION		"set_sdt_tracepoint_set"
-
-bool sdt_tracepoint_valid(uintptr_t patchpoint, uintptr_t target);
-void sdt_tracepoint_patch(uintptr_t patchpoint, uintptr_t target);
-void sdt_tracepoint_restore(uintptr_t patchpoint);
-
 #define __sdt_used
 
 SET_DECLARE(sdt_providers_set, struct sdt_provider);
@@ -176,41 +170,13 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 		.mod = #_mod,						\
 		.func = #_func,						\
 		.name = #_name,						\
+        .enabled = ZCOND_INIT(ZCOND_DISABLED), \
 	};								\
 	DATA_SET(sdt_probes_set, _SDT_PROBE_NAME(_prov, _mod, _func, _name))
 
 #define SDT_PROBE_DECLARE(prov, mod, func, name)			\
 	extern struct sdt_probe _SDT_PROBE_NAME(prov, mod, func, name)
 
-#define	SDT_PROBES_ENABLED()	__predict_false(sdt_probes_enabled)
-
-#ifdef _ILP32
-#define	_SDT_ASM_WORD			".long"
-#else
-#define	_SDT_ASM_WORD			".quad"
-#endif
-
-#ifndef _SDT_ASM_PROBE_CONSTRAINT
-#define	_SDT_ASM_PROBE_CONSTRAINT	"i"
-#endif
-#ifndef	_SDT_ASM_PROBE_OPERAND
-#if !defined(__clang__) && __GNUC_PREREQ__(15, 0)
-#define	_SDT_ASM_PROBE_OPERAND		"cc"
-#else
-#define	_SDT_ASM_PROBE_OPERAND		"c"
-#endif
-#endif
-
-/*
- * The asm below generates records corresponding to the structure's layout, so
- * the two must be kept in sync.
- */
-struct sdt_tracepoint {
-	struct sdt_probe *probe;
-	uintptr_t	patchpoint;
-	uintptr_t	target;
-	STAILQ_ENTRY(sdt_tracepoint) tracepoint_entry;
-};
 
 /* XXX: GCC is not able to compile probes in kernel modules for aarch64. */
 #if !defined(__clang__) && defined(KLD_MODULE) && defined(__aarch64__)
@@ -219,24 +185,7 @@ struct sdt_tracepoint {
 #define __SDT_PROBE(prov, mod, func, name, uniq, f, ...)
 #else
 #define __SDT_PROBE(prov, mod, func, name, uniq, f, ...) do {		\
-	__WEAK(__CONCAT(__start_set_, _SDT_TRACEPOINT_SET));		\
-	__WEAK(__CONCAT(__stop_set_, _SDT_TRACEPOINT_SET));		\
-	asm goto(							\
-	    "0:\n"							\
-	    _SDT_ASM_PATCH_INSTR "\n"					\
-	    ".pushsection " _SDT_TRACEPOINT_SECTION ", \"aw\"\n"	\
-	    _SDT_ASM_WORD " %" _SDT_ASM_PROBE_OPERAND "0\n"		\
-	    _SDT_ASM_WORD " 0b\n"					\
-	    _SDT_ASM_WORD " %l1\n"					\
-	    _SDT_ASM_WORD " 0\n"					\
-	    ".popsection\n"						\
-	    :								\
-	    : _SDT_ASM_PROBE_CONSTRAINT (&_SDT_PROBE_NAME(prov, mod,	\
-	    func, name))						\
-	    :								\
-	    : __sdt_probe##uniq);					\
-	if (0) {							\
-__sdt_probe##uniq:;							\
+	if (zcond_branch_likely(_SDT_PROBE_NAME(prov, mod, func, name).enabled)) {	\
 		f(_SDT_PROBE_NAME(prov, mod, func, name).id, __VA_ARGS__); \
 	}								\
 } while (0)
@@ -454,7 +403,7 @@ struct sdt_probe {
 	TAILQ_ENTRY(sdt_probe)
 			probe_entry;	/* SDT probe list entry. */
 	TAILQ_HEAD(, sdt_argtype) argtype_list;
-	STAILQ_HEAD(, sdt_tracepoint) tracepoint_list;
+    DECLARE_ZCOND_FALSE(enabled);
 	const char	*mod;
 	const char	*func;
 	const char	*name;

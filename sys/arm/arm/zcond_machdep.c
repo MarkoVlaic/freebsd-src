@@ -33,7 +33,7 @@ zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
     uint32_t instr;
 
 	KASSERT(patch_addr_valid(patch_addr, lbl_true_addr),
-	    ("%s: invalid tracepoint %#lx -> %#lx",
+	    ("%s: invalid tracepoint %#x -> %#x",
 	    __func__, patch_addr, lbl_true_addr));
 
     if(*((uint32_t*)patch_addr) == nop_insn) {

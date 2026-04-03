@@ -100,6 +100,13 @@ struct zcond_false {
 #define ZCOND_ELF_SECTION "set_zcond_patch_points_set"
 #define ZCOND_LINKER_SET  zcond_patch_points_set
 
+
+#ifdef __ILP32__
+#define	_ZCOND_ASM_WORD			".long"
+#else
+#define	_ZCOND_ASM_WORD			".quad"
+#endif
+
 /*
  * __zcond_table is an ELF section which keeps
  * all the data related to the zcond mechanism.
@@ -107,10 +114,10 @@ struct zcond_false {
  */
 #define ZCOND_TABLE_ENTRY                                 \
 	".pushsection " ZCOND_ELF_SECTION ", \"aw\" \n\t" \
-	".quad 1b \n\t"                                   \
-	".quad %l[l_true] \n\t"                           \
-	".quad %c0 \n\t"                                  \
-	".quad 0 \n\t"                                    \
+	_ZCOND_ASM_WORD "1b \n\t"                                   \
+	_ZCOND_ASM_WORD "%l[l_true] \n\t"                           \
+	_ZCOND_ASM_WORD "%c0 \n\t"                                  \
+	_ZCOND_ASM_WORD "0 \n\t"                                    \
 	".popsection \n\t"
 
 #define ZCOND_SET_START_STOP                                      \

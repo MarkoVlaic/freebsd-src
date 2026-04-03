@@ -58,29 +58,70 @@ static void
 zcond_load_patch_points(linker_file_t lf)
 {
 	struct patch_point *begin, *end;
-	struct patch_point *ins_p;
+	struct patch_point *pp;
 	struct zcond *owning_zcond;
 
 	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
 		&end, NULL) == 0) {
-		for (ins_p = begin; ins_p < end; ins_p++) {
-            owning_zcond = ins_p->zcond;
+		for (pp = begin; pp < end; pp++) {
+            owning_zcond = pp->zcond;
 			// owning_zcond->refcnt = 1;
 
 			if (owning_zcond->patch_points.slh_first == NULL) {
 				SLIST_INIT(&owning_zcond->patch_points);
 			}
 
-			SLIST_INSERT_HEAD(&owning_zcond->patch_points, ins_p,
+			SLIST_INSERT_HEAD(&owning_zcond->patch_points, pp,
 			    next);
 		}
 	}
 }
 
 static void
+zcond_unload_patch_points(linker_file_t lf)
+{
+  struct patch_point *begin, *end;
+  struct patch_point *pp;
+
+	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
+		&end, NULL) == 0) {
+      for(pp = begin; pp < end; pp++) {
+        struct patch_point *pp2 = SLIST_FIRST(&pp->owning_zcond->patch_points);
+        if(pp2 == pp) {
+          SLIST_REMOVE_HEAD(&pp->owning_zcond->patch_points, next);
+        } else if(pp2 != NULL) {
+          struct patch_point *pp3;
+
+          for(;;) {
+            pp3 = SLIST_NEXT(pp3, next);
+            if(pp3 == NULL) {
+                break;
+            }
+            if(pp3 == pp) {
+                SLIST_REMOVE_AFTER(pp2, next);
+                break;
+            }
+            pp2 = pp3;
+          }
+        }
+      }
+    }
+}
+
+static void
 zcond_kld_load(void *arg __unused, struct linker_file *lf)
 {
-	zcond_load_patch_points(lf);
+	zcond_load_patch_points(*lf);
+}
+
+static void
+zcond_kld_unload(void *arg __unused, struct linker_file *lf, int *error)
+{
+  if(*error != 0) {
+    return;
+  }
+
+ zcond_unload_patch_points(*lf);
 }
 
 static int
@@ -100,9 +141,12 @@ zcond_init(const void *unused)
 {
 	EVENTHANDLER_REGISTER(kld_load, zcond_kld_load, NULL,
 	    EVENTHANDLER_PRI_ANY);
+    EVENTHANDLER_REGISTER(kld_unload_try, zcond_kld_unload, NULL, EVENTHANDLER_PRI_ANY)
 	linker_file_foreach(zcond_load_patch_points_cb, NULL);
 }
+
 SYSINIT(zcond, SI_SUB_ZCOND, SI_ORDER_SECOND, zcond_init, NULL);
+
 
 /*
  * Patch all patch_points belonging to cond.

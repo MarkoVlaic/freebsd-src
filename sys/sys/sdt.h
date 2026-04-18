@@ -177,6 +177,7 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 #define SDT_PROBE_DECLARE(prov, mod, func, name)			\
 	extern struct sdt_probe _SDT_PROBE_NAME(prov, mod, func, name)
 
+#define	SDT_PROBES_ENABLED()	__predict_false(sdt_probes_enabled)
 
 /* XXX: GCC is not able to compile probes in kernel modules for aarch64. */
 #if !defined(__clang__) && defined(KLD_MODULE) && defined(__aarch64__)

@@ -35,7 +35,7 @@ zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 
     if(*((uint32_t*)patch_addr) == nop_insn) {
         // Replace nop with jump
-        imm = patch_addr - lbl_true_addr;
+        imm = lbl_true_addr - patch_addr;
         imm = (imm & 0x100000) |
             ((imm & 0x7fe) << 8) |
             ((imm & 0x800) >> 2) |

@@ -5,7 +5,7 @@
 #include <sys/types.h>
 
 #define ZCOND_NOP_ASM  "nop"
-#define ZCOND_JMP_ASM  "b"
+#define ZCOND_JMP_ASM(target)  "b " target
 
 void
 zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr);

@@ -86,14 +86,14 @@ zcond_unload_patch_points(linker_file_t lf)
 	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
 		&end, NULL) == 0) {
       for(pp = begin; pp < end; pp++) {
-        struct patch_point *pp2 = SLIST_FIRST(&pp->owning_zcond->patch_points);
+        struct patch_point *pp2 = SLIST_FIRST(&pp->zcond->patch_points);
         if(pp2 == pp) {
-          SLIST_REMOVE_HEAD(&pp->owning_zcond->patch_points, next);
+          SLIST_REMOVE_HEAD(&pp->zcond->patch_points, next);
         } else if(pp2 != NULL) {
           struct patch_point *pp3;
 
           for(;;) {
-            pp3 = SLIST_NEXT(pp3, next);
+            pp3 = SLIST_NEXT(pp2, next);
             if(pp3 == NULL) {
                 break;
             }
@@ -111,7 +111,7 @@ zcond_unload_patch_points(linker_file_t lf)
 static void
 zcond_kld_load(void *arg __unused, struct linker_file *lf)
 {
-	zcond_load_patch_points(*lf);
+	zcond_load_patch_points(lf);
 }
 
 static void
@@ -121,7 +121,7 @@ zcond_kld_unload(void *arg __unused, struct linker_file *lf, int *error)
     return;
   }
 
- zcond_unload_patch_points(*lf);
+ zcond_unload_patch_points(lf);
 }
 
 static int
@@ -141,7 +141,7 @@ zcond_init(const void *unused)
 {
 	EVENTHANDLER_REGISTER(kld_load, zcond_kld_load, NULL,
 	    EVENTHANDLER_PRI_ANY);
-    EVENTHANDLER_REGISTER(kld_unload_try, zcond_kld_unload, NULL, EVENTHANDLER_PRI_ANY)
+	EVENTHANDLER_REGISTER(kld_unload_try, zcond_kld_unload, NULL, EVENTHANDLER_PRI_ANY);
 	linker_file_foreach(zcond_load_patch_points_cb, NULL);
 }
 
@@ -293,15 +293,15 @@ zcond_list_inspection_points(SYSCTL_HANDLER_ARGS)
 	struct patch_point *p;
 	SLIST_FOREACH(p, &cond1.cond.patch_points, next) {
 		sbuf_printf(&buf,
-		    "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p\n",
-		    p->patch_addr, p->lbl_true_addr, p->zcond);
+		    "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | instr = %04x\n",
+		    p->patch_addr, p->lbl_true_addr, p->zcond, *((uint32_t *)p->patch_addr));
 	}
 
 	sbuf_printf(&buf, "inspection points for cond2:\n");
 	SLIST_FOREACH(p, &cond2.cond.patch_points, next) {
 		sbuf_printf(&buf,
-		    "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p\n",
-		    p->patch_addr, p->lbl_true_addr, p->zcond);
+			    "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | instr = %04x\n",
+	      p->patch_addr, p->lbl_true_addr, p->zcond, *((uint32_t *)p->patch_addr));
 	}
 
 	sbuf_finish(&buf);

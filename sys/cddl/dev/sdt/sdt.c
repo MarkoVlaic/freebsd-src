@@ -342,7 +342,6 @@ sdt_kld_load_probes(struct linker_file *lf)
 {
 	struct sdt_probe **p_begin, **p_end;
 	struct sdt_argtype **a_begin, **a_end;
-	struct sdt_tracepoint *tp_begin, *tp_end;
 
 	if (linker_file_lookup_set(lf, "sdt_probes_set", &p_begin, &p_end,
 	    NULL) == 0) {

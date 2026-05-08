@@ -114,10 +114,10 @@ struct zcond_false {
  */
 #define ZCOND_TABLE_ENTRY                                 \
 	".pushsection " ZCOND_ELF_SECTION ", \"aw\" \n\t" \
-	_ZCOND_ASM_WORD "1b \n\t"                                   \
-	_ZCOND_ASM_WORD "%l[l_true] \n\t"                           \
-	_ZCOND_ASM_WORD "%c0 \n\t"                                  \
-	_ZCOND_ASM_WORD "0 \n\t"                                    \
+	_ZCOND_ASM_WORD " 1b \n\t"                                   \
+	_ZCOND_ASM_WORD " %l[l_true] \n\t"                           \
+	_ZCOND_ASM_WORD " %c0 \n\t"                                  \
+	_ZCOND_ASM_WORD " 0 \n\t"                                    \
 	".popsection \n\t"
 
 #define ZCOND_SET_START_STOP                                      \
@@ -135,7 +135,7 @@ static __always_inline bool
 zcond_nop(struct zcond *const zcond_p)
 {
 	ZCOND_SET_START_STOP
-	asm goto("1: " ZCOND_NOP_ASM ZCOND_TABLE_ENTRY
+	asm goto("1: " ZCOND_NOP_ASM "\n\t" ZCOND_TABLE_ENTRY
 		 :
 		 : "i"(zcond_p)
 		 :
@@ -155,7 +155,7 @@ static __always_inline bool
 zcond_jmp(struct zcond *const zcond_p)
 {
 	ZCOND_SET_START_STOP
-	asm goto("1:" ZCOND_JMP_ASM " %[l_true] \n\t" ZCOND_TABLE_ENTRY
+	asm goto("1:" ZCOND_JMP_ASM("%[l_true]") "\n\t" ZCOND_TABLE_ENTRY
 		 :
 		 : "i"(zcond_p)
 		 :

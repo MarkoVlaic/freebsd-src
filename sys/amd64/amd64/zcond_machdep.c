@@ -132,6 +132,7 @@ get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 	}
 }
 
+
 static bool
 patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
@@ -142,7 +143,7 @@ patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
     if(patch_addr == lbl_true_addr || patch_addr + size < patch_addr)
       return (false);
 
-	uintptr_t offset = lbl_true_addr - patch_addr - size;
+	intptr_t offset = lbl_true_addr - patch_addr - size;
     if(offset < -(1l << 31) || offset > (1l << 31))
       return (false);
 

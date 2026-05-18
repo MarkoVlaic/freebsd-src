@@ -88,7 +88,6 @@ riscv/riscv/riscv_syscon.c	optional	syscon riscv_syscon fdt
 riscv/riscv/sigtramp.S		standard
 riscv/riscv/sbi.c		standard
 riscv/riscv/sbi_ipi.c		optional	smp
-riscv/riscv/sdt_machdep.c	optional	kdtrace_hooks
 riscv/riscv/stack_machdep.c	optional	ddb | stack
 riscv/riscv/support.S		standard
 riscv/riscv/swtch.S		standard
@@ -99,6 +98,7 @@ riscv/riscv/uio_machdep.c	standard
 riscv/riscv/unwind.c		optional	ddb | kdtrace_hooks | stack
 riscv/riscv/vector.c		standard
 riscv/riscv/vm_machdep.c	standard
+riscv/riscv/zcond_machdep.c standard
 riscv/vmm/vmm.c					optional	vmm
 riscv/vmm/vmm_aplic.c				optional	vmm
 riscv/vmm/vmm_dev_machdep.c			optional	vmm

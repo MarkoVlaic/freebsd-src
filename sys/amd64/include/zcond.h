@@ -41,7 +41,7 @@
 	".byte 0x00 \n\t" \
 	".byte 0x00 \n\t"
 
-#define ZCOND_JMP_ASM(target)	       "jmp " target
+#define ZCOND_JMP_ASM(target) "jmp " target
 
 void
 zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr);

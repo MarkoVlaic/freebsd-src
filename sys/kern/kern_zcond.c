@@ -42,6 +42,10 @@
 #include <sys/sysctl.h>
 #include <sys/zcond.h>
 
+/*
+ * Describes a single inspection of the zcond state (performed with an if
+ * statement). Holds all the data neccessary to perform an instruction patch.
+ */
 struct patch_point {
 	uintptr_t patch_addr;
 	uintptr_t lbl_true_addr;
@@ -80,32 +84,34 @@ zcond_load_patch_points(linker_file_t lf)
 static void
 zcond_unload_patch_points(linker_file_t lf)
 {
-  struct patch_point *begin, *end;
-  struct patch_point *pp;
+	struct patch_point *begin, *end;
+	struct patch_point *pp;
 
 	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
-		&end, NULL) == 0) {
-      for(pp = begin; pp < end; pp++) {
-        struct patch_point *pp2 = SLIST_FIRST(&pp->zcond->patch_points);
-        if(pp2 == pp) {
-          SLIST_REMOVE_HEAD(&pp->zcond->patch_points, next);
-        } else if(pp2 != NULL) {
-          struct patch_point *pp3;
+	    &end, NULL) != 0) {
+		return;
+	}
 
-          for(;;) {
-            pp3 = SLIST_NEXT(pp2, next);
-            if(pp3 == NULL) {
-                break;
-            }
-            if(pp3 == pp) {
-                SLIST_REMOVE_AFTER(pp2, next);
-                break;
-            }
-            pp2 = pp3;
-          }
-        }
-      }
-    }
+	for(pp = begin; pp < end; pp++) {
+		struct patch_point *pp2 = SLIST_FIRST(&pp->zcond->patch_points);
+		if(pp2 == pp) {
+			SLIST_REMOVE_HEAD(&pp->zcond->patch_points, next);
+		} else if(pp2 != NULL) {
+			struct patch_point *pp3;
+
+			for(;;) {
+				pp3 = SLIST_NEXT(pp2, next);
+				if(pp3 == NULL) {
+					break;
+				}
+				if(pp3 == pp) {
+					SLIST_REMOVE_AFTER(pp2, next);
+					break;
+				}
+				pp2 = pp3;
+			}
+		}
+	}
 }
 
 static void
@@ -117,11 +123,11 @@ zcond_kld_load(void *arg __unused, struct linker_file *lf)
 static void
 zcond_kld_unload(void *arg __unused, struct linker_file *lf, int *error)
 {
-  if(*error != 0) {
-    return;
-  }
+	if(*error != 0) {
+		return;
+	}
 
- zcond_unload_patch_points(lf);
+	zcond_unload_patch_points(lf);
 }
 
 static int

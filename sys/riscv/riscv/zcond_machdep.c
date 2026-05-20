@@ -26,26 +26,26 @@ patch_addr_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 void
 zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
-    uint32_t instr;
-    int32_t imm;
+	uint32_t instr;
+	int32_t imm;
 
 	KASSERT(patch_addr_valid(patch_addr, lbl_true_addr),
 	    ("%s: invalid tracepoint %#lx -> %#lx",
 	    __func__, patch_addr, lbl_true_addr));
 
-    if(*((uint32_t*)patch_addr) == nop_insn) {
-        // Replace nop with jump
-        imm = lbl_true_addr - patch_addr;
-        imm = (imm & 0x100000) |
-            ((imm & 0x7fe) << 8) |
-            ((imm & 0x800) >> 2) |
-            ((imm & 0xff000) >> 12);
-        instr = (imm << 12) | MATCH_JAL;
-    } else {
-        // Replace jump with nop
-        instr = nop_insn;
-    }
+	if(*((uint32_t*)patch_addr) == nop_insn) {
+		// Replace nop with jump
+		imm = lbl_true_addr - patch_addr;
+		imm = (imm & 0x100000) |
+		      ((imm & 0x7fe) << 8) |
+		      ((imm & 0x800) >> 2) |
+		      ((imm & 0xff000) >> 12);
+		instr = (imm << 12) | MATCH_JAL;
+	} else {
+		// Replace jump with nop
+		instr = nop_insn;
+	}
 
 	memcpy((void *)patch_addr, &instr, sizeof(instr));
-    fence_i();
+	fence_i();
 }

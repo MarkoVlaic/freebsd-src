@@ -29,20 +29,20 @@ patch_addr_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 void
 zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
-    void *addr;
-    uint32_t instr;
+	void *addr;
+	uint32_t instr;
 
 	KASSERT(patch_addr_valid(patch_addr, lbl_true_addr),
 	    ("%s: invalid tracepoint %#lx -> %#lx",
 	    __func__, patch_addr, lbl_true_addr));
 
-    if(*((uint32_t*)patch_addr) == nop_insn) {
-        // Replace nop with jump
-        instr = (((lbl_true_addr - patch_addr) >> 2) & 0x3fffffful) | 0x14000000;
-    } else {
-        // Replace jump with nop
-        instr = nop_insn;
-    }
+	if(*((uint32_t*)patch_addr) == nop_insn) {
+		// Replace nop with jump
+		instr = (((lbl_true_addr - patch_addr) >> 2) & 0x3fffffful) | 0x14000000;
+	} else {
+		// Replace jump with nop
+		instr = nop_insn;
+	}
 
 
     if (!arm64_get_writable_addr((void *)patch_addr, &addr))

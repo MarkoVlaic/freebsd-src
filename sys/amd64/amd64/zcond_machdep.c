@@ -75,7 +75,7 @@ insn_size(uintptr_t addr)
 		return (INSN_LONG_SIZE);
 	}
 
-    panic("%s: unexpected opcode: %02hhx", __func__, *paddr);
+	panic("%s: unexpected opcode: %02hhx", __func__, *paddr);
 }
 
 static const uint8_t *
@@ -112,9 +112,9 @@ static const uint8_t *
 get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
     size_t *size)
 {
-        const uint8_t *pa;
+	const uint8_t *pa;
 
-        *size = insn_size(patch_addr);
+	*size = insn_size(patch_addr);
 	pa = (uint8_t *)patch_addr;
 	if (*pa == nop_short_bytes[0]) {
 		/* two byte nop */
@@ -136,34 +136,34 @@ get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 static bool
 patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
-    if(patch_addr < KERNSTART || lbl_true_addr < KERNSTART)
-      return (false);
+	if(patch_addr < KERNSTART || lbl_true_addr < KERNSTART)
+		return (false);
 
-    size_t size = insn_size(patch_addr);
-    if(patch_addr == lbl_true_addr || patch_addr + size < patch_addr)
-      return (false);
+	size_t size = insn_size(patch_addr);
+	if(patch_addr == lbl_true_addr || patch_addr + size < patch_addr)
+		return (false);
 
 	intptr_t offset = lbl_true_addr - patch_addr - size;
-    if(offset < -(1l << 31) || offset > (1l << 31))
-      return (false);
+	if(offset < -(1l << 31) || offset > (1l << 31))
+		return (false);
 
-    return (true);
+	return (true);
 }
 
 void
 zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
 
-    KASSERT(patchpoint_valid(patch_addr, lbl_true_addr),
-        ("%s: invalid zcond patchpoint %#jx -> %#jx",
-        __func__, (uintmax_t)patch_addr, lbl_true_addr));
+	KASSERT(patchpoint_valid(patch_addr, lbl_true_addr),
+	    ("%s: invalid zcond patchpoint %#jx -> %#jx",
+	    __func__, (uintmax_t)patch_addr, lbl_true_addr));
 
-    size_t size;
-    const uint8_t *insn;
-    bool wp;
+	size_t size;
+	const uint8_t *insn;
+	bool wp;
 
-    insn = get_patch_insn(patch_addr, lbl_true_addr, &size);
-    wp = disable_wp();
-    memcpy((void *)patch_addr, insn, size);
-    restore_wp(wp);
+	insn = get_patch_insn(patch_addr, lbl_true_addr, &size);
+	wp = disable_wp();
+	memcpy((void *)patch_addr, insn, size);
+	restore_wp(wp);
 }

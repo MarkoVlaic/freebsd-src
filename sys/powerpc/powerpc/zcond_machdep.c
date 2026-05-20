@@ -25,19 +25,19 @@ patch_addr_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 void
 zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
-    uint32_t instr;
+	uint32_t instr;
 
 	KASSERT(patch_addr_valid(patch_addr, lbl_true_addr),
 	    ("%s: invalid tracepoint %#lx -> %#lx",
 	    __func__, (uintmax_t)patch_addr, (uintmax_t)lbl_true_addr));
 
-    if(*((uint32_t*)patch_addr) == nop_insn) {
-        // Replace nop with jump
-        instr = ((patch_addr - lbl_true_addr) & 0x7fffffful) | 0x48000000;
-    } else {
-        // Replace jump with nop
-        instr = nop_insn;
-    }
+	if(*((uint32_t*)patch_addr) == nop_insn) {
+		// Replace nop with jump
+		instr = ((patch_addr - lbl_true_addr) & 0x7fffffful) | 0x48000000;
+	} else {
+		// Replace jump with nop
+		instr = nop_insn;
+	}
 
 	memcpy((void *)patch_addr, &instr, sizeof(instr));
 	__syncicache((void *)patchpoint, sizeof(instr));

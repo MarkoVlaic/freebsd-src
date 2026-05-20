@@ -57,30 +57,29 @@
  * jump). Keep in mind that this is an expensive operation, since all cpus
  * except the one performing the patch need to be halted.
  *
+ * Zconds expand boolean semantics with reference counting. A zcond is in a
+ * false (disabled) state when its reference count is 0 and in a true (enabled)
+ * state when the reference count is greater than 0.
  *
- * To use a zcond, first define it with: ZCOND_DEFINE_TRUE(name) or
- * ZCOND_DEFINE_FALSE(name) Alternatively, declare it with
- * ZCOND_DECLARE_TRUE(name) or ZCOND_DECLARE_FALSE(name). Then initialize it
- * with ZCOND_INIT(true) or ZCOND_INIT(false).
+ * To use a zcond, first define it with: DEFINE_ZCOND_TRUE(name) or
+ * DEFINE_ZCOND_FALSE(name) Alternatively, declare it with
+ * DECLARE_ZCOND_TRUE(name) or DECLARE_ZCOND_FALSE(name). Then initialize it
+ * with ZCOND_INIT(ZCOND_ENABLED) or ZCOND_INIT(ZCOND_DISABLED).
  *
- * Use zcond_false(cond) or zcond_true(cond) to inspect the state of a zcond.
+ * Use zcond_branch_likely(cond) or zcond_branch_unlikely(cond) to perform branch selection
+ * based on a zcond. Both functions execute a branch corresponding to the zcond state (true/false).
+ * The likely/unlikely suffix is just a hint indicating which branch is expected to be
+ * executed more frequently.
  *
- * To flip the state of a zcond, use zcond_enable(cond) and zcond_disable(cond).
+ * To alter the state of a zcond, use zcond_enable(cond) and zcond_disable(cond).
+ * These increase/decrease a zcond's reference count by 1 and perform the
+ * instruction patch on the transition between false and true states.
  *
  * This header includes the interface intended to be used by consumers, as well
  * as some MI code. MD support can be found in sys/<arch>/include/zcond.h and
  * sys/<arch>/<arch>/zcond_machdep.c
  */
 
-/*
- * Describes a single inspection of the zcond state (performed with an if
- * statement). Holds all the data neccessary to perform a safe instruction
- * patch.
- */
-
-/*
- * A single optimized boolean.
- */
 struct zcond {
 	int refcnt;
 	SLIST_HEAD(, patch_point) patch_points;
@@ -112,12 +111,12 @@ struct zcond_false {
  * all the data related to the zcond mechanism.
  * A single entry describes a single patch_point.
  */
-#define ZCOND_TABLE_ENTRY                                 \
-	".pushsection " ZCOND_ELF_SECTION ", \"aw\" \n\t" \
-	_ZCOND_ASM_WORD " 1b \n\t"                                   \
-	_ZCOND_ASM_WORD " %l[l_true] \n\t"                           \
-	_ZCOND_ASM_WORD " %c0 \n\t"                                  \
-	_ZCOND_ASM_WORD " 0 \n\t"                                    \
+#define ZCOND_TABLE_ENTRY					\
+	".pushsection " ZCOND_ELF_SECTION ", \"aw\" \n\t"	\
+	_ZCOND_ASM_WORD " 1b \n\t"                              \
+	_ZCOND_ASM_WORD " %l[l_true] \n\t"                      \
+	_ZCOND_ASM_WORD " %c0 \n\t"                             \
+	_ZCOND_ASM_WORD " 0 \n\t"                               \
 	".popsection \n\t"
 
 #define ZCOND_SET_START_STOP                                      \
@@ -169,18 +168,18 @@ l_true:
  * These macros declare and initialize a new zcond.
  */
 
-#define ZCOND_INIT(enabled)                                      \
-	{                                                            \
-		{                                                        \
-			.patch_points = SLIST_HEAD_INITIALIZER(),            \
-			.refcnt = (enabled)                                  \
-		}                                                        \
+#define ZCOND_INIT(enabled)						\
+	{								\
+		{                                                       \
+			.patch_points = SLIST_HEAD_INITIALIZER(),       \
+			.refcnt = (enabled)                             \
+		}                                                       \
 	}
 
 #define ZCOND_ENABLED 1
 #define ZCOND_DISABLED 0
 
-#define DEFINE_ZCOND_TRUE(name)	  struct zcond_true name = ZCOND_INIT(ZCOND_ENABLED)
+#define DEFINE_ZCOND_TRUE(name)   struct zcond_true name = ZCOND_INIT(ZCOND_ENABLED)
 
 #define DEFINE_ZCOND_FALSE(name)  struct zcond_false name = ZCOND_INIT(ZCOND_DISABLED)
 
@@ -188,38 +187,38 @@ l_true:
 
 #define DECLARE_ZCOND_FALSE(name) struct zcond_false name;
 
-#define zcond_likely(x) (__builtin_expect((x), 1))
+#define zcond_likely(x)   (__builtin_expect((x), 1))
 #define zcond_unlikely(x) (__builtin_expect((x), 0))
 
 /*
  * These macros inspect the state of a zcond (is it true or false)
  * thus instatiating a patch_point.
  */
-#define zcond_branch_likely(cond_wrapped)                               \
-	({                                                                  \
+#define zcond_branch_likely(cond_wrapped)					\
+	({									\
 		bool branch;                                                    \
 		if (__builtin_types_compatible_p(typeof(cond_wrapped),          \
-			struct zcond_true)) {                                       \
-			branch = !zcond_nop(&(cond_wrapped.cond));                   \
+			struct zcond_true)) {                                   \
+			branch = !zcond_nop(&(cond_wrapped.cond));              \
 		} else if (__builtin_types_compatible_p(typeof(cond_wrapped),   \
-			       struct zcond_false)) {                               \
-			branch = !zcond_jmp(&(cond_wrapped.cond));                   \
+			       struct zcond_false)) {                           \
+			branch = !zcond_jmp(&(cond_wrapped.cond));              \
 		}                                                               \
-                                                                        \
+										\
 		zcond_likely(branch);                                           \
 	})
 
-#define zcond_branch_unlikely(cond_wrapped)                             \
-	({                                                                  \
+#define zcond_branch_unlikely(cond_wrapped)					\
+	({									\
 		bool branch;                                                    \
 		if (__builtin_types_compatible_p(typeof(cond_wrapped),          \
-			struct zcond_true)) {                                       \
-			branch = zcond_jmp(&(cond_wrapped.cond));                   \
+			struct zcond_true)) {                                   \
+			branch = zcond_jmp(&(cond_wrapped.cond));               \
 		} else if (__builtin_types_compatible_p(typeof(cond_wrapped),   \
-			       struct zcond_false)) {                               \
-			branch = zcond_nop(&(cond_wrapped.cond));                   \
+			       struct zcond_false)) {                           \
+			branch = zcond_nop(&(cond_wrapped.cond));               \
 		}                                                               \
-                                                                        \
+										\
 		zcond_unlikely(branch);                                         \
 	})
 

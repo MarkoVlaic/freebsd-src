@@ -1,7 +1,6 @@
+#include <sys/systm.h>
+#include <machine/cpu.h>
 #include <machine/zcond.h>
-#include <machine/cpufunc.h>
-#include <machine/md_var.h>
-#include <machine/vmparam.h>
 
 #define INSN_SIZE 4
 
@@ -10,11 +9,7 @@ static const uint32_t nop_insn = 0xe320f000u;
 static bool
 patch_addr_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 {
-	void *addr;
 	int32_t offset;
-
-	if (!arm64_get_writable_addr((void *)patch_addr, &addr))
-		return (false);
 
 	if (patch_addr == lbl_true_addr ||
 	    (patch_addr & (INSN_SIZE - 1)) != 0 ||
@@ -47,6 +42,6 @@ zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 		instr = nop_insn;
 	}
 
-	memcpy(addr, &instr, sizeof(instr));
+	memcpy((void *)patch_addr, &instr, sizeof(instr));
 	icache_sync(patch_addr, INSN_SIZE);
 }

@@ -210,6 +210,7 @@ __zcond_toggle(struct zcond *cond, bool enable)
 /*
  * Testing code.
  */
+/*
 DEFINE_ZCOND_TRUE(cond1);
 DEFINE_ZCOND_FALSE(cond2);
 
@@ -238,6 +239,8 @@ trigger_zcond_test(SYSCTL_HANDLER_ARGS)
 	return (0);
 }
 
+
+
 static int
 trigger_zcond_test2(SYSCTL_HANDLER_ARGS)
 {
@@ -252,9 +255,9 @@ trigger_zcond_test2(SYSCTL_HANDLER_ARGS)
 	}
 
 	// simulate long jump with nops
-	/*asm (
+	asm (
 	    ".nops 512\n\t":::
-	);*/
+	);
 
 	sbuf_finish(&buf);
 	sbuf_delete(&buf);
@@ -387,3 +390,4 @@ SYSCTL_PROC(_kern, OID_AUTO, zcond2_enable, CTLFLAG_RD | CTLTYPE_STRING,
     SYSCTL_NULL_INT_PTR, 0, zcond2_enable, "I", "enable zcond2");
 SYSCTL_PROC(_kern, OID_AUTO, zcond2_disable, CTLFLAG_RD | CTLTYPE_STRING,
     SYSCTL_NULL_INT_PTR, 0, zcond2_disable, "I", "disable zcond2");
+*/

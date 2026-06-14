@@ -1,7 +1,12 @@
-#include <machine/zcond.h>
+#include <sys/systm.h>
+
+#include <vm/vm.h>
+#include <vm/pmap.h>
+
 #include <machine/cpufunc.h>
 #include <machine/md_var.h>
 #include <machine/vmparam.h>
+#include <machine/zcond.h>
 
 #define INSN_SIZE 4
 

@@ -1,7 +1,7 @@
-#include <machine/zcond.h>
-#include <machine/cpufunc.h>
+#include <sys/systm.h>
+
 #include <machine/md_var.h>
-#include <machine/vmparam.h>
+#include <machine/zcond.h>
 
 #define INSN_SIZE 4
 
@@ -13,10 +13,10 @@ patch_addr_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 
 	int64_t offset;
 
-	if (patchpoint == target ||
-	    (patchpoint & 3) != 0 || (target & 3) != 0)
+	if (patch_addr == lbl_true_addr ||
+	    (patch_addr & 3) != 0 || (lbl_true_addr & 3) != 0)
 		return (false);
-	offset = target - patchpoint;
+	offset = lbl_true_addr - patch_addr;
 	if (offset < -(1 << 26) || offset > (1 << 26))
 		return (false);
 	return (true);
@@ -40,5 +40,5 @@ zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 	}
 
 	memcpy((void *)patch_addr, &instr, sizeof(instr));
-	__syncicache((void *)patchpoint, sizeof(instr));
+	__syncicache((void *)patch_addr, sizeof(instr));
 }

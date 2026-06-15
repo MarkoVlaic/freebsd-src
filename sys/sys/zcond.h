@@ -32,6 +32,8 @@
 #ifndef _SYS_ZCOND_H
 #define _SYS_ZCOND_H
 
+#ifdef ZCOND_PATCH
+
 #include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -234,5 +236,48 @@ l_true:
  */
 void __zcond_toggle(struct zcond *cond, bool enable);
 
-#endif
-#endif
+#else
+// Fallback implementation when instruction patching is disabled
+
+#include <sys/cdefs.h>
+#include <sys/types.h>
+#include <sys/param.h>
+
+struct zcond {
+	int refcnt;
+};
+
+#define ZCOND_INIT(enabled)					\
+	{                                                       \
+		.refcnt = enabled                               \
+	}                                                       \
+
+#define ZCOND_ENABLED 1
+#define ZCOND_DISABLED 0
+
+#define DEFINE_ZCOND_TRUE(name)   struct zcond name = ZCOND_INIT(ZCOND_ENABLED)
+
+#define DEFINE_ZCOND_FALSE(name)  struct zcond name = ZCOND_INIT(ZCOND_DISABLED)
+
+#define DECLARE_ZCOND_TRUE(name)  struct zcond name;
+
+#define DECLARE_ZCOND_FALSE(name) struct zcond name;
+
+#define zcond_likely(x)   (__builtin_expect((x), 1))
+#define zcond_unlikely(x) (__builtin_expect((x), 0))
+
+/*
+ * These macros inspect the state of a zcond (is it true or false)
+ * thus instatiating a patch_point.
+ */
+#define zcond_branch_likely(cond) (zcond_likely(cond.refcnt))
+#define zcond_branch_unlikely(cond) (zcond_unlikely(cond.refcnt))
+
+#define zcond_enable(cond)  __zcond_toggle(&cond, true)
+#define zcond_disable(cond) __zcond_toggle(&cond, false)
+
+void __zcond_toggle(struct zcond *cond, bool enable);
+
+#endif // ZCOND_PATCH
+#endif // _SYS_ZCOND_H
+#endif // _KERNEL

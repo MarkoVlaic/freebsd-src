@@ -88,12 +88,12 @@ insn_nop(size_t size)
 }
 
 static const uint8_t *
-insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t lbl_true_addr)
+insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t target)
 {
 	int i;
 	uintptr_t offset;
 
-	offset = lbl_true_addr - patch_addr - size;
+	offset = target - patch_addr - size;
 
 	if (size == INSN_SHORT_SIZE) {
 		insn[0] = JMP_SHORT_OPCODE;
@@ -109,7 +109,7 @@ insn_jmp(size_t size, uintptr_t patch_addr, uintptr_t lbl_true_addr)
 }
 
 static const uint8_t *
-get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
+get_patch_insn(uintptr_t patch_addr, uintptr_t target,
     size_t *size)
 {
 	const uint8_t *pa;
@@ -118,9 +118,9 @@ get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 	pa = (uint8_t *)patch_addr;
 	if (*pa == nop_short_bytes[0]) {
 		/* two byte nop */
-		return insn_jmp(*size, patch_addr, lbl_true_addr);
+		return insn_jmp(*size, patch_addr, target);
 	} else if (*pa == nop_long_bytes[0]) {
-		return insn_jmp(*size, patch_addr, lbl_true_addr);
+		return insn_jmp(*size, patch_addr, target);
 	} else if (*pa == JMP_SHORT_OPCODE) {
 		/* two byte jump */
 		return insn_nop(*size);
@@ -134,16 +134,16 @@ get_patch_insn(uintptr_t patch_addr, uintptr_t lbl_true_addr,
 
 
 static bool
-patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
+patchpoint_valid(uintptr_t patch_addr, uintptr_t target)
 {
-	if(patch_addr < KERNSTART || lbl_true_addr < KERNSTART)
+	if(patch_addr < KERNSTART || target < KERNSTART)
 		return (false);
 
 	size_t size = insn_size(patch_addr);
-	if(patch_addr == lbl_true_addr || patch_addr + size < patch_addr)
+	if(patch_addr == target || patch_addr + size < patch_addr)
 		return (false);
 
-	intptr_t offset = lbl_true_addr - patch_addr - size;
+	intptr_t offset = target - patch_addr - size;
 	if(offset < -(1l << 31) || offset > (1l << 31))
 		return (false);
 
@@ -151,18 +151,18 @@ patchpoint_valid(uintptr_t patch_addr, uintptr_t lbl_true_addr)
 }
 
 void
-zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t lbl_true_addr)
+zcond_patchpoint_patch(uintptr_t patch_addr, uintptr_t target)
 {
 
-	KASSERT(patchpoint_valid(patch_addr, lbl_true_addr),
+	KASSERT(patchpoint_valid(patch_addr, target),
 	    ("%s: invalid zcond patchpoint %#jx -> %#jx",
-	    __func__, (uintmax_t)patch_addr, lbl_true_addr));
+	    __func__, (uintmax_t)patch_addr, target));
 
 	size_t size;
 	const uint8_t *insn;
 	bool wp;
 
-	insn = get_patch_insn(patch_addr, lbl_true_addr, &size);
+	insn = get_patch_insn(patch_addr, target, &size);
 	wp = disable_wp();
 	memcpy((void *)patch_addr, insn, size);
 	restore_wp(wp);

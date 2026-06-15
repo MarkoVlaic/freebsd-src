@@ -3937,7 +3937,7 @@ kern/kern_umtx.c		standard
 kern/kern_uuid.c		standard
 kern/kern_vnodedumper.c		standard
 kern/kern_xxx.c			standard
-kern/kern_zcond.c           standard
+kern/kern_zcond.c           optional zcond | kdtrace_hooks
 kern/link_elf.c			standard
 kern/linker_if.m		standard
 kern/p1003_1b.c			standard

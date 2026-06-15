@@ -169,7 +169,7 @@ SET_DECLARE(sdt_argtypes_set, struct sdt_argtype);
 		.mod = #_mod,						\
 		.func = #_func,						\
 		.name = #_name,						\
-        .enabled = ZCOND_INIT(ZCOND_DISABLED), \
+		.enabled = ZCOND_INIT(ZCOND_DISABLED),                  \
 	};								\
 	DATA_SET(sdt_probes_set, _SDT_PROBE_NAME(_prov, _mod, _func, _name))
 
@@ -403,7 +403,7 @@ struct sdt_probe {
 	TAILQ_ENTRY(sdt_probe)
 			probe_entry;	/* SDT probe list entry. */
 	TAILQ_HEAD(, sdt_argtype) argtype_list;
-    DECLARE_ZCOND_FALSE(enabled);
+	DECLARE_ZCOND_FALSE(enabled);
 	const char	*mod;
 	const char	*func;
 	const char	*name;

@@ -28,6 +28,8 @@
  * SUCH DAMAGE.
  */
 
+#ifdef ZCOND_PATCH
+
 #include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -48,7 +50,7 @@
  */
 struct patch_point {
 	uintptr_t patch_addr;
-	uintptr_t lbl_true_addr;
+	uintptr_t target;
 	struct zcond *zcond;
 	SLIST_ENTRY(patch_point) next;
 } __attribute__((packed));
@@ -68,9 +70,7 @@ zcond_load_patch_points(linker_file_t lf)
 	if (linker_file_lookup_set(lf, __XSTRING(ZCOND_LINKER_SET), &begin,
 		&end, NULL) == 0) {
 		for (pp = begin; pp < end; pp++) {
-            owning_zcond = pp->zcond;
-			// owning_zcond->refcnt = 1;
-
+			owning_zcond = pp->zcond;
 			if (owning_zcond->patch_points.slh_first == NULL) {
 				SLIST_INIT(&owning_zcond->patch_points);
 			}
@@ -162,7 +162,7 @@ zcond_patch(struct zcond *cond)
 {
         struct patch_point *p;
 	SLIST_FOREACH(p, &cond->patch_points, next) {
-	  zcond_patchpoint_patch(p->patch_addr, p->lbl_true_addr);
+	  zcond_patchpoint_patch(p->patch_addr, p->target);
 	}
 }
 
@@ -206,6 +206,23 @@ __zcond_toggle(struct zcond *cond, bool enable)
 
 	smp_rendezvous(NULL, rendezvous_action, NULL, &arg);
 }
+
+#else
+
+#include <sys/zcond.h>
+#include <sys/refcount.h>
+
+void
+__zcond_toggle(struct zcond *cond, bool enable)
+{
+	if(enable) {
+		refcount_acquire(&cond->refcnt);
+	} else {
+		refcount_release(&cond->refcnt);
+	}
+}
+
+#endif // ZCOND_PATCH
 
 /*
  * Testing code.
@@ -303,14 +320,14 @@ zcond_list_inspection_points(SYSCTL_HANDLER_ARGS)
 	SLIST_FOREACH(p, &cond1.cond.patch_points, next) {
 		sbuf_printf(&buf,
 		    "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | instr = %04x\n",
-		    p->patch_addr, p->lbl_true_addr, p->zcond, *((uint32_t *)p->patch_addr));
+		    p->patch_addr, p->target, p->zcond, *((uint32_t *)p->patch_addr));
 	}
 
 	sbuf_printf(&buf, "inspection points for cond2:\n");
 	SLIST_FOREACH(p, &cond2.cond.patch_points, next) {
 		sbuf_printf(&buf,
 			    "patch_addr = %#08lx | jump_addr = %#08lx | zcond_ptr = %p | instr = %04x\n",
-	      p->patch_addr, p->lbl_true_addr, p->zcond, *((uint32_t *)p->patch_addr));
+	      p->patch_addr, p->target, p->zcond, *((uint32_t *)p->patch_addr));
 	}
 
 	sbuf_finish(&buf);

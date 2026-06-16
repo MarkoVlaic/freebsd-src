@@ -247,10 +247,10 @@ struct zcond {
 	int refcnt;
 };
 
-#define ZCOND_INIT(enabled)					\
-	{                                                       \
-		.refcnt = enabled                               \
-	}                                                       \
+#define ZCOND_INIT(enabled)	\
+{                               \
+	.refcnt = enabled       \
+}                               \
 
 #define ZCOND_ENABLED 1
 #define ZCOND_DISABLED 0
